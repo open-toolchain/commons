@@ -83,8 +83,10 @@ echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}" >> $ARCHIVE_DIR/build.properties
 
 # Copy scripts (incl. deploy scripts)
-if [ ! -d $ARCHIVE_DIR/scripts/ ]; then # no need to copy if working in ./ already
-  cp -r ./scripts/ $ARCHIVE_DIR/
+if [ -d ./scripts/ ]; then
+  if [ ! -d $ARCHIVE_DIR/scripts/ ]; then # no need to copy if working in ./ already
+    cp -r ./scripts/ $ARCHIVE_DIR/
+  fi
 fi
 
 if [ -f ./chart/${CHART_NAME}/values.yaml ]; then
