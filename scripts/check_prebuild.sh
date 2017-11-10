@@ -13,9 +13,6 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 # Learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
-# To review or change build options use:
-# bx cr build --help
-
 echo "=========================================================="
 echo "CHECKING DOCKERFILE"
 echo "Checking Dockerfile at the repository root"
