@@ -1,16 +1,20 @@
 #!/bin/bash
 # uncomment to debug the script
 #set -x
-
-# env
+# copy the script below into your app code repo (e.g. ./scripts/build_image.sh) and 'source' it from your pipeline job
+#    source ./scripts/build_image.sh
+# alternatively, you can source it from online script:
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/build_image.sh")`
+# ------------------
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/build_image.sh
 echo "Build environment variables:"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
-
-# Learn more about the available environment variables at:
+# also run 'env' command to find all available env variables
+# or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # To review or change build options use:
@@ -56,6 +60,10 @@ echo "COPYING ARTIFACTS needed for deployment and testing (in particular build.p
 
 echo "Checking archive dir presence"
 mkdir -p $ARCHIVE_DIR
+
+# Persist env variables into a properties file (build.properties) so that all pipeline stages consuming this
+# build as input and configured with an environment properties file valued 'build.properties'
+# will be able to reuse the env variables in their job shell scripts.
 
 # CHART information from build.properties is used in Helm Chart deployment to set the release name
 CHART_NAME=$(find chart/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)

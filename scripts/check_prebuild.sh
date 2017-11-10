@@ -1,16 +1,20 @@
 #!/bin/bash
 # uncomment to debug the script
 #set -x
-
-# env
+# copy the script below into your app code repo (e.g. ./scripts/check_prebuild.sh) and 'source' it from your pipeline job
+#    source ./scripts/check_prebuild.sh
+# alternatively, you can source it from online script:
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_prebuild.sh")`
+# ------------------
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_prebuild.sh
 echo "Build environment variables:"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
-
-# Learn more about the available environment variables at:
+# also run 'env' command to find all available env variables
+# or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 echo "=========================================================="
@@ -22,7 +26,6 @@ else
     echo "Dockerfile not found"
     exit 1
 fi
-
 echo "Linting Dockerfile"
 npm install -g dockerlint
 dockerlint -f Dockerfile
@@ -39,7 +42,6 @@ if [ -z ${CHART_NAME} ]; then
 else
     echo -e "Helm chart found for Kubernetes deployment : /chart/${CHART_NAME}"
 fi
-
 echo "Linting Helm Chart"
 helm lint ./chart/${CHART_NAME}
 

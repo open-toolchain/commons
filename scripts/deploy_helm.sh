@@ -1,8 +1,13 @@
 #!/bin/bash
 # uncomment to debug the script
 #set -x
-
-echo "Input env variables (can be received via properties.file:"
+# copy the script below into your app code repo (e.g. ./scripts/deploy_helm.sh) and 'source' it from your pipeline job
+#    source ./scripts/deploy_helm.sh
+# alternatively, you can source it from online script:
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_helm.sh")`
+# ------------------
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_helm.sh
+# Input env variables (can be received via a pipeline environment properties.file.
 echo "CHART_NAME=${CHART_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
@@ -11,10 +16,13 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
 #View build properties
 # cat build.properties
+# also run 'env' command to find all available env variables
+# or learn more about the available environment variables at:
+# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
-# Input parameters configured by Pipeline job automatically
-# PIPELINE_KUBERNETES_CLUSTER_NAME
-# CLUSTER_NAMESPACE
+# Input env variables from pipeline job
+echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
+echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 echo "=========================================================="
 echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
