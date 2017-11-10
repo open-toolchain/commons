@@ -15,5 +15,5 @@ For instance, you can use one of the shell scripts in your own toolchains in dif
     source ./scripts/deploy_helm`
 
 ### Recommendations:
-1. Initially try to understand the script behavior, by inserting 'set -x' at the top of the script, you'll get more insights into the script command executions.
-2. Prefer 'source' over 'sh' to run a script, as it then runs in the parent shell environment. Thus allowing to export environment variables that can be consumed in subsequent jobs in the same stage.
+1. Initially try to understand the script behavior, by inserting `set -x` at the top of the script, you'll get better insight into the script command executions.
+2. Prefer `source` over `sh` command to run a script, as it then runs in the parent shell environment. Thus allowing to export environment variables that can be consumed in subsequent jobs in the same stage.
