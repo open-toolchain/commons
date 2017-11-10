@@ -1,4 +1,5 @@
 #!/bin/bash
+# uncomment to debug the script
 #set -x
 
 # env
@@ -15,50 +16,29 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 # To review or change build options use:
 # bx cr build --help
 
-echo "=========================================================="
-echo "Checking for Dockerfile at the repository root"
-if [ -f Dockerfile ]; then 
-   echo "Dockerfile found"
-else
-    echo "Dockerfile not found"
-    exit 1
-fi
-
-echo "=========================================================="
-echo "Checking registry current plan and quota"
-bx cr plan
-bx cr quota
-echo "If needed, discard older images using: bx cr image-rm"
-
-echo "Checking registry namespace: ${REGISTRY_NAMESPACE}"
-NS=$( bx cr namespaces | grep ${REGISTRY_NAMESPACE} ||: )
-if [ -z ${NS} ]; then
-    echo "Registry namespace ${REGISTRY_NAMESPACE} not found, creating it."
-    bx cr namespace-add ${REGISTRY_NAMESPACE}
-    echo "Registry namespace ${REGISTRY_NAMESPACE} created."
-else 
-    echo "Registry namespace ${REGISTRY_NAMESPACE} found."
-fi
-
 echo -e "Existing images in registry"
 bx cr images
 
 echo "=========================================================="
-echo -e "Building container image: ${IMAGE_NAME}:${BUILD_NUMBER}"
+echo -e "BUILDING CONTAINER IMAGE: ${IMAGE_NAME}:${BUILD_NUMBER}"
 set -x
 bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER} .
 set +x
 bx cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER}
 
-# The image URL will automatically be passed along with the build result as env variable PIPELINE_IMAGE_URL to
-# any subsequent job consuming this build result. 
-# Uncomment and modify the environment variable $PIPELINE_IMAGE_URL to pass along a different image URL than the one inferred by the pipeline:
-# export PIPELINE_IMAGE_URL="$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER"
+# When 'bx' commands are in the pipeline job config directly, the image URL will automatically be passed 
+# along with the build result as env variable PIPELINE_IMAGE_URL to any subsequent job consuming this build result. 
+# When the job is sourc'ing an external shell script, or to pass a different image URL than the one inferred by the pipeline,
+# please uncomment and modify the environment variable the following line.
+export PIPELINE_IMAGE_URL="$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER"
+echo "TODO - remove once no longer needed to unlock VA job ^^^^"
+
+bx cr images
 
 # Provision a registry token for this toolchain to later pull image. Token will be passed into build.properties
 echo "=========================================================="
 TOKEN_DESCR="bluemix-toolchain-${PIPELINE_TOOLCHAIN_ID}"
-echo "Checking registry token for toolchain: ${TOKEN_DESCR}"
+echo "CHECKING REGISTRY token existence for toolchain: ${TOKEN_DESCR}"
 EXISTING_TOKEN=$(bx cr tokens | grep ${TOKEN_DESCR} ||: )
 if [ -z ${EXISTING_TOKEN} ]; then
     echo -e "Creating new registry token: ${TOKEN_DESCR}"
@@ -72,16 +52,25 @@ REGISTRY_TOKEN=$(bx cr token-get ${REGISTRY_TOKEN_ID} --quiet)
 echo -e "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
 
 echo "=========================================================="
-echo "Copying artifacts needed for deployment and testing"
+echo "COPYING ARTIFACTS needed for deployment and testing (in particular build.properties)"
 
-echo -e "Checking archive dir presence"
+echo "Checking archive dir presence"
 mkdir -p $ARCHIVE_DIR
-# RELEASE_NAME from build.properties is used in Helm Chart deployment to set the release name
-echo "RELEASE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties
+
+# CHART information from build.properties is used in Helm Chart deployment to set the release name
+CHART_NAME=$(find chart/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+echo "CHART_NAME=${CHART_NAME}" >> $ARCHIVE_DIR/build.properties
+# IMAGE information from build.properties is used in Helm Chart deployment to set the release name
+echo "IMAGE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties
+echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
 # REGISTRY information from build.properties is used in Helm Chart deployment to generate cluster secret
 echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
+echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}" >> $ARCHIVE_DIR/build.properties
+echo "File 'build.properties' created for passing env variables to subsequent pipeline jobs:"
+cat $ARCHIVE_DIR/build.properties
 
+echo "Copy pipeline scripts along with the build"
 # Copy scripts (incl. deploy scripts)
 if [ -d ./scripts/ ]; then
   if [ ! -d $ARCHIVE_DIR/scripts/ ]; then # no need to copy if working in ./ already
@@ -89,16 +78,7 @@ if [ -d ./scripts/ ]; then
   fi
 fi
 
-if [ -f ./chart/${CHART_NAME}/values.yaml ]; then
-    #Update Helm chart values.yml with image name and tag
-    echo "UPDATING CHART VALUES:"
-    sed -i "s~^\([[:blank:]]*\)repository:.*$~\1repository: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}~" ./chart/${CHART_NAME}/values.yaml
-    sed -i "s~^\([[:blank:]]*\)tag:.*$~\1tag: ${BUILD_NUMBER}~" ./chart/${CHART_NAME}/values.yaml
-    cat ./chart/${CHART_NAME}/values.yaml
-    if [ ! -d $ARCHIVE_DIR/chart/ ]; then # no need to copy if working in ./ already
-      cp -r ./chart/ $ARCHIVE_DIR/
-    fi
-else 
-    echo -e "${red}Helm chart values for Kubernetes deployment (/chart/${CHART_NAME}/values.yaml) not found.${no_color}"
-    exit 1
-fi     
+echo "Copy Helm chart along with the build"
+if [ ! -d $ARCHIVE_DIR/chart/ ]; then # no need to copy if working in ./ already
+  cp -r ./chart/ $ARCHIVE_DIR/
+fi
