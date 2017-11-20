@@ -1,15 +1,15 @@
 #!/bin/bash
 # uncomment to debug the script
 #set -x
-# copy the script below into your app code repo (e.g. ./scripts/check_predeploy.sh) and 'source' it from your pipeline job
-#    source ./scripts/check_predeploy.sh
+# copy the script below into your app code repo (e.g. ./scripts/check_predeploy_regtoken.sh) and 'source' it from your pipeline job
+#    source ./scripts/check_predeploy_regtoken.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_predeploy.sh")`
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_predeploy_regtoken.sh")`
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_predeploy.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_predeploy_regtoken.sh
 
 # This script checks the IBM Container Service cluster is ready, has a namespace configured with access to the private
-# image registry (using an IBM Cloud API Key). It also configures Helm Tiller service to later perform a deploy with Helm.
+# image registry (using a registry token passed in argument). It also configures Helm Tiller service to later perform a deploy with Helm.
 
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "CHART_NAME=${CHART_NAME}"
@@ -17,7 +17,7 @@ echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
-
+echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
 #View build properties
 # cat build.properties
 # also run 'env' command to find all available env variables
@@ -49,12 +49,11 @@ fi
 echo "=========================================================="
 echo -e "CONFIGURING ACCESS to private image registry from namespace ${CLUSTER_NAMESPACE}"
 IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_URL}"
-
 echo -e "Checking for presence of ${IMAGE_PULL_SECRET_NAME} imagePullSecret for this toolchain"
 if ! kubectl get secret ${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}; then
   echo -e "${IMAGE_PULL_SECRET_NAME} not found in ${CLUSTER_NAMESPACE}, creating it"
   # for Container Registry, docker username is 'token' and email does not matter
-  kubectl --namespace ${CLUSTER_NAMESPACE} create secret docker-registry ${IMAGE_PULL_SECRET_NAME} --docker-server=${REGISTRY_URL} --docker-password=${PIPELINE_BLUEMIX_API_KEY} --docker-username=iamapikey --docker-email=a@b.com
+  kubectl --namespace ${CLUSTER_NAMESPACE} create secret docker-registry ${IMAGE_PULL_SECRET_NAME} --docker-server=${REGISTRY_URL} --docker-password=${REGISTRY_TOKEN} --docker-username=token --docker-email=a@b.com
 else
   echo -e "Namespace ${CLUSTER_NAMESPACE} already has an imagePullSecret for this toolchain."
 fi
