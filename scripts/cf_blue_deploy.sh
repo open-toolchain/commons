@@ -44,9 +44,9 @@ export BLUE_APP_URL="http://$URL"
 
 echo "=========================================================="
 echo -e "DEPLOYED test blue app ${BLUE_APP_NAME}"
-echo -e "on temporary route: ${BLUE_APP_URL}"
-
-echo "Stage environment variables set:"
+echo -e "at: ${BLUE_APP_URL}"
+echo ""
+echo "Exported stage environment variables:"
 echo "BLUE_APP_NAME=${BLUE_APP_NAME}"
 echo "BLUE_APP_URL=${BLUE_APP_URL}"
 echo "BLUE_APP_DOMAIN=${BLUE_APP_DOMAIN}"

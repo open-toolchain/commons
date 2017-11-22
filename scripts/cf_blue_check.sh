@@ -53,4 +53,3 @@ fi
 echo "=========================================================="
 echo -e "SANITY CHECKED test blue app ${BLUE_APP_NAME}"
 echo -e "on temporary route: ${BLUE_APP_URL}"
-echo "##############################################################"
