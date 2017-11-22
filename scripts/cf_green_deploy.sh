@@ -2,12 +2,12 @@
 # uncomment to debug the script
 #set -x
 #CF_TRACE=true
-# copy the script below into your app code repo (e.g. ./scripts/cf_blue_deploy.sh) and 'source' it from your pipeline job
-#    source ./scripts/cf_blue_deploy.sh
+# copy the script below into your app code repo (e.g. ./scripts/cf_green_deploy.sh) and 'source' it from your pipeline job
+#    source ./scripts/cf_green_deploy.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh")`
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_green_deploy.sh")`
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_green_deploy.sh
 
 # BLUE/GREEN DEPLOY STEP 3/3
 # Finalizes the blue/green deployment by routing public traffic to the test blue app, deleting the test route, the old green app 

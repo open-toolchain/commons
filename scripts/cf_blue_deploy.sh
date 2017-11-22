@@ -2,12 +2,12 @@
 # uncomment to debug the script
 #set -x
 #CF_TRACE=true
-# copy the script below into your app code repo (e.g. ./scripts/cf_bluedeploy.sh) and 'source' it from your pipeline job
-#    source ./scripts/cf_bluedeploy.sh
+# copy the script below into your app code repo (e.g. ./scripts/cf_blue_deploy.sh) and 'source' it from your pipeline job
+#    source ./scripts/cf_blue_deploy.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_bluedeploy.sh")`
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh")`
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_bluedeploy.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh
 
 # BLUE/GREEN DEPLOY STEP 1/3
 # Deploys a Cloud Foundry app on a test route, and exports the test app url

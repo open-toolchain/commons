@@ -2,12 +2,12 @@
 # uncomment to debug the script
 #set -x
 #CF_TRACE=true
-# copy the script below into your app code repo (e.g. ./scripts/cf_blue_deploy.sh) and 'source' it from your pipeline job
-#    source ./scripts/cf_blue_deploy.sh
+# copy the script below into your app code repo (e.g. ./scripts/cf_blue_check.sh) and 'source' it from your pipeline job
+#    source ./scripts/cf_blue_check.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh")`
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_check.sh")`
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_check.sh
 
 # BLUE/GREEN DEPLOY STEP 2/3
 # Verifies that test blue app is actually running. Typically this job would be followed by other functional test jobs 
