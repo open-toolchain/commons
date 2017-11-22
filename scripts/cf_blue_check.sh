@@ -5,20 +5,21 @@
 # copy the script below into your app code repo (e.g. ./scripts/cf_blue_check.sh) and 'source' it from your pipeline job
 #    source ./scripts/cf_blue_check.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_check.sh")`
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_check.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_check.sh
 
 # BLUE/GREEN DEPLOY STEP 2/3
 # Verifies that test blue app is actually running. Typically this job would be followed by other functional test jobs 
 # targeting $TEMP_APP_URL. 
-# This script should be run in a CF test job, in a stage declaring an env property: TEMP_APP_URL (set beforehand)
+# This script should be run in a CF test job, in a stage declaring env properties: BLUE_APP_NAME, BLUE_APP_URL and BLUE_APP_DOMAIN (set beforehand)
 
 echo "Build environment variables:"
-echo "CF_APP_NAME=${CF_APP_NAME}"
+echo "CF_APP=${CF_APP}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "CF_APP_NAME=${CF_APP_NAME}"
-echo "TEMP_APP_URL=${TEMP_APP_URL}"
+echo "BLUE_APP_NAME=${BLUE_APP_NAME}"
+echo "BLUE_APP_URL=${BLUE_APP_URL}"
+echo "BLUE_APP_DOMAIN=${BLUE_APP_DOMAIN}"
 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
@@ -31,7 +32,7 @@ echo "SANITY CHECKING that the test blue app is ready to serve..."
 COUNT=0
 while [[ "${COUNT}" -lt "${MAX_HEALTH_CHECKS}" ]]
 do
-RESPONSE=$(curl -sIL -w "%{http_code}" -o /dev/null "${TEMP_APP_URL}")
+RESPONSE=$(curl -sIL -w "%{http_code}" -o /dev/null "${BLUE_APP_URL}")
 if [[ "${RESPONSE}" == "${EXPECTED_RESPONSE}" ]]; then
     echo -e "Got expected ${RESPONSE} RESPONSE"
     break
@@ -44,12 +45,12 @@ done
 if [[ "${COUNT}" == "${MAX_HEALTH_CHECKS}" ]]; then
   echo "Couldn't get ${EXPECTED_RESPONSE} RESPONSE. Discarding test blue app..."
   # Delete temporary route
-  cf delete-route $DOMAIN -n $TEMP_APP_NAME -f
+  cf delete-route $DOMAIN -n ${BLUE_APP_NAME} -f
   # Stop temporary app
-  cf stop $TEMP_APP_NAME
+  cf stop ${BLUE_APP_NAME}
   exit 1
 fi
 echo "=========================================================="
-echo -e "SANITY CHECKED test blue app ${TEMP_APP_NAME}"
-echo -e "on temporary route: ${TEMP_APP_URL}"
+echo -e "SANITY CHECKED test blue app ${BLUE_APP_NAME}"
+echo -e "on temporary route: ${BLUE_APP_URL}"
 echo "##############################################################"

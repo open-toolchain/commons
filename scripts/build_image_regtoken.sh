@@ -4,7 +4,7 @@
 # copy the script below into your app code repo (e.g. ./scripts/build_image_regtoken.sh) and 'source' it from your pipeline job
 #    source ./scripts/build_image_regtoken.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/build_image_regtoken.sh")`
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/build_image_regtoken.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/build_image_regtoken.sh
 

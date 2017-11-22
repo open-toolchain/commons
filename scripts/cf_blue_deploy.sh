@@ -5,16 +5,16 @@
 # copy the script below into your app code repo (e.g. ./scripts/cf_blue_deploy.sh) and 'source' it from your pipeline job
 #    source ./scripts/cf_blue_deploy.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh")`
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_blue_deploy.sh
 
 # BLUE/GREEN DEPLOY STEP 1/3
 # Deploys a Cloud Foundry app on a test route, and exports the test app url
-# This script should be run in a CF deploy job, in a stage declaring an env property: TEMP_APP_URL
+# This script should be run in a CF deploy job, in a stage declaring env properties: BLUE_APP_NAME, BLUE_APP_URL and BLUE_APP_DOMAIN
 
 echo "Build environment variables:"
-echo "CF_APP_NAME=${CF_APP_NAME}"
+echo "CF_APP=${CF_APP}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 # also run 'env' command to find all available env variables
@@ -24,24 +24,32 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 # Compute a unique app name using the reserved CF_APP name (configured in the 
 # deployer or from the manifest.yml file), the build number, and a 
 # timestamp (allowing multiple deploys for the same build).
-export TEMP_APP_NAME="${CF_APP_NAME}-${BUILD_NUMBER}-$(date +%s)"
+export BLUE_APP_NAME="${CF_APP}-${BUILD_NUMBER}-$(date +%s)"
 
 echo "=========================================================="
-echo -e "DEPLOYING test blue app: ${TEMP_APP_NAME}"
-# push the application, do not start it until all env properties are set
-cf push $TEMP_APP_NAME --no-start
-# cf set-env $TEMP_APP_NAME <property> <value>
-cf start $TEMP_APP_NAME -t 180 # grants 180s for app to fully start
+echo -e "DEPLOYING test blue app: ${BLUE_APP_NAME}"
+# push and start the application, granting it 180s for app to fully start
+cf push ${BLUE_APP_NAME} -t 180
+# alternatively, if you need to set env properties, use the commands below instead
+# cf push ${BLUE_APP_NAME} --no-start
+# cf set-env $BLUE_APP_NAME <property> <value>
+# cf start ${BLUE_APP_NAME}
+
 # retrieve the temp app domain and url
-cf apps | grep $TEMP_APP_NAME
-url=$(cf app $TEMP_APP_NAME | grep urls: | awk '{print $2}')
-prefix="${TEMP_APP_NAME}."
-export DOMAIN=$( echo ${url:${#prefix}} )
-export TEMP_APP_URL="http://$url"
+cf apps | grep ${BLUE_APP_NAME}
+URL=$(cf app ${BLUE_APP_NAME} | grep urls: | awk '{print $2}')
+PREFIX="${BLUE_APP_NAME}."
+export BLUE_APP_DOMAIN=$( echo ${URL:${#PREFIX}} )
+export BLUE_APP_URL="http://$URL"
 
 echo "=========================================================="
-echo -e "DEPLOYED test blue app ${TEMP_APP_NAME}"
-echo -e "on temporary route: ${TEMP_APP_URL}"
+echo -e "DEPLOYED test blue app ${BLUE_APP_NAME}"
+echo -e "on temporary route: ${BLUE_APP_URL}"
+
+echo "Stage environment variables set:"
+echo "BLUE_APP_NAME=${BLUE_APP_NAME}"
+echo "BLUE_APP_URL=${BLUE_APP_URL}"
+echo "BLUE_APP_DOMAIN=${BLUE_APP_DOMAIN}"
 
 # View logs
-#cf logs "${TEMP_APP_NAME}" --recent
+#cf logs "${BLUE_APP_NAME}" --recent
