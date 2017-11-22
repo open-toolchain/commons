@@ -30,7 +30,7 @@ echo "MAPPING traffic to the new version by binding to the public host."
 cf map-route ${BLUE_APP_NAME} ${BLUE_APP_DOMAIN} -n ${CF_APP}
 # NOTE: The old version(s) is still taking traffic to avoid disruption in service.
 cf routes | { grep ${BLUE_APP_NAME} || true; }
-echo "Deleting the temporary route that was used for testing since it is no longer needed.
+echo "Deleting the temporary route that was used for testing since it is no longer needed."
 cf unmap-route ${BLUE_APP_NAME} ${BLUE_APP_DOMAIN} -n ${BLUE_APP_NAME}
 cf delete-route ${BLUE_APP_DOMAIN} -n ${BLUE_APP_NAME} -f
 echo "=========================================================="
