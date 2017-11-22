@@ -15,6 +15,7 @@
 # This script should be run in a CF deploy job, in a stage declaring an env property: BLUE_APP_NAME, BLUE_APP_URL and BLUE_APP_DOMAIN. It will export the new APP_URL
 
 echo "Build environment variables:"
+echo "CF_APP=${CF_APP}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "BLUE_APP_NAME=${BLUE_APP_NAME}"
 echo "BLUE_APP_URL=${BLUE_APP_URL}"
@@ -26,25 +27,25 @@ cf app ${BLUE_APP_NAME}
 
 echo "=========================================================="
 echo "MAPPING traffic to the new version by binding to the public host."
-cf map-route $TEMP_APP_NAME $BLUE_APP_DOMAIN -n $CF_APP_NAME
+cf map-route ${BLUE_APP_NAME} ${BLUE_APP_DOMAIN} -n ${CF_APP}
 # NOTE: The old version(s) is still taking traffic to avoid disruption in service.
-cf routes | { grep $TEMP_APP_NAME || true; }
+cf routes | { grep ${BLUE_APP_NAME} || true; }
 echo "Deleting the temporary route that was used for testing since it is no longer needed.
-cf unmap-route $TEMP_APP_NAME $BLUE_APP_DOMAIN -n $TEMP_APP_NAME
-cf delete-route $BLUE_APP_DOMAIN -n $TEMP_APP_NAME -f
+cf unmap-route ${BLUE_APP_NAME} ${BLUE_APP_DOMAIN} -n ${BLUE_APP_NAME}
+cf delete-route ${BLUE_APP_DOMAIN} -n ${BLUE_APP_NAME} -f
 echo "=========================================================="
 echo "STOPPING the old green app"
-cf delete -f -r $CF_APP_NAME
+cf delete -f -r ${CF_APP}
 echo "=========================================================="
 echo "RENAMING the test blue app now it is public. It has become the new green app"
-cf rename $TEMP_APP_NAME $CF_APP_NAME
+cf rename ${BLUE_APP_NAME} ${CF_APP}
 echo "Public routes:"
-cf routes | { grep $CF_APP_NAME || true; }
-cf app $CF_APP_NAME
-export APP_URL=http://$(cf app $CF_APP_NAME | grep urls: | awk '{print $2}')
+cf routes | { grep ${CF_APP} || true; }
+cf app ${CF_APP}
+export APP_URL=http://$(cf app ${CF_APP} | grep urls: | awk '{print $2}')
 echo "=========================================================="
-echo -e "SUCCESS: You have successfully executed a blue/green deployment of ${CF_APP_NAME}"
+echo -e "SUCCESS: You have successfully executed a blue/green deployment of ${CF_APP}"
 echo -e "at: ${APP_URL}"
 
 # View logs
-#cf logs "${CF_APP_NAME}" --recent
+#cf logs "${CF_APP}" --recent
