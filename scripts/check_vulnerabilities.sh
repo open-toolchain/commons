@@ -23,16 +23,15 @@ echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
 bx cr images --restrict $REGISTRY_NAMESPACE/$IMAGE_NAME
 PIPELINE_IMAGE_URL=$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER
 echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
-for iteration in {1..30}
+for ITERATION in {1..30}
 do
   set +e
-  VA_OUTPUT=$( bx cr va ${PIPELINE_IMAGE_URL} )
+  OUTPUT=$( bx cr va ${PIPELINE_IMAGE_URL} )
   set -e
-  if ! [[ ${VA_OUTPUT} == *No\ vulnerability\ scan* || ${VA_OUTPUT} == *not\ yet\ completed* ]]; then
+  if ! [[ ${OUTPUT} == *No\ vulnerability\ scan* || ${OUTPUT} == *not\ yet\ completed* ]]; then
     break
   fi
-  #[[ $(bx cr va ${PIPELINE_IMAGE_URL}) == *No\ vulnerability\ scan* ]] || break
-  echo -e "${iteration} : A vulnerability report was not found for the specified image."
+  echo -e "${ITERATION} : A vulnerability report was not found for the specified image."
   echo "Either the image doesn't exist or the scan hasn't completed yet. "
   echo "Waiting for scan to complete.."
   sleep 10
@@ -40,4 +39,4 @@ done
 set +e
 bx cr va ${PIPELINE_IMAGE_URL}
 set -e
-[[ $(bx cr va ${PIPELINE_IMAGE_URL}) == *SAFE\ to\ deploy* ]] || { echo "ERROR: The vulnerability scan was not successful, check the output of the command and try again."; exit 1; }
+[[ $(bx cr va ${PIPELINE_IMAGE_URL}) == *SAFE\ to\ deploy* ]] || { echo "ERROR: The vulnerability scan was not successful, check the OUTPUT of the command and try again."; exit 1; }
