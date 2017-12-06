@@ -20,13 +20,18 @@ echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
-bx cr images
-
+bx cr images --restrict $REGISTRY_NAMESPACE/$IMAGE_NAME
 PIPELINE_IMAGE_URL=$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER
 echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
 for iteration in {1..30}
 do
-  [[ $(bx cr va ${PIPELINE_IMAGE_URL}) == *No\ vulnerability\ scan* ]] || break
+  set +e
+  VA_OUTPUT=$( bx cr va ${PIPELINE_IMAGE_URL} )
+  set -e
+  if ! [[ ${VA_OUTPUT} == *No\ vulnerability\ scan* || ${VA_OUTPUT} == *not\ yet\ completed* ]]; then
+    break
+  fi
+  #[[ $(bx cr va ${PIPELINE_IMAGE_URL}) == *No\ vulnerability\ scan* ]] || break
   echo -e "${iteration} : A vulnerability report was not found for the specified image."
   echo "Either the image doesn't exist or the scan hasn't completed yet. "
   echo "Waiting for scan to complete.."
