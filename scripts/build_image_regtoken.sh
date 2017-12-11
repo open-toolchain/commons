@@ -49,7 +49,7 @@ echo "=========================================================="
 TOKEN_DESCR="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}"
 echo "CHECKING REGISTRY token existence for toolchain: ${TOKEN_DESCR}"
 EXISTING_TOKEN=$(bx cr tokens | grep ${TOKEN_DESCR} ||: )
-if [ -z ${EXISTING_TOKEN} ]; then
+if [ -z "${EXISTING_TOKEN}" ]; then
     echo -e "Creating new registry token: ${TOKEN_DESCR}"
     bx cr token-add --non-expiring --description ${TOKEN_DESCR}
     REGISTRY_TOKEN_ID=$(bx cr tokens | grep ${TOKEN_DESCR} | awk '{ print $1 }')

@@ -31,8 +31,8 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 #Check cluster availability
 echo "=========================================================="
 echo "CHECKING CLUSTER readiness and namespace existence"
-IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | awk '{ print $2 }')
-if [ -z ${IP_ADDR} ]; then
+IP_ADDR=$( bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | awk '{ print $2 }' )
+if [ -z "${IP_ADDR}" ]; then
   echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
   exit 1
 fi
@@ -59,7 +59,7 @@ else
 fi
 echo "Checking ability to pass pull secret via Helm chart"
 CHART_PULL_SECRET=$( grep 'pullSecret' ./chart/${CHART_NAME}/values.yaml || : )
-if [ -z $CHART_PULL_SECRET ]; then
+if [ -z "$CHART_PULL_SECRET" ]; then
   echo "WARNING: Chart is not expecting an explicit private registry imagePullSecret. Will patch the cluster default serviceAccount to pass it implicitly for now."
   echo "Going forward, you should edit the chart to add in:"
   echo -e "[./chart/${CHART_NAME}/templates/deployment.yaml] (under kind:Deployment)"

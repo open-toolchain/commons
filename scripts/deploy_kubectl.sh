@@ -24,8 +24,8 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 echo "=========================================================="
 #Check cluster availability
-ip_addr=$(bx cs workers $PIPELINE_KUBERNETES_CLUSTER_NAME | grep normal | awk '{ print $2 }')
-if [ -z $ip_addr ]; then
+IP_ADDR=$( bx cs workers $PIPELINE_KUBERNETES_CLUSTER_NAME | grep normal | awk '{ print $2 }' )
+if [ -z "$IP_ADDR" ]; then
 echo "$PIPELINE_KUBERNETES_CLUSTER_NAME not created or workers not ready"
 exit 1
 fi
@@ -41,6 +41,6 @@ kubectl describe services hello-service
 echo ""
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=hello-app
-port=$(kubectl get services | grep hello-service | sed 's/.*:\([0-9]*\).*/\1/g')
+PORT=$( kubectl get services | grep hello-service | sed 's/.*:\([0-9]*\).*/\1/g' )
 echo ""
-echo "VIEW THE APPLICATION AT: http://$ip_addr:$port"
+echo "VIEW THE APPLICATION AT: http://$IP_ADDR:$PORT"

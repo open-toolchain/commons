@@ -36,7 +36,7 @@ echo "Looking for chart under /chart/<CHART_NAME>"
 if [ -d ./chart ]; then
   CHART_NAME=$(find chart/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
 fi
-if [ -z ${CHART_NAME} ]; then
+if [ -z "${CHART_NAME}" ]; then
     echo -e "No Helm chart found for Kubernetes deployment under /chart/<CHART_NAME>."
     exit 1
 else
@@ -56,7 +56,7 @@ bx cr images
 
 echo "Checking registry namespace: ${REGISTRY_NAMESPACE}"
 NS=$( bx cr namespaces | grep ${REGISTRY_NAMESPACE} ||: )
-if [ -z ${NS} ]; then
+if [ -z "${NS}" ]; then
     echo "Registry namespace ${REGISTRY_NAMESPACE} not found, creating it."
     bx cr namespace-add ${REGISTRY_NAMESPACE}
     echo "Registry namespace ${REGISTRY_NAMESPACE} created."
