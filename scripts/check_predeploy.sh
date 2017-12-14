@@ -94,15 +94,7 @@ fi
 echo "=========================================================="
 echo "CONFIGURING TILLER enabled (Helm server-side component)"
 helm init --upgrade
-while true; do
-  TILLER_DEPLOYED=$(kubectl --namespace=kube-system get pods | grep tiller | grep Running | grep 1/1 )
-  if [[ "${TILLER_DEPLOYED}" != "" ]]; then
-    echo "Tiller is ready."
-    break; 
-  fi
-  echo "Waiting for Tiller to become ready."
-  sleep 1
-done
+kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
 helm version
 
 echo "=========================================================="
