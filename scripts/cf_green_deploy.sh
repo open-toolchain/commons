@@ -42,7 +42,7 @@ cf rename ${BLUE_APP_NAME} ${CF_APP}
 echo "Public routes:"
 cf routes | { grep ${CF_APP} || true; }
 cf app ${CF_APP}
-export APP_URL=http://$(cf app ${CF_APP} | grep urls: | awk '{print $2}')
+export APP_URL=http://$(cf app ${CF_APP} | grep -e urls: -e routes: | awk '{print $2}')
 echo "=========================================================="
 echo -e "SUCCESS ! You have executed a blue/green deployment of ${CF_APP}"
 echo -e "at: ${APP_URL}"
