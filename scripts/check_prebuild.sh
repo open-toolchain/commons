@@ -64,13 +64,12 @@ echo "=========================================================="
 KEEP=1
 echo -e "PURGING REGISTRY, only keeping last ${KEEP} image(s) based on image digests"
 COUNT=0
-IMAGE_URL=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
-LIST=$( bx cr images --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | grep ${IMAGE_URL} | sort -r -u | awk '{print $2}' | sed '$ d' )
-while read -r DIGEST ; do
+LIST=$( bx cr images --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | grep ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME} | sort -r -u | awk '{print $2}' | sed '$ d' )
+while read -r IMAGE_URL ; do
   if [[ "$COUNT" -lt "$KEEP" ]]; then
-    echo "Keeping image digest: $IMAGE_URL:$DIGEST"
+    echo "Keeping image digest: ${IMAGE_URL}"
   else
-    bx cr image-rm "$IMAGE_URL:$DIGEST"
+    bx cr image-rm "${IMAGE_URL}"
   fi
   COUNT=$((COUNT+1)) 
 done <<< "$LIST"
