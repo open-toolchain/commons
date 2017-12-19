@@ -62,10 +62,10 @@ echo "Current content of image registry"
 bx cr images
 echo "=========================================================="
 KEEP=1
-echo -e "PURGING REGISTRY, only keeping last ${KEEP} images (based on image digests, not labels)"
+echo -e "PURGING REGISTRY, only keeping last ${KEEP} image(s) based on image digests"
 COUNT=0
 IMAGE_URL=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
-LIST=$( bx cr images --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | grep ${IMAGE_URL} | sort -r -u | awk '{print $2}' | sed '$ d') )
+LIST=$( bx cr images --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | grep ${IMAGE_URL} | sort -r -u | awk '{print $2}' | sed '$ d' )
 while read -r DIGEST ; do
   if [[ "$COUNT" -lt "$KEEP" ]]; then
     echo "Keeping image digest: $IMAGE_URL:$DIGEST"
