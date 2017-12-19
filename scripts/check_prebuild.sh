@@ -37,7 +37,7 @@ if [ -d ./chart ]; then
   CHART_NAME=$(find chart/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
 fi
 if [ -z "${CHART_NAME}" ]; then
-    echo -e "No Helm chart found for Kubernetes deployment under /chart/<CHART_NAME>."
+    echo "No Helm chart found for Kubernetes deployment under /chart/<CHART_NAME>."
     exit 1
 else
     echo -e "Helm chart found for Kubernetes deployment : /chart/${CHART_NAME}"
@@ -46,17 +46,17 @@ echo "Linting Helm Chart"
 helm lint ./chart/${CHART_NAME}
 
 echo "=========================================================="
-echo "CHECKING REGISTRY current plan and quota"
+echo "CHECKING REGISTRY namespace, current plan and quota"
 bx cr plan
 bx cr quota
 echo "Checking registry namespace: ${REGISTRY_NAMESPACE}"
 NS=$( bx cr namespaces | grep ${REGISTRY_NAMESPACE} ||: )
 if [ -z "${NS}" ]; then
-    echo "Registry namespace ${REGISTRY_NAMESPACE} not found, creating it."
+    echo -e "Registry namespace ${REGISTRY_NAMESPACE} not found, creating it."
     bx cr namespace-add ${REGISTRY_NAMESPACE}
-    echo "Registry namespace ${REGISTRY_NAMESPACE} created."
+    echo -e "Registry namespace ${REGISTRY_NAMESPACE} created."
 else 
-    echo "Registry namespace ${REGISTRY_NAMESPACE} found."
+    echo -e "Registry namespace ${REGISTRY_NAMESPACE} found."
 fi
 echo "Current content of image registry"
 bx cr images
@@ -65,7 +65,7 @@ KEEP=1
 echo -e "PURGING REGISTRY, only keeping last ${KEEP} images (based on image digests, not labels)"
 COUNT=0
 IMAGE_URL=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
-LIST=$( bx cr images --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | grep $IMAGE_URL | sort -r -u | awk '{print $2}' | sed '$ d') )
+LIST=$( bx cr images --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | grep ${IMAGE_URL} | sort -r -u | awk '{print $2}' | sed '$ d') )
 while read -r DIGEST ; do
   if [[ "$COUNT" -lt "$KEEP" ]]; then
     echo "Keeping image digest: $IMAGE_URL:$DIGEST"
