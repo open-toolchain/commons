@@ -49,11 +49,6 @@ echo "=========================================================="
 echo "CHECKING REGISTRY current plan and quota"
 bx cr plan
 bx cr quota
-echo "If needed, discard older images using: bx cr image-rm"
-
-echo "Current content of image registry"
-bx cr images
-
 echo "Checking registry namespace: ${REGISTRY_NAMESPACE}"
 NS=$( bx cr namespaces | grep ${REGISTRY_NAMESPACE} ||: )
 if [ -z "${NS}" ]; then
@@ -62,4 +57,24 @@ if [ -z "${NS}" ]; then
     echo "Registry namespace ${REGISTRY_NAMESPACE} created."
 else 
     echo "Registry namespace ${REGISTRY_NAMESPACE} found."
+fi
+echo "Current content of image registry"
+bx cr images
+echo "=========================================================="
+KEEP=1
+echo -e "PURGING REGISTRY, only keeping last ${KEEP} images (based on image digests, not labels)"
+COUNT=0
+IMAGE_URL=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
+LIST=$( bx cr images --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | grep $IMAGE_URL | sort -r -u | awk '{print $2}' | sed '$ d') )
+while read -r DIGEST ; do
+  if [[ "$COUNT" -lt "$KEEP" ]]; then
+    echo "Keeping image digest: $IMAGE_URL:$DIGEST"
+  else
+    bx cr image-rm "$IMAGE_URL:$DIGEST"
+  fi
+  COUNT=$((COUNT+1)) 
+done <<< "$LIST"
+if [[ "$COUNT" -gt 1 ]]; then
+  echo "Content of image registry"
+  bx cr images
 fi
