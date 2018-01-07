@@ -1,4 +1,22 @@
 #!/bin/bash
+# uncomment to debug the script
+#set -x
+#CF_TRACE=true
+# copy the script below into your app code repo (e.g. ./scripts/cf_rolling_deploy.sh) and 'source' it from your pipeline job
+#    source ./scripts/cf_rolling_deploy.sh
+# alternatively, you can source it from online script:
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_rolling_deploy.sh")
+# ------------------
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cf_rolling_deploy.sh
+
+# Performs a rolling deployment of a CF app, by pushing the new app on the same route as the old
+# app. The old app still kept running in parallel to handle incoming traffic while the new app is started.
+# The old app is renamed to avoid the new app to override it. Once the new app is established,
+# the old app is simply discarded.
+# For a more progressive rollout, please see the blue/green deployment script at 
+# https://raw.githubusercontent.com/open-toolchain/commons/master/scripts
+# This script should be run in a CF deploy job. It will export the new APP_URL
+
 # Push app
 if ! cf app $CF_APP; then  
   cf push $CF_APP
