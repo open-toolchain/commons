@@ -20,7 +20,7 @@ echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
-bx cr images --restrict $REGISTRY_NAMESPACE/$IMAGE_NAME
+bx cr images
 PIPELINE_IMAGE_URL=$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER
 echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
 for ITERATION in {1..30}
