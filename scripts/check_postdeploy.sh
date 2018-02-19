@@ -1,19 +1,18 @@
 #!/bin/bash
 # uncomment to debug the script
-#set -x
-# copy the script below into your app code repo (e.g. ./scripts/deploy_helm.sh) and 'source' it from your pipeline job
-#    source ./scripts/deploy_helm.sh
+# set -x
+# copy the script below into your app code repo (e.g. ./scripts/check_postdeploy.sh) and 'source' it from your pipeline job
+#    source ./scripts/check_postdeploy.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_helm.sh")
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_postdeploy.sh")
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_helm.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_postdeploy.sh
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "CHART_NAME=${CHART_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
-
 #View build properties
 # cat build.properties
 # also run 'env' command to find all available env variables
@@ -33,17 +32,14 @@ else
 fi
 echo -e "Release name: ${RELEASE_NAME}"
 
-echo "=========================================================="
-echo "DEPLOYING HELM chart"
+# Install 'jq' command
+WORKING_DIR=$(pwd)
+mkdir ~/tmpbin && cd ~/tmpbin
+curl -sL "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64" -o jq && chmod +x jq
+export PATH=$(pwd):$PATH
+cd $WORKING_DIR
+
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
-IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_URL}"
-
-# Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
-echo -e "Dry run into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade --install --debug --dry-run ${RELEASE_NAME} ./chart/${CHART_NAME} --set image.repository=${IMAGE_REPOSITORY},image.tag=${BUILD_NUMBER},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
-
-echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade  --install ${RELEASE_NAME} ./chart/${CHART_NAME} --set image.repository=${IMAGE_REPOSITORY},image.tag=${BUILD_NUMBER},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
 
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${BUILD_NUMBER}"
@@ -61,11 +57,11 @@ do
   echo -e "${ITERATION} : Deployment still pending..."
   echo -e "NOT_READY:${NOT_READY}"
   echo -e "REASON: ${REASON}"
-  if [[ ${REASON} == *ErrImagePull* ]] || [[ ${REASON} == *ImagePullBackOff* ]]; then
+  if [[ "${REASON}" == *"ErrImagePull"* ]] || [[ "${REASON}" == *"ImagePullBackOff"* ]]; then
     echo "Detected ErrImagePull or ImagePullBackOff failure. "
     echo "Please check proper authenticating to from cluster to image registry (e.g. image pull secret)"
     break; # no need to wait longer, error is fatal
-  elif [[ ${REASON} == *CrashLoopBackOff* ]]; then
+  elif [[ "${REASON}" == *"CrashLoopBackOff"* ]]; then
     echo "Detected CrashLoopBackOff failure. "
     echo "Application is unable to start, check the application startup logs"
     break; # no need to wait longer, error is fatal
@@ -82,9 +78,6 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo ""
   echo "Deployed Pods:"
   kubectl describe pods --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
-  echo ""
-  echo "Application Logs"
-  kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
   echo "=========================================================="
   PREVIOUS_RELEASE=$( helm history ${RELEASE_NAME} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
   echo -e "Could rollback to previous release: ${PREVIOUS_RELEASE} using command:"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # uncomment to debug the script
-#set -x
+# set -x
 # copy the script below into your app code repo (e.g. ./scripts/deploy_helm.sh) and 'source' it from your pipeline job
 #    source ./scripts/deploy_helm.sh
 # alternatively, you can source it from online script:
@@ -45,6 +45,13 @@ helm upgrade --install --debug --dry-run ${RELEASE_NAME} ./chart/${CHART_NAME} -
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
 helm upgrade  --install ${RELEASE_NAME} ./chart/${CHART_NAME} --set image.repository=${IMAGE_REPOSITORY},image.tag=${BUILD_NUMBER},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
 
+# Install jq tool
+WORKING_DIR=$(pwd)
+mkdir ~/tmpbin && cd ~/tmpbin
+curl -sL "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64" -o jq && chmod +x jq
+export PATH=$(pwd):$PATH
+cd $WORKING_DIR
+
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${BUILD_NUMBER}"
 echo ""
@@ -61,13 +68,9 @@ do
   echo -e "${ITERATION} : Deployment still pending..."
   echo -e "NOT_READY:${NOT_READY}"
   echo -e "REASON: ${REASON}"
-  if [[ ${REASON} == *ErrImagePull* ]] || [[ ${REASON} == *ImagePullBackOff* ]]; then
+  if [[ "${REASON}" == *"ErrImagePull"* ]] || [[ "${REASON}" == *"ImagePullBackOff"* ]]; then
     echo "Detected ErrImagePull or ImagePullBackOff failure. "
     echo "Please check proper authenticating to from cluster to image registry (e.g. image pull secret)"
-    break; # no need to wait longer, error is fatal
-  elif [[ ${REASON} == *CrashLoopBackOff* ]]; then
-    echo "Detected CrashLoopBackOff failure. "
-    echo "Application is unable to start, check the application startup logs"
     break; # no need to wait longer, error is fatal
   fi
   sleep 5
@@ -82,9 +85,6 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo ""
   echo "Deployed Pods:"
   kubectl describe pods --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
-  echo ""
-  echo "Application Logs"
-  kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
   echo "=========================================================="
   PREVIOUS_RELEASE=$( helm history ${RELEASE_NAME} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
   echo -e "Could rollback to previous release: ${PREVIOUS_RELEASE} using command:"
