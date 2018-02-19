@@ -24,10 +24,10 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 echo "=========================================================="
 #Check cluster availability
-IP_ADDR=$( bx cs workers $PIPELINE_KUBERNETES_CLUSTER_NAME | grep normal | awk '{ print $2 }' )
+IP_ADDR=$( bx cs workers $PIPELINE_KUBERNETES_CLUSTER_NAME | grep normal | head -n 1 | awk '{ print $2 }' )
 if [ -z "$IP_ADDR" ]; then
-echo "$PIPELINE_KUBERNETES_CLUSTER_NAME not created or workers not ready"
-exit 1
+  echo "$PIPELINE_KUBERNETES_CLUSTER_NAME not created or workers not ready"
+  exit 1
 fi
 #Connect to a different container-service api by uncommenting and specifying an api endpoint
 #bx cs init --host https://us-south.containers.bluemix.net
