@@ -27,7 +27,7 @@ echo "=========================================================="
 echo "FETCHING UMBRELLA repo"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
 TOOLCHAIN_SERVICES=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
-UMBRELLA_REPO_URL=$( echo $TOOLCHAIN_SERVICES | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
+UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_SERVICES} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 # Augment URL with git user & password
 UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL:0:8}${GIT_USER}:${GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
 echo -e "Located umbrella repo: ${UMBRELLA_REPO_URL}"
@@ -36,7 +36,7 @@ echo -e "Fetching umbrella repo (to then commit a new packaged version of the ch
 git config --global user.email "autobuild@not-an-email.com"
 git config --global user.name "Automatic Build: ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}"
 git config --global push.default simple
-git clone $UMBRELLA_REPO_URL
+git clone ${UMBRELLA_REPO_URL}
 
 ls -al
 
