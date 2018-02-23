@@ -37,7 +37,7 @@ cf push ${BLUE_APP_NAME} -t 180
 
 # retrieve the temp app domain and url
 cf apps | grep ${BLUE_APP_NAME}
-URL=$(cf app ${BLUE_APP_NAME} | grep urls: | awk '{print $2}')
+URL=$(cf app ${BLUE_APP_NAME} | grep -e urls: -e routes: | awk '{print $2}')
 PREFIX="${BLUE_APP_NAME}."
 export BLUE_APP_DOMAIN=$( echo ${URL:${#PREFIX}} )
 export BLUE_APP_URL="http://$URL"

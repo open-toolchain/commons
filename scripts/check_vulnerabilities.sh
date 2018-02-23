@@ -25,9 +25,9 @@ echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
 for ITER in {1..30}
 do
   set +e
-  STATUS=$( bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq '.[0].status' )
+  STATUS=$( bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status' )
   set -e
-  if [[ ${STATUS} == *OK* ]]; then
+  if [[ ${STATUS} == "OK" ]]; then
     break
   fi
   echo -e "${ITER} STATUS ${STATUS} : A vulnerability report was not found for the specified image."
@@ -38,4 +38,4 @@ done
 set +e
 bx cr va ${PIPELINE_IMAGE_URL}
 set -e
-[[ $(bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq '.[0].status') == *OK* ]] || { echo "ERROR: The vulnerability scan was not successful, check the OUTPUT of the command and try again."; exit 1; }
+[[ $(bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status') == "OK" ]] || { echo "ERROR: The vulnerability scan was not successful, check the OUTPUT of the command and try again."; exit 1; }
