@@ -32,7 +32,7 @@ GIT_PASSWORD=$( echo ${GIT_REMOTE} | cut -d: -f3 | cut -d@ -f1 )
 mkdir -p $ARCHIVE_DIR
 echo "SOURCE_GIT_URL=${GIT_URL}" >> $ARCHIVE_DIR/build.properties
 echo "SOURCE_GIT_COMMIT=${GIT_COMMIT}" >> $ARCHIVE_DIR/build.properties
-echo "GIT_USER=${GIT_USER}" >> $ARCHIVE_DIR/build.properties
-echo "GIT_PASSWORD=${GIT_PASSWORD}" >> $ARCHIVE_DIR/build.properties
+echo "SOURCE_GIT_USER=${GIT_USER}" >> $ARCHIVE_DIR/build.properties
+echo "SOURCE_GIT_PASSWORD=${GIT_PASSWORD}" >> $ARCHIVE_DIR/build.properties
 
 cat $ARCHIVE_DIR/build.properties

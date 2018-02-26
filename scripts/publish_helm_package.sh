@@ -8,6 +8,8 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh
 # Input env variables (can be received via a pipeline environment properties.file.
+echo "SOURCE_GIT_URL=${SOURCE_GIT_URL}"
+echo "SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT}"
 echo "SOURCE_GIT_USER=${SOURCE_GIT_USER}"
 echo "SOURCE_GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
 echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
