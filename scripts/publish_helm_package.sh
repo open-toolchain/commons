@@ -8,8 +8,8 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "GIT_USER=${GIT_USER}"
-echo "GIT_PASSWORD=${GIT_PASSWORD}"
+echo "SOURCE_GIT_USER=${SOURCE_GIT_USER}"
+echo "SOURCE_GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
 echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
 echo "CHART_NAME=${CHART_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
@@ -29,7 +29,7 @@ echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
 TOOLCHAIN_SERVICES=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
 UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_SERVICES} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 # Augment URL with git user & password
-UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL:0:8}${GIT_USER}:${GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
+UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL:0:8}${SOURCE_GIT_USER}:${SOURCE_GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
 echo -e "Located umbrella repo: ${UMBRELLA_REPO_URL}"
 
 echo -e "Fetching umbrella repo (to then commit a new packaged version of the chart for component: ${CHART_NAME}"
