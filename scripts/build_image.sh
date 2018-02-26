@@ -34,12 +34,8 @@ bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBE
 set +x
 bx cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER}
 
-# When 'bx' commands are in the pipeline job config directly, the image URL will automatically be passed 
-# along with the build result as env variable PIPELINE_IMAGE_URL to any subsequent job consuming this build result. 
-# When the job is sourc'ing an external shell script, or to pass a different image URL than the one inferred by the pipeline,
-# please uncomment and modify the environment variable the following line.
+# Set PIPELINE_IMAGE_URL for subsequent jobs in stage (e.g. Vulnerability Advisor)
 export PIPELINE_IMAGE_URL="$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER"
-echo "TODO - remove once no longer needed to unlock VA job ^^^^"
 
 bx cr images
 

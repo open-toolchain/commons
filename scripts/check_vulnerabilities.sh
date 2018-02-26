@@ -20,7 +20,10 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 bx cr images
-PIPELINE_IMAGE_URL=$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER
+# If running after build_image.sh in same stage, reuse the exported variable PIPELINE_IMAGE_URL
+if [[ -z PIPELINE_IMAGE_URL ]]; then
+  PIPELINE_IMAGE_URL=$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER
+fi
 echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
 for ITER in {1..30}
 do
