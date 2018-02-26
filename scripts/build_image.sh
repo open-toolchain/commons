@@ -49,6 +49,14 @@ mkdir -p $ARCHIVE_DIR
 # build as input and configured with an environment properties file valued 'build.properties'
 # will be able to reuse the env variables in their job shell scripts.
 
+# If already defined build.properties from prior build job, append to it.
+cp build.properties $ARCHIVE_DIR/ || :
+
+echo "Copy Helm chart along with the build"
+if [ ! -f $ARCHIVE_DIR/chart/ ]; then # no need to copy if working in ./ already
+  cp -r ./chart/ $ARCHIVE_DIR/
+fi
+
 # CHART information from build.properties is used in Helm Chart deployment to set the release name
 CHART_NAME=$(find chart/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
 echo "CHART_NAME=${CHART_NAME}" >> $ARCHIVE_DIR/build.properties
