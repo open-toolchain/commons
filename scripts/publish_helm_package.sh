@@ -78,8 +78,7 @@ echo "PUBLISH CHART PACKAGE"
 # Refresh in case of concurrent updates
 git -C ./${UMBRELLA_REPO_NAME} pull --no-edit
 echo "Updating charts index"
-# touch ./${UMBRELLA_REPO_NAME}/charts/index.yaml
-helm repo index ./${UMBRELLA_REPO_NAME}/charts ./${UMBRELLA_REPO_NAME}/charts/index.yaml --url ${UMBRELLA_REPO_URL}/tree/master/charts
+helm repo index ./${UMBRELLA_REPO_NAME}/charts --url ${UMBRELLA_REPO_URL}/tree/master/charts
 
 cd ${UMBRELLA_REPO_NAME}
 git add .
