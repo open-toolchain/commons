@@ -78,7 +78,7 @@ echo "PUBLISH CHART PACKAGE"
 git -C ./${UMBRELLA_REPO_NAME} pull --no-edit
 echo "Updating charts index"
 touch ./${UMBRELLA_REPO_NAME}/charts/index.yaml
-helm repo index charts --merge ./${UMBRELLA_REPO_NAME}/charts/index.yaml # --url https://$IDS_TOKEN@raw.github.ibm.com/$CHART_ORG/$CHART_REPO/master/charts
+helm repo index charts --merge ./${UMBRELLA_REPO_NAME}/charts/index.yaml --url ${UMBRELLA_REPO_URL}/charts
 
 cd ${UMBRELLA_REPO_NAME}
 git add .
