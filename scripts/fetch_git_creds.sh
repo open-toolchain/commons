@@ -25,9 +25,9 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 cp -R -n ./ $ARCHIVE_DIR/ || true
 
 # Record git info to later contribute to umbrella chart repo
-GIT_REMOTE=$( git remote -v | head -1 )
-GIT_USER=$( echo ${GIT_REMOTE} | cut -d/ -f3 | cut -d: -f1 )
-GIT_PASSWORD=$( echo ${GIT_REMOTE} | cut -d: -f3 | cut -d@ -f1 )
+GIT_REMOTE_URL=$( git config --get remote.origin.url )
+GIT_USER=$( echo ${GIT_REMOTE_URL} | cut -d/ -f3 | cut -d: -f1 )
+GIT_PASSWORD=$( echo ${GIT_REMOTE_URL} | cut -d: -f3 | cut -d@ -f1 )
 
 mkdir -p $ARCHIVE_DIR
 echo "SOURCE_GIT_URL=${GIT_URL}" >> $ARCHIVE_DIR/build.properties
