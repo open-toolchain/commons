@@ -56,8 +56,8 @@ MINOR=`echo ${CHART_VERSION} | cut -d. -f2`
 REVISION=`echo ${CHART_VERSION} | cut -d. -f3`
 if [ -z ${MAJOR} ]; then MAJOR=0; fi
 if [ -z ${MINOR} ]; then MINOR=0; fi
-if [ -z ${REVISION} ]; then REVISION=0; fi
-VERSION="${MAJOR}.${MINOR}.${REVISION}-${BUILD_NUMBER}"
+if [ -z ${REVISION} ]; then REVISION=${BUILD_NUMBER}; else REVISION=${REVISION}-b${BUILD_NUMBER}; fi
+VERSION="${MAJOR}.${MINOR}.${REVISION}"
 echo -e "VERSION:${VERSION}"
 #echo -e "Injecting pipeline build values into /chart/${CHART_NAME}/Chart.yaml"
 #sed -i "s~^\([[:blank:]]*\)version:.*$~\version: ${VERSION}~" ./chart/${CHART_NAME}/Chart.yaml
