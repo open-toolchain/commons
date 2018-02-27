@@ -83,5 +83,5 @@ git -C ./${UMBRELLA_REPO_NAME} pull --no-edit
 cd ${UMBRELLA_REPO_NAME}
 git add .
 git status
-git commit -m "Updated component chart: ${CHART_NAME}:${BUILD_NUMBER} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${SOURCE_GIT_URL} commit: ${SOURCE_GIT_COMMIT}"
+git commit -m "Published chart: ${CHART_NAME}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${SOURCE_GIT_URL} commit: ${SOURCE_GIT_COMMIT}"
 git push -f
