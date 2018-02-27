@@ -32,6 +32,7 @@ TOOLCHAIN_SERVICES=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-ap
 UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_SERVICES} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 # Augment URL with git user & password
 UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL:0:8}${SOURCE_GIT_USER}:${SOURCE_GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
+UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL%".git"} #remove trailing .git if present
 echo -e "Located umbrella repo: ${UMBRELLA_REPO_URL}"
 
 echo -e "Fetching umbrella repo (to then commit a new packaged version of the chart for component: ${CHART_NAME}"
@@ -78,7 +79,7 @@ echo "PUBLISH CHART PACKAGE"
 git -C ./${UMBRELLA_REPO_NAME} pull --no-edit
 echo "Updating charts index"
 touch ./${UMBRELLA_REPO_NAME}/charts/index.yaml
-helm repo index ./${UMBRELLA_REPO_NAME}/charts --merge ./${UMBRELLA_REPO_NAME}/charts/index.yaml #--url ${UMBRELLA_REPO_URL}/charts
+helm repo index ./${UMBRELLA_REPO_NAME}/charts --merge ./${UMBRELLA_REPO_NAME}/charts/index.yaml --url ${UMBRELLA_REPO_URL}/tree/master/charts
 
 cd ${UMBRELLA_REPO_NAME}
 git add .
