@@ -27,7 +27,7 @@ set -x
 GIT_REMOTE_URL=$( git config --get remote.origin.url )
 
 helm init --client-only
-#helm repo add components ${GIT_REMOTE_URL%".git"}/tree/master/charts
+# helm repo add components ${GIT_REMOTE_URL%".git"}/tree/master/charts
 helm dependency build ./umbrella-chart
 helm lint ./umbrella-chart
 
