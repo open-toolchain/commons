@@ -17,6 +17,8 @@
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
+echo "SERVICE_ID=${SERVICE_ID}"
+
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
