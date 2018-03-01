@@ -39,11 +39,15 @@ helm init --client-only
 # TEMPORARY solution, until figured https://github.com/kubernetes/helm/issues/3585
 # copy latest version of each component chart (assuming requirements.yaml was intending so)
 mkdir -p ./umbrella-chart/charts
+echo "Component charts available:"
+ls ./charts/*.tgz
 for COMPONENT_NAME in $( grep "name:" umbrella-chart/requirements.yaml | awk '{print $3}' ); do
   COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
   cp ${COMPONENT_CHART} ./umbrella-chart/charts
 done
+echo "Umbrella chart with updated dependencies:"
 ls -R umbrella-chart
+
 helm lint umbrella-chart
 
 # copy updated umbrella chart
