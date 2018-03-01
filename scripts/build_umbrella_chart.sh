@@ -14,6 +14,7 @@
 echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
+echo "CHART_NAME=${CHART_NAME}"
 
 #env
 # also run 'env' command to find all available env variables
@@ -37,17 +38,47 @@ helm init --client-only
 
 # TEMPORARY solution, until figured https://github.com/kubernetes/helm/issues/3585
 # copy latest version of each component chart (assuming requirements.yaml was intending so)
-mkdir -p ./umbrella-chart/charts
+CHART_NAME=umbrella-chart
+CHART_PATH=./${CHART_NAME}
+
+mkdir -p ${CHART_PATH}/charts
 echo "Component charts available:"
 ls ./charts/*.tgz
 for COMPONENT_NAME in $( grep "name:" umbrella-chart/requirements.yaml | awk '{print $3}' ); do
   COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
-  cp ${COMPONENT_CHART} ./umbrella-chart/charts
+  cp ${COMPONENT_CHART} ${CHART_PATH}/charts
 done
 echo "Umbrella chart with updated dependencies:"
-ls -R umbrella-chart
+ls -R ${CHART_PATH}
 
-helm lint umbrella-chart
+helm lint ${CHART_PATH}
 
-# copy updated umbrella chart
-cp -R -n ./umbrella-chart ${ARCHIVE_DIR}/chart || true
+echo "=========================================================="
+echo "COPYING ARTIFACTS needed for deployment and testing (in particular build.properties)"
+
+echo "Checking archive dir presence"
+mkdir -p $ARCHIVE_DIR
+
+# Persist env variables into a properties file (build.properties) so that all pipeline stages consuming this
+# build as input and configured with an environment properties file valued 'build.properties'
+# will be able to reuse the env variables in their job shell scripts.
+
+# If already defined build.properties from prior build job, append to it.
+cp build.properties $ARCHIVE_DIR || :
+
+# CHART information from build.properties is used in Helm Chart deployment to set the release name
+echo "CHART_PATH=${CHART_PATH}" >> $ARCHIVE_DIR/build.properties
+# IMAGE information from build.properties is used in Helm Chart deployment to set the release name
+echo "IMAGE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties
+echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
+# REGISTRY information from build.properties is used in Helm Chart deployment to generate cluster secret
+echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
+echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties
+echo "File 'build.properties' created for passing env variables to subsequent pipeline jobs:"
+cat $ARCHIVE_DIR/build.properties
+
+echo "Copy updated Helm umbrella chart"
+cp -R -n ${CHART_PATH} ${ARCHIVE_DIR} || true
+
+echo "Copy pipeline scripts along with the build"
+cp -R -n ./scripts ${ARCHIVE_DIR}/scripts || true
