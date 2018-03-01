@@ -24,14 +24,17 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 #cp -R -n ./ $ARCHIVE_DIR/ || true
 
 set -x
-GIT_REMOTE_URL=$( git config --get remote.origin.url )
+#GIT_REMOTE_URL=$( git config --get remote.origin.url )
 
 helm init --client-only
-echo -e "REPO:${GIT_REMOTE_URL%'.git'}/raw/master/charts"
-cat <(curl -sSL "${GIT_REMOTE_URL}/raw/master/charts/index.yaml")
-helm repo add components ${GIT_REMOTE_URL}/raw/master/charts
+#echo -e "REPO:${GIT_REMOTE_URL%'.git'}/raw/master/charts"
+#cat <(curl -sSL "${GIT_REMOTE_URL}/raw/master/charts/index.yaml")
+#helm repo add components ${GIT_REMOTE_URL}/raw/master/charts
 #helm repo add components "${GIT_REMOTE_URL%'.git'}/raw/master/charts"
-helm dependency build ./umbrella-chart
+
+# regenerate index to use local file path
+helm repo index ./charts --url "file://../charts"
+helm dependency update --debug ./umbrella-chart
 helm lint ./umbrella-chart
 
 ls ./umbrella-chart/charts
