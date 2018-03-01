@@ -12,7 +12,7 @@
 # image registry (using an IBM Cloud API Key). It also configures Helm Tiller service to later perform a deploy with Helm.
 
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "CHART_NAME=${CHART_NAME}"
+echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
@@ -59,11 +59,11 @@ else
   echo -e "Namespace ${CLUSTER_NAMESPACE} already has an imagePullSecret for this toolchain."
 fi
 echo "Checking ability to pass pull secret via Helm chart"
-CHART_PULL_SECRET=$( grep 'pullSecret' ./chart/${CHART_NAME}/values.yaml || : )
+CHART_PULL_SECRET=$( grep 'pullSecret' ${CHART_PATH}/values.yaml || : )
 if [ -z "$CHART_PULL_SECRET" ]; then
   echo "WARNING: Chart is not expecting an explicit private registry imagePullSecret. Will patch the cluster default serviceAccount to pass it implicitly for now."
   echo "Going forward, you should edit the chart to add in:"
-  echo -e "[./chart/${CHART_NAME}/templates/deployment.yaml] (under kind:Deployment)"
+  echo -e "[${CHART_PATH}/templates/deployment.yaml] (under kind:Deployment)"
   echo "    ..."
   echo "    spec:"
   echo "      imagePullSecrets:               #<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -72,7 +72,7 @@ if [ -z "$CHART_PULL_SECRET" ]; then
   echo "        - name: {{ .Chart.Name }}"
   echo "          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
   echo "    ..."          
-  echo -e "[./chart/${CHART_NAME}/values.yaml]"
+  echo -e "[${CHART_PATH}/values.yaml]"
   echo "or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
   echo "or refer to: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#create-a-pod-that-uses-your-secret"
   echo "    ..."
