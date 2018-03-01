@@ -36,7 +36,7 @@ helm init --client-only
 #helm repo index ./charts --url "file://../charts"
 #helm dependency update --debug ./umbrella-chart
 
-# temporary solution, until figured https://github.com/kubernetes/helm/issues/3585
+# TEMPORARY solution, until figured https://github.com/kubernetes/helm/issues/3585
 # copy latest version of each component chart (assuming requirements.yaml was intending so)
 mkdir -p ./umbrella-chart/charts
 for COMPONENT_NAME in $( grep "name:" umbrella-chart/requirements.yaml | awk '{print $3}' ); do
