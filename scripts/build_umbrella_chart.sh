@@ -33,8 +33,19 @@ helm init --client-only
 #helm repo add components "${GIT_REMOTE_URL%'.git'}/raw/master/charts"
 
 # regenerate index to use local file path
-helm repo index ./charts --url "file://../charts"
-helm dependency update --debug ./umbrella-chart
-helm lint ./umbrella-chart
+#helm repo index ./charts --url "file://../charts"
+#helm dependency update --debug ./umbrella-chart
 
-ls ./umbrella-chart/charts
+# temporary solution, until figured https://github.com/kubernetes/helm/issues/3585
+# copy latest version of each component chart (assuming requirements.yaml was intending so)
+mkdir -p ./umbrella-chart/charts
+for COMPONENT_NAME in $( grep "name:" umbrella-chart/requirements.yaml | awk '{print $3}' ); do
+  COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
+  cp COMPONENT_CHART ./umbrella-chart/charts
+done
+ls -R umbrella-chart
+helm lint umbrella-chart
+
+# copy updated umbrella chart
+cp -R -n ./umbrella-chart ${ARCHIVE_DIR}/ || true
+
