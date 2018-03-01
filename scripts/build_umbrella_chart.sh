@@ -50,5 +50,4 @@ ls -R umbrella-chart
 helm lint umbrella-chart
 
 # copy updated umbrella chart
-cp -R -n ./umbrella-chart ${ARCHIVE_DIR}/ || true
-
+cp -R -n ./umbrella-chart ${ARCHIVE_DIR}/chart || true

@@ -33,17 +33,20 @@ dockerlint -f Dockerfile
 echo "=========================================================="
 echo "CHECKING HELM CHART"
 echo "Looking for chart under /chart/<CHART_NAME>"
-if [ -d ./chart ]; then
-  CHART_NAME=$(find chart/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+CHART_ROOT="./chart"
+
+if [ -d ${CHART_ROOT} ]; then
+  CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+  CHART_PATH=${CHART_ROOT}/${CHART_NAME}
 fi
-if [ -z "${CHART_NAME}" ]; then
-    echo "No Helm chart found for Kubernetes deployment under /chart/<CHART_NAME>."
+if [ -z "${CHART_PATH}" ]; then
+    echo -e "No Helm chart found for Kubernetes deployment under ${CHART_ROOT}/<CHART_NAME>."
     exit 1
 else
-    echo -e "Helm chart found for Kubernetes deployment : /chart/${CHART_NAME}"
+    echo -e "Helm chart found for Kubernetes deployment : ${CHART_PATH}"
 fi
 echo "Linting Helm Chart"
-helm lint ./chart/${CHART_NAME}
+helm lint ${CHART_PATH}
 
 echo "=========================================================="
 echo "CHECKING REGISTRY namespace, current plan and quota"

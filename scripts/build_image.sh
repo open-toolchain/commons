@@ -52,14 +52,16 @@ mkdir -p $ARCHIVE_DIR
 # If already defined build.properties from prior build job, append to it.
 cp build.properties $ARCHIVE_DIR/ || :
 
+CHART_ROOT="./chart"
 echo "Copy Helm chart along with the build"
 if [ ! -f $ARCHIVE_DIR/chart/ ]; then # no need to copy if working in ./ already
-  cp -r ./chart/ $ARCHIVE_DIR/
+  cp -r $CHART_ROOT $ARCHIVE_DIR/
 fi
 
 # CHART information from build.properties is used in Helm Chart deployment to set the release name
-CHART_NAME=$(find chart/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
 echo "CHART_NAME=${CHART_NAME}" >> $ARCHIVE_DIR/build.properties
+echo "CHART_PATH=${CHART_ROOT}/${CHART_NAME}" >> $ARCHIVE_DIR/build.properties
 # IMAGE information from build.properties is used in Helm Chart deployment to set the release name
 echo "IMAGE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties
 echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
