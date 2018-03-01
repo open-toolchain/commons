@@ -41,7 +41,7 @@ helm init --client-only
 mkdir -p ./umbrella-chart/charts
 for COMPONENT_NAME in $( grep "name:" umbrella-chart/requirements.yaml | awk '{print $3}' ); do
   COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
-  cp COMPONENT_CHART ./umbrella-chart/charts
+  cp ${COMPONENT_CHART} ./umbrella-chart/charts
 done
 ls -R umbrella-chart
 helm lint umbrella-chart
