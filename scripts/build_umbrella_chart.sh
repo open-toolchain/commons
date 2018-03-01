@@ -28,7 +28,7 @@ GIT_REMOTE_URL=$( git config --get remote.origin.url )
 
 helm init --client-only
 echo -e "REPO:${GIT_REMOTE_URL%'.git'}/raw/master/charts"
-echo <(curl -sSL "${GIT_REMOTE_URL}/raw/master/charts/index.yaml")
+cat <(curl -sSL "${GIT_REMOTE_URL}/raw/master/charts/index.yaml")
 helm repo add components ${GIT_REMOTE_URL}/raw/master/charts
 #helm repo add components "${GIT_REMOTE_URL%'.git'}/raw/master/charts"
 helm dependency build ./umbrella-chart
