@@ -41,10 +41,10 @@ IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_U
 
 # Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
 echo -e "Dry run into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set image.tag=${BUILD_NUMBER},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set global.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
 
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set image.tag=${BUILD_NUMBER},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set global.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
 
 echo ""
 echo "=========================================================="
