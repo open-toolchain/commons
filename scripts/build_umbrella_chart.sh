@@ -32,25 +32,25 @@ helm init --client-only
 #helm repo add components ${GIT_REMOTE_URL}/raw/master/charts
 #helm repo add components "${GIT_REMOTE_URL%'.git'}/raw/master/charts"
 
-# regenerate index to use local file path
-#helm repo index ./charts --url "file://../charts"
-#helm dependency update --debug ./umbrella-chart
-
-# TEMPORARY solution, until figured https://github.com/kubernetes/helm/issues/3585
-# copy latest version of each component chart (assuming requirements.yaml was intending so)
 CHART_NAME=umbrella-chart
 CHART_PATH=./${CHART_NAME}
 
-mkdir -p ${CHART_PATH}/charts
-echo "Component charts available:"
-ls ./charts/*.tgz
-for COMPONENT_NAME in $( grep "name:" umbrella-chart/requirements.yaml | awk '{print $3}' ); do
-  COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
-  cp ${COMPONENT_CHART} ${CHART_PATH}/charts
-done
+# regenerate index to use local file path
+#helm repo index ./charts --url "file://../charts"
+helm dependency update --debug ${CHART_PATH}
+
+# TEMPORARY solution, until figured https://github.com/kubernetes/helm/issues/3585
+# copy latest version of each component chart (assuming requirements.yaml was intending so)
+# mkdir -p ${CHART_PATH}/charts
+# echo "Component charts available:"
+# ls ./charts/*.tgz
+# for COMPONENT_NAME in $( grep "name:" umbrella-chart/requirements.yaml | awk '{print $3}' ); do
+#   COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
+#   cp ${COMPONENT_CHART} ${CHART_PATH}/charts
+# done
+
 echo "Umbrella chart with updated dependencies:"
 ls -R ${CHART_PATH}
-
 helm lint ${CHART_PATH}
 
 echo "=========================================================="

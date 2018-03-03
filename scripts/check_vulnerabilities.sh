@@ -8,7 +8,7 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_vulnerabilities.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "CHART_NAME=${CHART_NAME}"
+
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
