@@ -52,9 +52,9 @@ mkdir -p $ARCHIVE_DIR
 # If already defined build.properties from prior build job, append to it.
 cp build.properties $ARCHIVE_DIR/ || :
 
-CHART_ROOT="./chart"
+CHART_ROOT="chart"
 echo "Copy Helm chart along with the build"
-if [ ! -f $ARCHIVE_DIR/chart/ ]; then # no need to copy if working in ./ already
+if [ ! -d $ARCHIVE_DIR/CHART_ROOT ]; then # no need to copy if working in ./ already
   cp -r $CHART_ROOT $ARCHIVE_DIR/
 fi
 
@@ -77,9 +77,4 @@ if [ -d ./scripts/ ]; then
   if [ ! -d $ARCHIVE_DIR/scripts/ ]; then # no need to copy if working in ./ already
     cp -r ./scripts/ $ARCHIVE_DIR/
   fi
-fi
-
-echo "Copy Helm chart along with the build"
-if [ ! -d $ARCHIVE_DIR/chart/ ]; then # no need to copy if working in ./ already
-  cp -r ./chart/ $ARCHIVE_DIR/
 fi

@@ -33,7 +33,7 @@ dockerlint -f Dockerfile
 echo "=========================================================="
 echo "CHECKING HELM CHART"
 echo "Looking for chart under /chart/<CHART_NAME>"
-CHART_ROOT="./chart"
+CHART_ROOT="chart"
 
 if [ -d ${CHART_ROOT} ]; then
   CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
