@@ -18,6 +18,10 @@ echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
+# Insights variables
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
+echo "BUILD_PREFIX=${BUILD_PREFIX}"
+echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 
 #View build properties
 # cat build.properties
@@ -72,6 +76,16 @@ helm lint ${CHART_PATH}
 echo "Packaging chart"
 mkdir -p ./${UMBRELLA_REPO_NAME}/charts
 helm package ${CHART_PATH} --version $VERSION -d ./${UMBRELLA_REPO_NAME}/charts
+
+echo "Capture Insights matching config"
+mkdir -p ./${UMBRELLA_REPO_NAME}/insights
+INSIGHTS_FILE=./${UMBRELLA_REPO_NAME}/insights/${CHART_NAME}.${VERSION}
+rm -f INSIGHTS_FILE # override if already exists
+echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
+echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
+echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
+echo "BUILD_ID=${BUILD_NUMBER}" >> $INSIGHTS_FILE
+cat $INSIGHTS_FILE
 
 echo "=========================================================="
 echo "PUBLISH CHART PACKAGE"

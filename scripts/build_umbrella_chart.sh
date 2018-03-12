@@ -44,10 +44,21 @@ CHART_PATH=./${CHART_NAME}
 mkdir -p ${CHART_PATH}/charts
 echo "Component charts available:"
 ls ./charts/*.tgz
-for COMPONENT_NAME in $( grep "name:" umbrella-chart/requirements.yaml | awk '{print $3}' ); do
+for COMPONENT_NAME in $( grep "name:" ${CHART_NAME}/requirements.yaml | awk '{print $3}' ); do
   COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
   cp ${COMPONENT_CHART} ${CHART_PATH}/charts
 done
+
+# copy latest version of each component insights config
+if [[ -d ./insights ]]; then
+  mkdir -p ${CHART_PATH}/insights
+  echo "Insights config files available:"
+  ls ./insights/*
+  for COMPONENT_NAME in $( grep "name:" ${CHART_NAME}/requirements.yaml | awk '{print $3}' ); do
+    COMPONENT_CHART=$(find ./insights/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
+    cp ${COMPONENT_CHART} ${CHART_PATH}/insights
+  done
+fi
 
 echo "Umbrella chart with updated dependencies:"
 ls -R ${CHART_PATH}
