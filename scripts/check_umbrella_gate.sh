@@ -21,6 +21,10 @@ if [[ ! -d ./insights ]]; then
   exit 1
 fi
 
+# Install DRA CLI
+npm install
+npm install -g grunt-idra3
+
 ls ./insights/*
 for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   echo -e "Checking gate for component: ${INSIGHT_CONFIG}"
