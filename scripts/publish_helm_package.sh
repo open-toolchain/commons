@@ -79,7 +79,7 @@ helm package ${CHART_PATH} --version $VERSION -d ./${UMBRELLA_REPO_NAME}/charts
 
 echo "Capture Insights matching config"
 mkdir -p ./${UMBRELLA_REPO_NAME}/insights
-INSIGHTS_FILE=./${UMBRELLA_REPO_NAME}/insights/${CHART_NAME}.${VERSION}
+INSIGHTS_FILE=./${UMBRELLA_REPO_NAME}/insights/${CHART_NAME}-${VERSION}
 rm -f INSIGHTS_FILE # override if already exists
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
