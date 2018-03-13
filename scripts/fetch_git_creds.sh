@@ -34,5 +34,6 @@ echo "SOURCE_GIT_URL=${GIT_URL}" >> $ARCHIVE_DIR/build.properties
 echo "SOURCE_GIT_COMMIT=${GIT_COMMIT}" >> $ARCHIVE_DIR/build.properties
 echo "SOURCE_GIT_USER=${GIT_USER}" >> $ARCHIVE_DIR/build.properties
 echo "SOURCE_GIT_PASSWORD=${GIT_PASSWORD}" >> $ARCHIVE_DIR/build.properties
+echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
 
 cat $ARCHIVE_DIR/build.properties

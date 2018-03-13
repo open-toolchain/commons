@@ -84,7 +84,7 @@ rm -f INSIGHTS_FILE # override if already exists
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
-echo "BUILD_ID=${BUILD_NUMBER}" >> $INSIGHTS_FILE
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $INSIGHTS_FILE
 cat $INSIGHTS_FILE
 
 echo "=========================================================="

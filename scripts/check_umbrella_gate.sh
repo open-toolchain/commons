@@ -24,10 +24,10 @@ fi
 ls ./insights/*
 for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   echo -e "Checking gate for component: ${INSIGHT_CONFIG}"
-  source ${INSIGHT_CONFIG}
+  source ${CHART_PATH}/insights/${INSIGHT_CONFIG}
   echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
   echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
-  echo -e "BUILD_ID: ${BUILD_ID}"
+  echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
   # get the decision
   idra --evaluategate  --policy=${POLICY_NAME} --forcedecision=true
   # get the process exit code
