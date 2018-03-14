@@ -96,4 +96,5 @@ echo "Copy pipeline scripts along with the build"
 cp -R -n ./scripts ${ARCHIVE_DIR}/scripts || true
 
 echo "Copy umbrella tests along with the build"
+cp -R -n ./package.json ${ARCHIVE_DIR} || true
 cp -R -n ./tests ${ARCHIVE_DIR}/tests || true
