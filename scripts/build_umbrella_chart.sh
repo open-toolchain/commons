@@ -45,7 +45,7 @@ mkdir -p ${CHART_PATH}/charts
 echo "Component charts available:"
 ls ./charts/*.tgz
 for COMPONENT_NAME in $( grep "name:" ${CHART_NAME}/requirements.yaml | awk '{print $3}' ); do
-  COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
+  COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort --version-sort --field-separator=- --key=2,2 | tail -n 1 )
   cp ${COMPONENT_CHART} ${CHART_PATH}/charts
 done
 
@@ -55,8 +55,8 @@ if [[ -d ./insights ]]; then
   echo "Insights config files available:"
   ls ./insights/*
   for COMPONENT_NAME in $( grep "name:" ${CHART_NAME}/requirements.yaml | awk '{print $3}' ); do
-    COMPONENT_CHART=$(find ./insights/${COMPONENT_NAME}* -maxdepth 1 | sort -r | head -n 1 )
-    cp ${COMPONENT_CHART} ${CHART_PATH}/insights
+    COMPONENT_CONFIG=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort --version-sort --field-separator=- --key=2,2 | tail -n 1 )
+    cp ${COMPONENT_CONFIG} ${CHART_PATH}/insights
   done
 fi
 
