@@ -33,20 +33,17 @@ for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
   export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
   POLICY_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep POLICY_NAME | cut -d'=' -f2 )
-  POLICY_NAME='"'$POLICY_NAME'"'
-  
+
   echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
   echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
   echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
   echo -e "POLICY_NAME: ${POLICY_NAME}"
 
   # get the decision
-  idra --evaluategate --policy=${POLICY_NAME} --forcedecision=true
+  idra --evaluategate --policy="${POLICY_NAME}" --forcedecision=true
   # get the process exit code
   RESULT=$?  
   if [[ ${RESULT} != 0 ]]; then
       exit ${RESULT}
   fi
 done
-
-exit 0
