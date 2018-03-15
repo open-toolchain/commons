@@ -71,3 +71,5 @@ IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head
 echo -e "View the applications at:"
 kubectl get services --namespace ${CLUSTER_NAMESPACE} --selector release=${RELEASE_NAME} -o json | jq -r '.items[].spec.ports[0] | [.name, .nodePort | tostring] | join(" -> http://"+"'"${IP_ADDR}"':") '
 
+# Select url of frontend service
+export APP_URL=http://${IP_ADDR}:$( kubectl get services --namespace ${CLUSTER_NAMESPACE} --selector release=${RELEASE_NAME},group=frontend -o json | jq -r '.items[].spec.ports[0].nodePort ' )

@@ -22,7 +22,7 @@ if [[ ! -d ./insights ]]; then
 fi
 
 # Install DRA CLI
-npm install
+export PATH=/opt/IBM/node-v4.2/bin:$PATH
 npm install -g grunt-idra3
 
 ls ./insights/*
