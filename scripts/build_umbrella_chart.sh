@@ -55,7 +55,7 @@ if [[ -d ./insights ]]; then
   echo "Insights config files available:"
   ls ./insights/*
   for COMPONENT_NAME in $( grep "name:" ${CHART_NAME}/requirements.yaml | awk '{print $3}' ); do
-    COMPONENT_CONFIG=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort --version-sort --field-separator=- --key=2,2 | tail -n 1 )
+    COMPONENT_CONFIG=$(find ./insights/${COMPONENT_NAME}* -maxdepth 1 | sort --version-sort --field-separator=- --key=2,2 | tail -n 1 )
     cp ${COMPONENT_CONFIG} ${CHART_PATH}/insights
   done
 fi
