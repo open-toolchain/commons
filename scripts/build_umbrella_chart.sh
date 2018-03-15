@@ -95,6 +95,7 @@ cp -R -n ${CHART_PATH} ${ARCHIVE_DIR} || true
 echo "Copy pipeline scripts along with the build"
 cp -R -n ./scripts ${ARCHIVE_DIR}/scripts || true
 
-echo "Copy umbrella tests along with the build"
+echo "Copy umbrella insights, tests along with the build"
 cp -R -n ./package.json ${ARCHIVE_DIR} || true
 cp -R -n ./tests ${ARCHIVE_DIR}/tests || true
+cp -R -n ./insights ${ARCHIVE_DIR}/insights || true
