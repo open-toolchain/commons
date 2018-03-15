@@ -66,10 +66,9 @@ helm history ${RELEASE_NAME}
 
 echo ""
 echo -e "Updating Insights deployment records:${RELEASE_NAME}"
-if [[ -d ./insights ]]; then
+if [[ ! -d ./insights ]]; then
   echo "Cannot find Insights config information in /insights folder"
 else
-
   # Install DRA CLI
   export PATH=/opt/IBM/node-v4.2/bin:$PATH
   npm install -g grunt-idra3
