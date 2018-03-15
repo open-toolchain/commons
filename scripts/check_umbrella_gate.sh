@@ -13,8 +13,8 @@
 echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "CHART_PATH=${CHART_PATH}"
-echo "POLICY_NAME=${POLICY_NAME}"
 
+ls -l 
 # copy latest version of each component insights config
 if [[ ! -d ./insights ]]; then
   echo "Cannot find Insights config information in /insights folder"
