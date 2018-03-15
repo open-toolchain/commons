@@ -40,7 +40,7 @@ for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   echo -e "POLICY_NAME: ${POLICY_NAME}"
 
   # get the decision
-  idra --evaluategate  --policy='${POLICY_NAME}' --forcedecision=true
+  idra --evaluategate  --policy=${POLICY_NAME} --forcedecision=true
   # get the process exit code
   RESULT=$?  
   if [[ ${RESULT} != 0 ]]; then
