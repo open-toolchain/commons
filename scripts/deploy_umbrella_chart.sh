@@ -64,12 +64,52 @@ helm history ${RELEASE_NAME}
 # echo "Deployed Pods:"
 # kubectl describe pods --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
 
+echo ""
+echo -e "Updating Insights deployment records:${RELEASE_NAME}"
+if [[ -d ./insights ]]; then
+  echo "Cannot find Insights config information in /insights folder"
+else
+
+  # Install DRA CLI
+  export PATH=/opt/IBM/node-v4.2/bin:$PATH
+  npm install -g grunt-idra3
+
+  # get the deployment result from helm status command
+  STATUS=$( helm status ${RELEASE_NAME} | grep STATUS: | awk '{print $2}' )
+  if [[ $STATUS -eq 'DEPLOYED' ]]; then
+      STATUS='pass'
+  else
+      STATUS='fail'
+  fi
+
+  ls ./insights/*
+  for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
+    echo -e "Publish results for component: ${INSIGHT_CONFIG}"
+    export LOGICAL_APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep LOGICAL_APP_NAME | cut -d'=' -f2 )
+    export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
+    export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
+    echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
+    echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
+    echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
+
+    # publish deploy records for 3 microservices
+    idra --publishdeployrecord  --env=${CLUSTER_NAMESPACE} --status=${STATUS}
+
+    # get the process exit code
+    RESULT=$?  
+    if [[ ${RESULT} != 0 ]]; then
+        exit ${RESULT}
+    fi
+  done
+fi
+
 echo "=========================================================="
 IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
-#PORT=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${RELEASE_NAME} | sed 's/.*:\([0-9]*\).*/\1/g')
 
-echo -e "View the applications at:"
+echo -e "Deployed services:"
 kubectl get services --namespace ${CLUSTER_NAMESPACE} --selector release=${RELEASE_NAME} -o json | jq -r '.items[].spec.ports[0] | [.name, .nodePort | tostring] | join(" -> http://"+"'"${IP_ADDR}"':") '
-
+echo ""
 # Select url of frontend service
 export APP_URL=http://${IP_ADDR}:$( kubectl get services --namespace ${CLUSTER_NAMESPACE} --selector release=${RELEASE_NAME},group=frontend -o json | jq -r '.items[].spec.ports[0].nodePort ' )
+echo -e "VIEW THE FRONT-END APPLICATION AT: ${APP_URL}"
+
