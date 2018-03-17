@@ -2,11 +2,11 @@
 # uncomment to debug the script
 #set -x
 # copy the script below into your app code repo (e.g. ./scripts/publish_umbrella_test_results.sh.sh) and 'source' it from your pipeline job
-#    source ./scripts/publish_umbrella_test_results.sh.sh
+#    source ./scripts/publish_umbrella_test_results.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_test_results.sh.sh")
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_test_results.sh")
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_test_results.sh.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_test_results.sh
 
 # This script does upload current test results for all components in an given umbrella chart which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_umbrella_gate.sh)
 
