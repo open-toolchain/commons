@@ -32,7 +32,7 @@ for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   export LOGICAL_APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep LOGICAL_APP_NAME | cut -d'=' -f2 )
   export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
   export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
-  POLICY_NAME=$( printf ${POLICY_NAME_FORMAT} ${LOGICAL_APP_NAME} ${LOGICAL_ENV_NAME} )
+  POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${LOGICAL_APP_NAME} ${LOGICAL_ENV_NAME} )
   
   echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
   echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
