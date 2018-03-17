@@ -12,6 +12,7 @@ echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}" # TODO improve into RELEASE NAME
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
+echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
 
 #View build properties
 # cat build.properties
@@ -22,6 +23,7 @@ echo "REGISTRY_URL=${REGISTRY_URL}"
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+
 
 # Infer CHART_NAME from path to chart (last segment per construction for valid charts)
 CHART_NAME=$(basename $CHART_PATH)
@@ -82,6 +84,7 @@ else
   fi
 
   ls ./insights/*
+  echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
   for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
     echo -e "Publish results for component: ${INSIGHT_CONFIG}"
     export LOGICAL_APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep LOGICAL_APP_NAME | cut -d'=' -f2 )
@@ -92,7 +95,7 @@ else
     echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
 
     # publish deploy records for 3 microservices
-    idra --publishdeployrecord  --env=${CLUSTER_NAMESPACE} --status=${STATUS}
+    idra --publishdeployrecord  --env=${LOGICAL_ENV_NAME} --status=${STATUS}
 
     # get the process exit code
     RESULT=$?  
