@@ -45,5 +45,3 @@ for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
       exit ${RESULT}
   fi
 done
-
-exit 0
