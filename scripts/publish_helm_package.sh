@@ -30,7 +30,7 @@ echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 echo "=========================================================="
-echo "FETCHING UMBRELLA repo"
+echo "CONFIGURING UMBRELLA CHART REPO"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
 TOOLCHAIN_SERVICES=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
 UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_SERVICES} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
@@ -38,14 +38,9 @@ UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL%".git"} #remove trailing .git if present
 # Augment URL with git user & password
 UMBRELLA_ACCESS_REPO_URL=${UMBRELLA_REPO_URL:0:8}${SOURCE_GIT_USER}:${SOURCE_GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
 echo -e "Located umbrella repo: ${UMBRELLA_REPO_URL}, with access token: ${UMBRELLA_ACCESS_REPO_URL}"
-
-echo -e "Fetching umbrella repo (to then commit a new packaged version of the chart for component: ${CHART_PATH}"
 git config --global user.email "autobuild@not-an-email.com"
 git config --global user.name "Automatic Build: ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}"
 git config --global push.default simple
-git clone ${UMBRELLA_ACCESS_REPO_URL}
-
-ls -al
 
 echo "=========================================================="
 echo "PREPARING CHART PACKAGE"
@@ -74,12 +69,12 @@ echo "Linting injected Helm chart"
 helm init --client-only
 helm lint ${CHART_PATH}
 echo "Packaging chart"
-mkdir -p ./${UMBRELLA_REPO_NAME}/charts
-helm package ${CHART_PATH} --version $VERSION -d ./${UMBRELLA_REPO_NAME}/charts
+mkdir -p ./.publish/charts
+helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
 
 echo "Capture Insights matching config"
-mkdir -p ./${UMBRELLA_REPO_NAME}/insights
-INSIGHTS_FILE=./${UMBRELLA_REPO_NAME}/insights/${CHART_NAME}-${VERSION}
+mkdir -p ./.publish/insights
+INSIGHTS_FILE=./.publish/insights/${CHART_NAME}-${VERSION}
 rm -f INSIGHTS_FILE # override if already exists
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
@@ -88,13 +83,33 @@ cat $INSIGHTS_FILE
 
 echo "=========================================================="
 echo "PUBLISH CHART PACKAGE"
-# Refresh in case of concurrent updates
-git -C ./${UMBRELLA_REPO_NAME} pull --no-edit
-echo "Updating charts index"
-helm repo index ./${UMBRELLA_REPO_NAME}/charts --url "${UMBRELLA_REPO_URL}/raw/master/charts"
+for ITER in {1..30}
+do
+  echo "Fetching umbrella repo"
+  git clone ${UMBRELLA_ACCESS_REPO_URL}
+  cd ${UMBRELLA_REPO_NAME}
+  ls -al
+  echo "Inject component chart"
+  mkdir -p ./${UMBRELLA_REPO_NAME}/charts
+  cp -r ../.publish/. .
+  echo "Updating charts index"
+  helm repo index ./charts --url "${UMBRELLA_REPO_URL}/raw/master/charts"
+  echo "Pushing commit"
+  git add .
+  git status
+  git commit -m "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${SOURCE_GIT_URL} commit: ${SOURCE_GIT_COMMIT}"
+  if git push ; then
+    COMMIT_STATUS=OK
+    break
+  fi
+  echo -e "Attempt ${ITER} : Commit failed. Likely due to concurrent commit from another component. Retrying shortly..."
+  cd ..
+  rm -rf ${UMBRELLA_REPO_NAME} ||:
+  sleep 5
+done
+[[ $COMMIT_STATUS == "OK" ]] || { echo "ERROR: Unable to commit the packaged Helm chart, please check the log and try again."; exit 1; }
 
-cd ${UMBRELLA_REPO_NAME}
-git add .
-git status
-git commit -m "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${SOURCE_GIT_URL} commit: ${SOURCE_GIT_COMMIT}"
-git push -f
+echo "SUCCESS: Committed packaged component to umbrella repo"
+echo "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${SOURCE_GIT_URL} commit: ${SOURCE_GIT_COMMIT}"
+echo "Umbrella repo commit:"
+git ls-remote
