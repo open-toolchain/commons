@@ -56,11 +56,12 @@ set -x
 bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} .
 set +x
 bx cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
-# When 'bx' commands are in the pipeline job config directly, the image URL will automatically be passed 
-# along with the build result as env variable PIPELINE_IMAGE_URL to any subsequent job consuming this build result. 
-# When the job is sourc'ing an external shell script, or to pass a different image URL than the one inferred by the pipeline,
-# please uncomment and modify the environment variable the following line.
-# export PIPELINE_IMAGE_URL="$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$IMAGE_TAG"
+
+# Set PIPELINE_IMAGE_URL for subsequent jobs in stage (e.g. Vulnerability Advisor)
+export PIPELINE_IMAGE_URL="$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$IMAGE_TAG"
+
+bx cr images
+
 ######################################################################################
 # Copy any artifacts that will be needed for deployment and testing to $WORKSPACE    #
 ######################################################################################
