@@ -8,27 +8,14 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/record_deployment.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "SOURCE_GIT_URL=${SOURCE_GIT_URL}"
-echo "SOURCE_GIT_BRANCH=${SOURCE_GIT_BRANCH}"
-echo "SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT}"
+echo "GIT_URL=${GIT_URL}"
+echo "GIT_BRANCH=${GIT_BRANCH}"
+echo "GIT_COMMIT=${GIT_COMMIT}"
 echo "TIMESTAMP=${TIMESTAMP}"
 echo "TARGET_REGION_ID=${TARGET_REGION_ID}"
 echo "TARGET_REGION_NAME=${TARGET_REGION_NAME}"
 echo "TARGET_ORG_NAME=${TARGET_ORG_NAME}"
 echo "TIMESTAMP=${TIMESTAMP}"
-
-# echo "SOURCE_GIT_USER=${SOURCE_GIT_USER}"
-# echo "SOURCE_GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
-# echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
-# echo "CHART_PATH=${CHART_PATH}"
-# echo "IMAGE_NAME=${IMAGE_NAME}"
-# echo "BUILD_NUMBER=${BUILD_NUMBER}"
-# echo "REGISTRY_URL=${REGISTRY_URL}"
-# echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
-# Insights variables
-# echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
-# echo "BUILD_PREFIX=${BUILD_PREFIX}"
-# echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 
 #View build properties
 # cat build.properties

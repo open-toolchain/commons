@@ -10,6 +10,7 @@
 # Input env variables (can be received via a pipeline environment properties.file.
 
 echo "IMAGE_NAME=${IMAGE_NAME}"
+echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
@@ -22,7 +23,7 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 bx cr images
 # If running after build_image.sh in same stage, reuse the exported variable PIPELINE_IMAGE_URL
 if [[ -z PIPELINE_IMAGE_URL ]]; then
-  PIPELINE_IMAGE_URL=$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$BUILD_NUMBER
+  PIPELINE_IMAGE_URL=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 fi
 echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
 for ITER in {1..30}

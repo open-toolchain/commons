@@ -8,6 +8,8 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_kubectl.sh
 # Input env variables (can be received via a pipeline environment properties.file.
+echo "IMAGE_NAME=${IMAGE_NAME}"
+echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
