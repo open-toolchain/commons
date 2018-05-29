@@ -11,6 +11,7 @@
 echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}" # TODO improve into RELEASE NAME
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
 
@@ -23,7 +24,6 @@ echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
-
 
 # Infer CHART_NAME from path to chart (last segment per construction for valid charts)
 CHART_NAME=$(basename $CHART_PATH)

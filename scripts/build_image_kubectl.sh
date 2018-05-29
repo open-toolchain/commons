@@ -16,6 +16,7 @@ echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 echo "GIT_COMMIT=${GIT_COMMIT}"
 # also run 'env' command to find all available env variables
@@ -70,7 +71,8 @@ mkdir -p $ARCHIVE_DIR
 # pass image information along via build.properties for Vulnerability Advisor scan
 echo "IMAGE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties
 echo "IMAGE_TAG=${IMAGE_TAG}" >> $ARCHIVE_DIR/build.properties
-echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
+#echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties
 echo "File 'build.properties' created for passing env variables to subsequent pipeline jobs:"
