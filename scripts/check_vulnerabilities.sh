@@ -20,7 +20,7 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
-bx cr images
+bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 # If running after build_image.sh in same stage, reuse the exported variable PIPELINE_IMAGE_URL
 if [[ -z PIPELINE_IMAGE_URL ]]; then
   PIPELINE_IMAGE_URL=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
