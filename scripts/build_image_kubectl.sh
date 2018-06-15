@@ -53,7 +53,7 @@ bx cr images --restrict ${REGISTRY_NAMESPACE}
 
 TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
 IMAGE_TAG=${BUILD_NUMBER}-${TIMESTAMP}
-if [ -z ${GIT_COMMIT} ]; then
+if [ ! -z ${GIT_COMMIT} ]; then
   GIT_COMMIT_SHORT=$( echo ${GIT_COMMIT} | head -c 8 ) 
   IMAGE_TAG=${IMAGE_TAG}-${GIT_COMMIT_SHORT}; 
 fi
