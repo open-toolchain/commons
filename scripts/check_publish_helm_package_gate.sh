@@ -16,15 +16,13 @@ echo "CHART_PATH=${CHART_PATH}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
-echo -e "POLICY_NAME: ${POLICY_NAME}"
+echo "POLICY_NAME: ${POLICY_NAME}"
 env
 ls -l 
 
 # Install DRA CLI
 export PATH=/opt/IBM/node-v4.2/bin:$PATH
 npm install -g grunt-idra3
-
-echo -e "Checking gate for component: ${INSIGHT_CONFIG}"
 
 #export LOGICAL_APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep LOGICAL_APP_NAME | cut -d'=' -f2 )
 #export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
