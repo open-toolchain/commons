@@ -14,7 +14,6 @@
 
 echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 
 #env
@@ -35,7 +34,6 @@ echo "GIT_URL=${GIT_URL}" >> $ARCHIVE_DIR/build.properties
 echo "GIT_COMMIT=${GIT_COMMIT}" >> $ARCHIVE_DIR/build.properties
 echo "GIT_USER=${GIT_USER}" >> $ARCHIVE_DIR/build.properties
 echo "GIT_PASSWORD=${GIT_PASSWORD}" >> $ARCHIVE_DIR/build.properties
-#echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
-echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $ARCHIVE_DIR/build.properties
+echo "FETCH_BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
 
 cat $ARCHIVE_DIR/build.properties

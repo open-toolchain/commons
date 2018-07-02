@@ -1,12 +1,12 @@
 #!/bin/bash
 # uncomment to debug the script
 #set -x
-# copy the script below into your app code repo (e.g. ./scripts/check_publish_helm_package_gate.sh) and 'source' it from your pipeline job
-#    source ./scripts/check_publish_helm_package_gate.sh
+# copy the script below into your app code repo (e.g. ./scripts/check_publish_gate_component_helm_chart.sh) and 'source' it from your pipeline job
+#    source ./scripts/check_publish_gate_component_helm_chart.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_publish_helm_package_gate.sh")
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_publish_gate_component_helm_chart.sh")
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_publish_helm_package_gate.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_publish_gate_component_helm_chart.sh
 
 # This script does test quality gates for all components in an umbrella chart which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_umbrella_gate.sh)
 
@@ -15,7 +15,7 @@ echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "CHART_PATH=${CHART_PATH}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
-echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
+echo "FETCH_BUILD_NUMBER=${FETCH_BUILD_NUMBER}"
 echo "POLICY_NAME: ${POLICY_NAME}"
 env
 ls -l 
@@ -31,7 +31,7 @@ npm install -g grunt-idra3
 
 echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
 echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
-echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
+echo -e "PIPELINE_STAGE_INPUT_REV: ${FETCH_BUILD_NUMBER}"
 echo -e "POLICY_NAME: ${POLICY_NAME}"
 
 # get the decision
