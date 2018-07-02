@@ -1,12 +1,12 @@
 #!/bin/bash
 # uncomment to debug the script
 #set -x
-# copy the script below into your app code repo (e.g. ./scripts/publish_helm_package.sh) and 'source' it from your pipeline job
-#    source ./scripts/publish_helm_package.sh
+# copy the script below into your app code repo (e.g. ./scripts/publish_umbrella_helm_chart.sh) and 'source' it from your pipeline job
+#    source ./scripts/publish_umbrella_helm_chart.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh")
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_helm_chart.sh")
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_helm_chart.sh
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "GIT_URL=${SOURCE_GIT_URL}"
 echo "GIT_COMMIT=${SOURCE_GIT_COMMIT}"
@@ -98,7 +98,7 @@ do
   echo "Pushing commit"
   git add .
   git status
-  git commit -m "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${GIT_URL} commit: ${GIT_COMMIT}"
+  git commit -m "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${GIT_URL%".git"}/commit/${GIT_COMMIT}"
   if git push ; then
     COMMIT_STATUS=OK
     break
@@ -111,6 +111,6 @@ done
 [[ $COMMIT_STATUS == "OK" ]] || { echo "ERROR: Unable to commit the packaged Helm chart, please check the log and try again."; exit 1; }
 
 echo "SUCCESS: Committed packaged component to umbrella repo"
-echo "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${GIT_URL} commit: ${GIT_COMMIT}"
+echo "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${GIT_URL%".git"}/commit/${GIT_COMMIT}"
 echo "Umbrella repo commit:"
 git ls-remote

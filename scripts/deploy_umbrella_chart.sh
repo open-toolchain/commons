@@ -48,6 +48,8 @@ helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set glo
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
 helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set global.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
 
+source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/wait_deploy_umbrella.sh")
+
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
