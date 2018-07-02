@@ -15,7 +15,7 @@ echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "CHART_PATH=${CHART_PATH}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
-echo "FETCH_BUILD_NUMBER=${FETCH_BUILD_NUMBER}"
+echo "GIT_BUILD_NUMBER=${GIT_BUILD_NUMBER}"
 echo "POLICY_NAME: ${POLICY_NAME}"
 env
 ls -l 
@@ -29,9 +29,12 @@ npm install -g grunt-idra3
 #export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
 #POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${LOGICAL_APP_NAME} ${LOGICAL_ENV_NAME} )
 
+# Evaluate the gate against the version matching the git commit
+export PIPELINE_STAGE_INPUT_REV=${GIT_BUILD_NUMBER}
+
 echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
 echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
-echo -e "PIPELINE_STAGE_INPUT_REV: ${FETCH_BUILD_NUMBER}"
+echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
 echo -e "POLICY_NAME: ${POLICY_NAME}"
 
 # get the decision
