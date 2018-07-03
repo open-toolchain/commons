@@ -10,7 +10,6 @@
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "CHART_PATH=${CHART_PATH}"
 
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties
@@ -72,7 +71,7 @@ do
 done
 echo "=========================================================="
 echo -e "Expected number of replicas:"
-COMPONENTS_AND_REPLICAS=$( grep -r "replicas:" temp_charts/*/values.yaml | awk '{if ( $NF ~ /[0-9]/ ) { n=split($1,a,"/"); print a[n-1] ":" $NF; }}' )
+COMPONENTS_AND_REPLICAS=$( grep -r "replicaCount:" temp_charts/*/values.yaml | awk '{if ( $NF ~ /[0-9]/ ) { n=split($1,a,"/"); print a[n-1] ":" $NF; }}' )
 echo -e "${COMPONENTS_AND_REPLICAS}"
 echo "=========================================================="
 MAX=${WAIT_FOR_DEPLOY_MAX:-30}
