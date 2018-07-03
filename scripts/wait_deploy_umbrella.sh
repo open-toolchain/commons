@@ -1,9 +1,36 @@
 #!/bin/bash
+# uncomment to debug the script
+#set -x
+# copy the script below into your app code repo (e.g. ./scripts/wait_deploy_umbrella.sh) and 'source' it from your pipeline job
+#    source ./scripts/wait_deploy_umbrella.sh
+# alternatively, you can source it from online script:
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/wait_deploy_umbrella.sh")
+# ------------------
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/wait_deploy_umbrella.sh
+# Input env variables (can be received via a pipeline environment properties.file.
+echo "CHART_PATH=${CHART_PATH}"
+
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
+# also run 'env' command to find all available env variables
+# or learn more about the available environment variables at:
+# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+
+# Input env variables from pipeline job
+echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
+echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+
+# Infer CHART_NAME from path to chart (last segment per construction for valid charts)
+CHART_NAME=$(basename $CHART_PATH)
+
 echo "=========================================================="
 echo "Required env vars:"
-echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
-echo "NAMESPACE=${NAMESPACE}"
-if [ -z "$PIPELINE_KUBERNETES_CLUSTER_NAME" ] || [ -z "$NAMESPACE" ]; then
+if [ -z "$PIPELINE_KUBERNETES_CLUSTER_NAME" ] || [ -z "$CLUSTER_NAMESPACE" ]; then
   echo "One of the required env vars is missing"
   exit -1
 fi
@@ -58,8 +85,8 @@ do
     echo -e ""
     STATUS=DONE
     NOT_READY_COMPONENTS=
-    echo -e "Retrieving pods in namespace ${NAMESPACE}"
-    ALL_PODS=$( kubectl get pods --namespace ${NAMESPACE} -o json )
+    echo -e "Retrieving pods in namespace ${CLUSTER_NAMESPACE}"
+    ALL_PODS=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
     for COMPONENT_REPO_TAG in ${COMPONENTS_REPOS_TAGS}
     do
         IFS=':' read COMPONENT_NAME IMAGE_REPOSITORY IMAGE_TAG <<< $COMPONENT_REPO_TAG
@@ -125,14 +152,14 @@ if [[ "$STATUS" != "DONE" ]]; then
   echo "Not ready services:"
   for NOT_READY in ${NOT_READY_COMPONENTS}
   do
-    kubectl describe services ${NOT_READY} --namespace ${NAMESPACE}
+    kubectl describe services ${NOT_READY} --namespace ${CLUSTER_NAMESPACE}
     echo " "
   done
   echo "----------------------------------------------------------"
   echo "Not ready pods:"
   for NOT_READY in ${NOT_READY_COMPONENTS}
   do
-    kubectl describe pods ${NOT_READY} --namespace ${NAMESPACE}
+    kubectl describe pods ${NOT_READY} --namespace ${CLUSTER_NAMESPACE}
     echo " "
   done
   echo "=========================================================="
