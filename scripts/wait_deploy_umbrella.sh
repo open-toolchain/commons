@@ -22,7 +22,6 @@ fi
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # Input env variables from pipeline job
-echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 # Infer CHART_NAME from path to chart (last segment per construction for valid charts)
@@ -30,19 +29,16 @@ CHART_NAME=$(basename $CHART_PATH)
 
 echo "=========================================================="
 echo "Required env vars:"
-if [ -z "$PIPELINE_KUBERNETES_CLUSTER_NAME" ] || [ -z "$CLUSTER_NAMESPACE" ]; then
+if [ -z "$CLUSTER_NAMESPACE" ]; then
   echo "One of the required env vars is missing"
   exit -1
 fi
-echo "ls -l $PIPELINE_KUBERNETES_CLUSTER_NAME/charts"
-ls -l $PIPELINE_KUBERNETES_CLUSTER_NAME/charts
-echo "=========================================================="
+ls -al charts
 
-echo ""
 echo "=========================================================="
 echo -e "Extracting component charts"
 mkdir -p temp_charts
-for tarfile in $PIPELINE_KUBERNETES_CLUSTER_NAME/charts/*.tgz ; do
+for tarfile in charts/*.tgz ; do
     echo $tarfile
     tar -xf $tarfile -C temp_charts/
 done
