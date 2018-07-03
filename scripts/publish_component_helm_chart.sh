@@ -17,7 +17,7 @@ echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
+echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 # Insights variables
@@ -77,6 +77,8 @@ echo "Capture Insights matching config"
 mkdir -p ./.publish/insights
 INSIGHTS_FILE=./.publish/insights/${CHART_NAME}-${VERSION}
 rm -f INSIGHTS_FILE # override if already exists
+# Evaluate the gate against the version matching the git commit
+PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
 echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $INSIGHTS_FILE
