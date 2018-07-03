@@ -10,13 +10,18 @@
 
 # This script does build a complete umbrella chart with resolved dependencies, leveraging a sibling local chart repo (/charts)
 # which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh)
-
-echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 echo "CHART_NAME=${CHART_NAME}"
 
-#env
+# View build properties
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment

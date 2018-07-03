@@ -20,8 +20,14 @@ echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 
-#View build properties
-# cat build.properties
+# View build properties
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment

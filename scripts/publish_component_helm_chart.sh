@@ -14,6 +14,7 @@ echo "GIT_USER=${SOURCE_GIT_USER}"
 echo "GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
 echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
 echo "CHART_PATH=${CHART_PATH}"
+echo "CHART_NAME=${CHART_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
@@ -24,8 +25,14 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 
-#View build properties
-# cat build.properties
+# View build properties
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
@@ -94,6 +101,9 @@ do
   ls -al
   echo "Inject component chart"
   mkdir -p ./${UMBRELLA_REPO_NAME}/charts
+  echo "Remove previous component data"
+  rm -rf ./${UMBRELLA_REPO_NAME}/charts/${CHART_NAME}.*
+  rm -rf ./${UMBRELLA_REPO_NAME}/insights/${CHART_NAME}.*
   cp -r ../.publish/. .
   echo "Updating charts index"
   helm repo index ./charts --url "${UMBRELLA_REPO_URL}/raw/master/charts"

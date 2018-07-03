@@ -9,13 +9,22 @@
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_umbrella_gate.sh
 
 # This script does test quality gates for all components in an umbrella chart which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_umbrella_gate.sh)
-
-echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "CHART_PATH=${CHART_PATH}"
 
+# View build properties
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
+
+# List files available
 ls -l 
-# copy latest version of each component insights config
+
+# Copy latest version of each component insights config
 if [[ ! -d ./insights ]]; then
   echo "Cannot find Insights config information in /insights folder"
   exit 1

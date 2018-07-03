@@ -10,14 +10,21 @@
 
 # This script does build a Docker image into IBM Container Service private image registry, and copies information into
 # a build.properties file, so they can be reused later on by other scripts (e.g. image url, chart name, ...)
-
-echo "Build environment variables:"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 echo "GIT_COMMIT=${GIT_COMMIT}"
+
+# View build properties
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
@@ -32,7 +39,7 @@ TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
 IMAGE_TAG=${BUILD_NUMBER}-${TIMESTAMP}
 if [ ! -z ${GIT_COMMIT} ]; then
   GIT_COMMIT_SHORT=$( echo ${GIT_COMMIT} | head -c 8 ) 
-  IMAGE_TAG=${IMAGE_TAG}-${GIT_COMMIT_SHORT}; 
+  IMAGE_TAG=${IMAGE_TAG}.${GIT_COMMIT_SHORT}; 
 fi
 echo "=========================================================="
 echo -e "BUILDING CONTAINER IMAGE: ${IMAGE_NAME}:${IMAGE_TAG}"

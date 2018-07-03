@@ -9,15 +9,23 @@
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_publish_gate_component_helm_chart.sh
 
 # This script does test quality gates for all components in an umbrella chart which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_umbrella_gate.sh)
-
-echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "CHART_PATH=${CHART_PATH}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "POLICY_NAME: ${POLICY_NAME}"
-env
+
+# View build properties
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
+
+# List files available
 ls -l 
 
 # Install DRA CLI

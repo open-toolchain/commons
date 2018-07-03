@@ -11,8 +11,6 @@
 # This script does perform an entire fetch of associated git repo, and copies it into archive_dir output
 # along with git credentials stored in build.properties, so as a consuming job could leverage these to repost
 # to same or another git repo.
-
-echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 

@@ -7,12 +7,20 @@
 #    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_prebuild.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_prebuild.sh
-echo "Build environment variables:"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
+
+# View build properties
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
