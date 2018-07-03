@@ -70,7 +70,7 @@ echo -e "VERSION:${VERSION}"
 #sed -i "s~^\([[:blank:]]*\)version:.*$~\version: ${VERSION}~" ${CHART_PATH}/Chart.yaml
 echo -e "Injecting pipeline build values into ${CHART_PATH}/values.yaml"
 sed -i "s~^\([[:blank:]]*\)repository:.*$~\1repository: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}~" ${CHART_PATH}/values.yaml
-sed -i "s~^\([[:blank:]]*\)tag:.*$~\1tag: ${BUILD_NUMBER}~" ${CHART_PATH}/values.yaml
+sed -i "s~^\([[:blank:]]*\)tag:.*$~\1tag: ${IMAGE_TAG}~" ${CHART_PATH}/values.yaml
 # TODO: revisit above after https://github.com/kubernetes/helm/issues/3141
 echo "Linting injected Helm chart"
 helm init --client-only
