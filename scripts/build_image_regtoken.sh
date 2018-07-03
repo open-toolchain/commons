@@ -35,10 +35,10 @@ echo -e "Existing images in registry"
 bx cr images --restrict ${REGISTRY_NAMESPACE}
 
 TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
-IMAGE_TAG=${BUILD_NUMBER}-${TIMESTAMP}
+IMAGE_TAG=${BUILD_NUMBER}.${TIMESTAMP}
 if [ ! -z ${GIT_COMMIT} ]; then
   GIT_COMMIT_SHORT=$( echo ${GIT_COMMIT} | head -c 8 ) 
-  IMAGE_TAG=${IMAGE_TAG}.${GIT_COMMIT_SHORT}; 
+  IMAGE_TAG=${IMAGE_TAG}-${GIT_COMMIT_SHORT}; 
 fi
 echo "=========================================================="
 echo -e "Building container image: ${IMAGE_NAME}:${IMAGE_TAG}"
