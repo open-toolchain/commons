@@ -101,10 +101,10 @@ fi
 echo "=========================================================="
 echo "CONFIGURING TILLER enabled (Helm server-side component)"
 helm version
-helm init --upgrade
+helm init --upgrade --force-upgrade
 kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
 # TODO: once helm version >=2.8.2 replace above 2 lines with
-# helm init --upgrade --wait
+# helm init --upgrade --force-upgrade --wait
 
 helm version
 
