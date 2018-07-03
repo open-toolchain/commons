@@ -15,7 +15,6 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 echo "CHART_NAME=${CHART_NAME}"
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties

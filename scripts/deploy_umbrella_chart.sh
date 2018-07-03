@@ -15,7 +15,6 @@ echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
 
-# View build properties
 echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"

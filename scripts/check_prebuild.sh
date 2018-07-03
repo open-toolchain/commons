@@ -14,7 +14,6 @@ echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties

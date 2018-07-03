@@ -24,9 +24,7 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 
-
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties

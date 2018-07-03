@@ -13,7 +13,6 @@ echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "CHART_PATH=${CHART_PATH}"
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties

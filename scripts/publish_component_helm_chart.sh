@@ -26,7 +26,6 @@ echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties
@@ -99,11 +98,13 @@ do
   git clone ${UMBRELLA_ACCESS_REPO_URL}
   cd ${UMBRELLA_REPO_NAME}
   ls -al
-  echo "Inject component chart"
-  mkdir -p ./${UMBRELLA_REPO_NAME}/charts
   echo "Remove previous component data"
-  rm -rf ./${UMBRELLA_REPO_NAME}/charts/${CHART_NAME}.*
-  rm -rf ./${UMBRELLA_REPO_NAME}/insights/${CHART_NAME}.*
+  ls -al
+  rm -rf charts/${CHART_NAME}-*
+  ls -al
+  rm -rf insights/${CHART_NAME}-*
+  echo "Inject component chart"
+  mkdir -p charts
   cp -r ../.publish/. .
   echo "Updating charts index"
   helm repo index ./charts --url "${UMBRELLA_REPO_URL}/raw/master/charts"

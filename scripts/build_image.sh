@@ -18,7 +18,6 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 echo "GIT_COMMIT=${GIT_COMMIT}"
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties

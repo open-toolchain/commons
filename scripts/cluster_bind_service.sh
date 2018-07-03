@@ -12,7 +12,6 @@
 # This script should be executed in a Kubernetes deploy job.
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties

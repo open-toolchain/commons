@@ -17,7 +17,6 @@ echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "POLICY_NAME: ${POLICY_NAME}"
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties

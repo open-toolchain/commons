@@ -22,7 +22,6 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties

@@ -18,7 +18,6 @@ echo "TARGET_ORG_NAME=${TARGET_ORG_NAME}"
 echo "TIMESTAMP=${TIMESTAMP}"
 
 # View build properties
-echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
   cat build.properties
