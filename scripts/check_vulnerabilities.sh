@@ -44,7 +44,7 @@ do
   set +e
   STATUS=$( bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status' )
   set -e
-  if [[ ${STATUS} == "OK" || ${STATUS} == "FAILED" ]]; then
+  if [[ ${STATUS} == "OK" || ${STATUS} == *"FAIL"* ]]; then
     break
   fi
   echo -e "${ITER} STATUS ${STATUS} : A vulnerability report was not found for the specified image."
