@@ -41,7 +41,7 @@ echo "CONFIGURING UMBRELLA CHART REPO"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
 echo "#######################"
 echo "#######################"
-echo $TOOLCHAIN_JSON | jq
+echo $TOOLCHAIN_JSON | jq .
 echo "#######################"
 echo "#######################"
 

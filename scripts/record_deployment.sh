@@ -213,7 +213,7 @@ curl -X POST \
 
  #########################################
 
- #!/bin/bash
+#!/bin/bash
 
 # Extract the related GIT var from build.properties
 while read -r line ; do
