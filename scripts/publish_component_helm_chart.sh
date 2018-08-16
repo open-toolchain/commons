@@ -39,6 +39,7 @@ fi
 echo "=========================================================="
 echo "CONFIGURING UMBRELLA CHART REPO"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
+cat _toolchain.json
 if [ -f _toolchain.json ]; then
   UMBRELLA_REPO_URL=$( cat _toolchain.json | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 else if [ -z ${TOOLCHAIN_TOKEN} ]; then
