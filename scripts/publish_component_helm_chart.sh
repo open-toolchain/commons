@@ -39,7 +39,7 @@ fi
 echo "=========================================================="
 echo "CONFIGURING UMBRELLA CHART REPO"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
-if [ -f _toolchain.json} ]; then
+if [ -f _toolchain.json ]; then
   UMBRELLA_REPO_URL=$( cat _toolchain.json | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 else if [ -z ${TOOLCHAIN_TOKEN} ]; then
   TOOLCHAIN_SERVICES=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
