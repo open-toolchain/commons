@@ -10,12 +10,18 @@
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "CHART_NAME=${CHART_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
+echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 
-#View build properties
-# cat build.properties
+# View build properties
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
@@ -40,10 +46,10 @@ IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_U
 
 # Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
 echo -e "Dry run into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade --install --debug --dry-run ${RELEASE_NAME} ./chart/${CHART_NAME} --set image.repository=${IMAGE_REPOSITORY},image.tag=${BUILD_NUMBER},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade --install --debug --dry-run ${RELEASE_NAME} ./chart/${CHART_NAME} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
 
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade  --install ${RELEASE_NAME} ./chart/${CHART_NAME} --set image.repository=${IMAGE_REPOSITORY},image.tag=${BUILD_NUMBER},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade  --install ${RELEASE_NAME} ./chart/${CHART_NAME} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
 
 # Install jq tool
 WORKING_DIR=$(pwd)
@@ -53,18 +59,18 @@ export PATH=$(pwd):$PATH
 cd $WORKING_DIR
 
 echo "=========================================================="
-echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${BUILD_NUMBER}"
+echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
 echo ""
 for ITERATION in {1..30}
 do
   DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -a -l release=${RELEASE_NAME} -o json )
-  NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${BUILD_NUMBER}"'") | select(.ready==false) ' )
+  NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
-    echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${BUILD_NUMBER}"'") | select(.ready==true) '
+    echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==true) '
     break # deployment succeeded
   fi
-  REASON=$(echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${BUILD_NUMBER}"'") | .state.waiting.reason')
+  REASON=$(echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .state.waiting.reason')
   echo -e "${ITERATION} : Deployment still pending..."
   echo -e "NOT_READY:${NOT_READY}"
   echo -e "REASON: ${REASON}"

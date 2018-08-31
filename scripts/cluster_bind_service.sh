@@ -11,8 +11,13 @@
 # This script does bind a given IBM Cloud Service identified by its SERVICE_ID to a cluster (via secret).
 # This script should be executed in a Kubernetes deploy job.
 
-#View build properties
-# cat build.properties
+# View build properties
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment

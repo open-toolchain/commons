@@ -14,12 +14,20 @@
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "CHART_NAME=${CHART_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
+echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
-#View build properties
-# cat build.properties
+
+# View build properties
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
@@ -92,7 +100,7 @@ fi
 
 echo "=========================================================="
 echo "CONFIGURING TILLER enabled (Helm server-side component)"
-helm init --upgrade
+helm init --upgrade --force-upgrade
 kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
 helm version
 

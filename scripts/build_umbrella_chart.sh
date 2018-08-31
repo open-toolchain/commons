@@ -10,13 +10,17 @@
 
 # This script does build a complete umbrella chart with resolved dependencies, leveraging a sibling local chart repo (/charts)
 # which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh)
-
-echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 echo "CHART_NAME=${CHART_NAME}"
 
-#env
+# View build properties
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
@@ -34,6 +38,24 @@ helm init --client-only
 
 CHART_NAME=umbrella-chart
 CHART_PATH=./${CHART_NAME}
+
+# Compute chart version number
+TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
+REVISION_INFO=${BUILD_NUMBER}-${TIMESTAMP}
+if [ ! -z ${GIT_COMMIT} ]; then
+  GIT_COMMIT_SHORT=$( echo ${GIT_COMMIT} | head -c 8 ) 
+  REVISION_INFO=${IMAGE_TAG}-${GIT_COMMIT_SHORT}; 
+fi
+
+CHART_VERSION=$(cat ${CHART_PATH}/Chart.yaml | grep '^version:' | awk '{print $2}')
+MAJOR=`echo ${CHART_VERSION} | cut -d. -f1`
+MINOR=`echo ${CHART_VERSION} | cut -d. -f2`
+REVISION=`echo ${CHART_VERSION} | cut -d. -f3`
+if [ -z ${MAJOR} ]; then MAJOR=0; fi
+if [ -z ${MINOR} ]; then MINOR=0; fi
+if [ -z ${REVISION} ]; then REVISION=${REVISION_INFO}; else REVISION=${REVISION}.${REVISION_INFO}; fi
+VERSION="${MAJOR}.${MINOR}.${REVISION}"
+echo -e "VERSION:${VERSION}"
 
 # regenerate index to use local file path
 #helm repo index ./charts --url "file://../charts"
@@ -82,7 +104,7 @@ echo "CHART_PATH=${CHART_PATH}" >> $ARCHIVE_DIR/build.properties
 echo "CHART_NAME=${CHART_NAME}" >> $ARCHIVE_DIR/build.properties
 # IMAGE information from build.properties is used in Helm Chart deployment to set the release name
 echo "IMAGE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties
-echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $ARCHIVE_DIR/build.properties
 # REGISTRY information from build.properties is used in Helm Chart deployment to generate cluster secret
 echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties

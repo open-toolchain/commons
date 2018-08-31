@@ -8,30 +8,22 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/record_deployment.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "SOURCE_GIT_URL=${SOURCE_GIT_URL}"
-echo "SOURCE_GIT_BRANCH=${SOURCE_GIT_BRANCH}"
-echo "SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT}"
+echo "GIT_URL=${GIT_URL}"
+echo "GIT_BRANCH=${GIT_BRANCH}"
+echo "GIT_COMMIT=${GIT_COMMIT}"
 echo "TIMESTAMP=${TIMESTAMP}"
 echo "TARGET_REGION_ID=${TARGET_REGION_ID}"
 echo "TARGET_REGION_NAME=${TARGET_REGION_NAME}"
 echo "TARGET_ORG_NAME=${TARGET_ORG_NAME}"
 echo "TIMESTAMP=${TIMESTAMP}"
 
-# echo "SOURCE_GIT_USER=${SOURCE_GIT_USER}"
-# echo "SOURCE_GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
-# echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
-# echo "CHART_PATH=${CHART_PATH}"
-# echo "IMAGE_NAME=${IMAGE_NAME}"
-# echo "BUILD_NUMBER=${BUILD_NUMBER}"
-# echo "REGISTRY_URL=${REGISTRY_URL}"
-# echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
-# Insights variables
-# echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
-# echo "BUILD_PREFIX=${BUILD_PREFIX}"
-# echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
-
-#View build properties
-# cat build.properties
+# View build properties
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
@@ -39,8 +31,11 @@ echo "TIMESTAMP=${TIMESTAMP}"
 echo "=========================================================="
 echo "FETCHING UMBRELLA repo"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
-TOOLCHAIN_SERVICES=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
-UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_SERVICES} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
+if [ -z ${TOOLCHAIN_JSON} ]; then
+  echo "### TODO remove this once TOOLCHAIN_JSON publicly available"
+  TOOLCHAIN_JSON=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
+fi
+UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_JSON} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL%".git"} #remove trailing .git if present
 # Augment URL with git user & password
 UMBRELLA_ACCESS_REPO_URL=${UMBRELLA_REPO_URL:0:8}${SOURCE_GIT_USER}:${SOURCE_GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
@@ -218,3 +213,79 @@ curl -X POST \
 #     }
 # } 
  
+
+ #########################################
+
+#!/bin/bash
+
+# Extract the related GIT var from build.properties
+while read -r line ; do
+    echo "Processing $line"
+    eval "export $line"
+done < <(grep GIT build.properties)
+
+# If creating a deployable mapping of type non app, ui is failing/showing internal error
+deploymapping_template=$(cat <<'EOT'
+{
+    "deployable": {
+        "deployable_guid": "%s",
+        "type": "app",
+        "region_id": "%s",
+        "organization_guid": "%s"
+    },
+    "toolchain": {
+        "toolchain_guid": "%s",
+        "region_id": "%s"
+    },
+    "source": {
+        "type": "service_instance",
+        "source_guid": "%s"
+    },
+    "experimental": {
+        "inputs": [{
+            "service_instance_id": "%s",
+            "data": {
+                "repo_url": "%s",
+                "repo_branch": "%s",
+                "timestamp": "%s",
+                "revision_url": "%s"
+            }
+        }],
+        "env": {
+            "label": "%s:%s"
+        }
+    }
+}
+EOT
+)
+
+echo -e "Create the deployable mapping payload"
+printf "$deploymapping_template" "$TARGET_DEPLOYABLE_GUID" "$TARGET_REGION_ID" "$PIPELINE_ORGANIZATION_ID" \
+  "${PIPELINE_TOOLCHAIN_ID}" "$TARGET_REGION_ID" \
+  "${PIPELINE_ID}" \
+  "${GIT_REPO_SERVICE_ID}" "${SOURCE_GIT_URL}" "${SOURCE_GIT_BRANCH}" "${SOURCE_GIT_REVISION_TIMESTAMP}" "$SOURCE_GIT_REVISION_URL" \
+  "${PIPELINE_KUBERNETES_CLUSTER_NAME}" "${CLUSTER_NAMESPACE}" > deployable_mapping.json
+
+echo -e "Identify the HTTP verb to use"
+EXISTING_DEPLOYABLE_MAPPINGS=$(curl -H "Authorization: ${TOOLCHAIN_TOKEN}" "${PIPELINE_API_URL%/pipeline}/toolchain_deployable_mappings?toolchain_guid=${PIPELINE_TOOLCHAIN_ID}")
+MAPPING_GUID=$(echo $EXISTING_DEPLOYABLE_MAPPINGS | jq --arg DEPLOYABLE_GUID "$TARGET_DEPLOYABLE_GUID" -r '.items[] | select(.deployable.deployable_guid==$DEPLOYABLE_GUID) | .mapping_guid');
+
+echo "MAPPING_GUID=$MAPPING_GUID"
+
+if [ -z "$MAPPING_GUID" ]; then
+   HTTP_VERB="POST"
+else 
+   HTTP_VERB="PUT"
+   COMPLEMENTARY_PATH="/${MAPPING_GUID}"
+fi
+
+echo -e "$HTTP_VERB ${PIPELINE_API_URL%/pipeline}/toolchain_deployable_mappings${COMPLEMENTARY_PATH}"
+cat deployable_mapping.json
+
+curl -X $HTTP_VERB \
+  "${PIPELINE_API_URL%/pipeline}/toolchain_deployable_mappings${COMPLEMENTARY_PATH}" \
+  -is \
+  -H "Authorization: ${TOOLCHAIN_TOKEN}" \
+  -H "cache-control: no-cache" \
+  -H "content-type: application/json; charset=utf-8" \
+  -d @deployable_mapping.json

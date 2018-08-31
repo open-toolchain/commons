@@ -11,8 +11,6 @@
 # This script does perform an entire fetch of associated git repo, and copies it into archive_dir output
 # along with git credentials stored in build.properties, so as a consuming job could leverage these to repost
 # to same or another git repo.
-
-echo "Build environment variables:"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 
@@ -30,10 +28,10 @@ GIT_USER=$( echo ${GIT_REMOTE_URL} | cut -d/ -f3 | cut -d: -f1 )
 GIT_PASSWORD=$( echo ${GIT_REMOTE_URL} | cut -d: -f3 | cut -d@ -f1 )
 
 mkdir -p $ARCHIVE_DIR
-echo "SOURCE_GIT_URL=${GIT_URL}" >> $ARCHIVE_DIR/build.properties
-echo "SOURCE_GIT_COMMIT=${GIT_COMMIT}" >> $ARCHIVE_DIR/build.properties
-echo "SOURCE_GIT_USER=${GIT_USER}" >> $ARCHIVE_DIR/build.properties
-echo "SOURCE_GIT_PASSWORD=${GIT_PASSWORD}" >> $ARCHIVE_DIR/build.properties
-echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
+echo "GIT_URL=${GIT_URL}" >> $ARCHIVE_DIR/build.properties
+echo "GIT_COMMIT=${GIT_COMMIT}" >> $ARCHIVE_DIR/build.properties
+echo "GIT_USER=${GIT_USER}" >> $ARCHIVE_DIR/build.properties
+echo "GIT_PASSWORD=${GIT_PASSWORD}" >> $ARCHIVE_DIR/build.properties
+echo "SOURCE_BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
 
 cat $ARCHIVE_DIR/build.properties

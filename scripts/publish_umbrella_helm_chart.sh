@@ -1,30 +1,36 @@
 #!/bin/bash
 # uncomment to debug the script
 #set -x
-# copy the script below into your app code repo (e.g. ./scripts/publish_helm_package.sh) and 'source' it from your pipeline job
-#    source ./scripts/publish_helm_package.sh
+# copy the script below into your app code repo (e.g. ./scripts/publish_umbrella_helm_chart.sh) and 'source' it from your pipeline job
+#    source ./scripts/publish_umbrella_helm_chart.sh
 # alternatively, you can source it from online script:
-#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh")
+#    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_helm_chart.sh")
 # ------------------
-# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh
+# source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_helm_chart.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "SOURCE_GIT_URL=${SOURCE_GIT_URL}"
-echo "SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT}"
-echo "SOURCE_GIT_USER=${SOURCE_GIT_USER}"
-echo "SOURCE_GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
+echo "GIT_URL=${SOURCE_GIT_URL}"
+echo "GIT_COMMIT=${SOURCE_GIT_COMMIT}"
+echo "GIT_USER=${SOURCE_GIT_USER}"
+echo "GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
 echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
 echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
+echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 # Insights variables
-echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 
-#View build properties
-# cat build.properties
+# View build properties
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
@@ -32,11 +38,14 @@ echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 echo "=========================================================="
 echo "CONFIGURING UMBRELLA CHART REPO"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
-TOOLCHAIN_SERVICES=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
-UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_SERVICES} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
+if [ -z ${TOOLCHAIN_JSON} ]; then
+  echo "### TODO remove this once TOOLCHAIN_JSON publicly available"
+  TOOLCHAIN_JSON=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
+fi
+UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_JSON} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL%".git"} #remove trailing .git if present
 # Augment URL with git user & password
-UMBRELLA_ACCESS_REPO_URL=${UMBRELLA_REPO_URL:0:8}${SOURCE_GIT_USER}:${SOURCE_GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
+UMBRELLA_ACCESS_REPO_URL=${UMBRELLA_REPO_URL:0:8}${GIT_USER}:${GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
 echo -e "Located umbrella repo: ${UMBRELLA_REPO_URL}, with access token: ${UMBRELLA_ACCESS_REPO_URL}"
 git config --global user.email "autobuild@not-an-email.com"
 git config --global user.name "Automatic Build: ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}"
@@ -56,7 +65,7 @@ MINOR=`echo ${CHART_VERSION} | cut -d. -f2`
 REVISION=`echo ${CHART_VERSION} | cut -d. -f3`
 if [ -z ${MAJOR} ]; then MAJOR=0; fi
 if [ -z ${MINOR} ]; then MINOR=0; fi
-if [ -z ${REVISION} ]; then REVISION=${BUILD_NUMBER}; else REVISION=${REVISION}.${BUILD_NUMBER}; fi
+if [ -z ${REVISION} ]; then REVISION=${IMAGE_TAG}; else REVISION=${REVISION}.${IMAGE_TAG}; fi
 VERSION="${MAJOR}.${MINOR}.${REVISION}"
 echo -e "VERSION:${VERSION}"
 #echo -e "Injecting pipeline build values into ${CHART_PATH}/Chart.yaml"
@@ -97,7 +106,7 @@ do
   echo "Pushing commit"
   git add .
   git status
-  git commit -m "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${SOURCE_GIT_URL} commit: ${SOURCE_GIT_COMMIT}"
+  git commit -m "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${GIT_URL%".git"}/commit/${GIT_COMMIT}"
   if git push ; then
     COMMIT_STATUS=OK
     break
@@ -110,6 +119,6 @@ done
 [[ $COMMIT_STATUS == "OK" ]] || { echo "ERROR: Unable to commit the packaged Helm chart, please check the log and try again."; exit 1; }
 
 echo "SUCCESS: Committed packaged component to umbrella repo"
-echo "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${SOURCE_GIT_URL} commit: ${SOURCE_GIT_COMMIT}"
+echo "Published chart: ${CHART_PATH}:${VERSION} from ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}. Source: ${GIT_URL%".git"}/commit/${GIT_COMMIT}"
 echo "Umbrella repo commit:"
 git ls-remote

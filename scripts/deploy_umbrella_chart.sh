@@ -11,11 +11,17 @@
 echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}" # TODO improve into RELEASE NAME
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
+echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
 
-#View build properties
-# cat build.properties
+echo "build.properties:"
+if [ -f build.properties ]; then 
+  echo "build.properties:"
+  cat build.properties
+else 
+  echo "build.properties : not found"
+fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
@@ -23,7 +29,6 @@ echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
-
 
 # Infer CHART_NAME from path to chart (last segment per construction for valid charts)
 CHART_NAME=$(basename $CHART_PATH)
@@ -47,6 +52,8 @@ helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set glo
 
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
 helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set global.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
+
+source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/next/scripts/wait_deploy_umbrella.sh")
 
 echo ""
 echo "=========================================================="
