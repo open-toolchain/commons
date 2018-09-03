@@ -66,27 +66,10 @@ fi
 echo "Checking ability to pass pull secret via Helm chart"
 CHART_PULL_SECRET=$( grep 'imagePullSecrets' ${CHART_PATH}/templates/deployment.yaml || : )
 if [ -z "$CHART_PULL_SECRET" ]; then
-  echo "WARNING: Chart is not expecting an explicit private registry imagePullSecret. Will patch the cluster default serviceAccount to pass it implicitly instead."
-  echo "Going forward, you should edit the chart to add in:"
-  echo -e "[${CHART_PATH}/templates/deployment.yaml] (under kind:Deployment)"
-  echo "    ..."
-  echo "    spec:"
-  echo "      imagePullSecrets:               #<<<<<<<<<<<<<<<<<<<<<<<<"
-  echo "        - name: {{ .Values.image.pullSecret }}   #<<<<<<<<<<<<<<<<<<<<<<<<"
-  echo "      containers:"
-  echo "        - name: {{ .Chart.Name }}"
-  echo "          image: ...
-  echo -e "[${CHART_PATH}/values.yaml]"
-  echo "or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
-  echo "or refer to: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
-  echo "    ..."
-  echo "    image:"
-  echo "repository: webapp"
-  echo "  tag: 1"
-  echo "  pullSecret: regsecret            #<<<<<<<<<<<<<<<<<<<<<<<<"
-  echo "  pullPolicy: IfNotPresent"
-  echo "    ..."
-  echo "Enabling default serviceaccount to use the pull secret"
+  echo "INFO: Chart is not expecting an explicit private registry imagePullSecret. Will patch the cluster default serviceAccount to pass it implicitly instead."
+  echo "      You can learn how to inject pull secrets into the deployment chart at: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
+  echo "      or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
+  echo "Enabling default serviceaccount for using the pull secret implicitely"
   kubectl patch -n ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets":[{"name":"'"${IMAGE_PULL_SECRET_NAME}"'"}]}'
   echo "default serviceAccount:"
   kubectl get serviceAccount default -o yaml
