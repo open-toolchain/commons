@@ -15,8 +15,6 @@
 echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
-echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 
@@ -66,9 +64,9 @@ else
   echo -e "Namespace ${CLUSTER_NAMESPACE} already has an imagePullSecret for this toolchain."
 fi
 echo "Checking ability to pass pull secret via Helm chart"
-CHART_PULL_SECRET=$( grep 'pullSecret' ${CHART_PATH}/values.yaml || : )
+CHART_PULL_SECRET=$( grep 'imagePullSecrets' ${CHART_PATH}/templates/deployment.yaml || : )
 if [ -z "$CHART_PULL_SECRET" ]; then
-  echo "WARNING: Chart is not expecting an explicit private registry imagePullSecret. Will patch the cluster default serviceAccount to pass it implicitly for now."
+  echo "WARNING: Chart is not expecting an explicit private registry imagePullSecret. Will patch the cluster default serviceAccount to pass it implicitly instead."
   echo "Going forward, you should edit the chart to add in:"
   echo -e "[${CHART_PATH}/templates/deployment.yaml] (under kind:Deployment)"
   echo "    ..."
@@ -77,16 +75,15 @@ if [ -z "$CHART_PULL_SECRET" ]; then
   echo "        - name: {{ .Values.image.pullSecret }}   #<<<<<<<<<<<<<<<<<<<<<<<<"
   echo "      containers:"
   echo "        - name: {{ .Chart.Name }}"
-  echo "          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-  echo "    ..."          
+  echo "          image: ...
   echo -e "[${CHART_PATH}/values.yaml]"
   echo "or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
-  echo "or refer to: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#create-a-pod-that-uses-your-secret"
+  echo "or refer to: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
   echo "    ..."
   echo "    image:"
   echo "repository: webapp"
   echo "  tag: 1"
-  echo "  pullSecret: regsecret            #<<<<<<<<<<<<<<<<<<<<<<<<""
+  echo "  pullSecret: regsecret            #<<<<<<<<<<<<<<<<<<<<<<<<"
   echo "  pullPolicy: IfNotPresent"
   echo "    ..."
   echo "Enabling default serviceaccount to use the pull secret"

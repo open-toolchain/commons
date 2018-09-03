@@ -12,7 +12,6 @@ echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "FETCH_BUILD_NUMBER=${FETCH_BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 
@@ -61,7 +60,7 @@ echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: $
 echo ""
 for ITERATION in {1..30}
 do
-  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -a -l release=${RELEASE_NAME} -o json )
+  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -l release=${RELEASE_NAME} -o json )
   NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
