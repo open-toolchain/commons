@@ -69,14 +69,15 @@ if [ -z "$CHART_PULL_SECRET" ]; then
   echo "INFO: Chart is not expecting an explicit private registry imagePullSecret. Patching the cluster default serviceAccount to pass it implicitly instead."
   echo "      Learn how to inject pull secrets into the deployment chart at: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
   echo "      or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
-  ACCOUNT_PULL_SECRETS=$(kubectl get serviceaccount default  -o json --namespace ${CLUSTER_NAMESPACE} | jq '.imagePullSecrets')
-  if [ -z ${ACCOUNT_PULL_SECRETS} ]; then
+  SERVICE_ACCOUNT=$(kubectl get serviceaccount default  -o json --namespace ${CLUSTER_NAMESPACE} )
+  if ! echo ${SERVICE_ACCOUNT} | jq '. | has("imagePullSecrets"); then
     kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets":[{"name":"'"${IMAGE_PULL_SECRET_NAME}"'"}]}'
   else
-    if echo ${ACCOUNT_PULL_SECRETS} | jq -e '.[] | select(.name=="'"${IMAGE_PULL_SECRET_NAME}"'")' > /dev/null; then 
+    if echo ${SERVICE_ACCOUNT} | jq -e '.imagePullSecrets[] | select(.name=="'"${IMAGE_PULL_SECRET_NAME}"'")' > /dev/null; then 
       echo -e "Pull secret already found in default serviceAccount"
     else
       echo "Inserting toolchain pull secret into default serviceAccount"
+      ACCOUNT_PULL_SECRETS=$(echo ${SERVICE_ACCOUNT} | jq '.imagePullSecrets')
       MERGED_PULL_SECRETS=$(echo ${ACCOUNT_PULL_SECRETS} '[{ "name": "'"${IMAGE_PULL_SECRET_NAME}"'"}]' | jq -s '[.[][]]')
       kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets": '"${MERGED_PULL_SECRETS}"'}'
     fi
