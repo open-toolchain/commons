@@ -64,7 +64,7 @@ else
   echo -e "Namespace ${CLUSTER_NAMESPACE} already has an imagePullSecret for this toolchain."
 fi
 echo "Checking ability to pass pull secret via Helm chart"
-CHART_PULL_SECRET=$(grep 'imagePullSecrets' ${CHART_PATH}/templates/deployment.yaml ||:)
+CHART_PULL_SECRET=$( grep 'pullSecret' ${CHART_PATH}/values.yaml || : )
 if [ -z "$CHART_PULL_SECRET" ]; then
   echo "INFO: Chart is not expecting an explicit private registry imagePullSecret. Patching the cluster default serviceAccount to pass it implicitly instead."
   echo "      Learn how to inject pull secrets into the deployment chart at: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
