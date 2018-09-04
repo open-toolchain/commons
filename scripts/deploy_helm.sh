@@ -60,7 +60,7 @@ echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: $
 echo ""
 for ITERATION in {1..30}
 do
-  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -l release=${RELEASE_NAME} -o json )
+  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
   NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
