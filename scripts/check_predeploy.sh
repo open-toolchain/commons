@@ -66,24 +66,25 @@ fi
 echo "Checking ability to pass pull secret via Helm chart"
 CHART_PULL_SECRET=$( grep 'imagePullSecrets' ${CHART_PATH}/templates/deployment.yaml || : )
 if [ -z "$CHART_PULL_SECRET" ]; then
-  if kubectl get serviceAccount default  -o json -n baz | jq -e '.imagePullSecrets[] | select(.name=="'"${IMAGE_PULL_SECRET_NAME}"'") | .name ' > null ; then 
-    echo "INFO: Chart is not expecting an explicit private registry imagePullSecret. Patching the cluster default serviceAccount to pass it implicitly instead."
-    echo "      Learn how to inject pull secrets into the deployment chart at: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
-    echo "      or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
-    echo "Enabling default serviceaccount for using the pull secret implicitely"
-    EXISTING_PULL_SECRETS=$(kubectl get serviceAccount default  -o json --namespace ${CLUSTER_NAMESPACE} | jq '.imagePullSecrets')
-    if [ -z ${EXISTING_PULL_SECRETS} ]; then
-      kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets":[{"name":"'"${IMAGE_PULL_SECRET_NAME}"'"}]}'
-    else
-      MERGED_PULL_SECRETS=$(echo ${EXISTING_PULL_SECRETS} '[{ "name": "'"${IMAGE_PULL_SECRET_NAME}"'"}]' | jq -s '[.[][]]')
-      kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets": '"${MERGED_PULL_SECRETS}"'}'
-    fi
+  echo "INFO: Chart is not expecting an explicit private registry imagePullSecret. Patching the cluster default serviceAccount to pass it implicitly instead."
+  echo "      Learn how to inject pull secrets into the deployment chart at: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
+  echo "      or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
+  ACCOUNT_PULL_SECRETS=$(kubectl get serviceaccount default  -o json --namespace ${CLUSTER_NAMESPACE} | jq '.imagePullSecrets')
+  if [ -z ${ACCOUNT_PULL_SECRETS} ]; then
+    kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets":[{"name":"'"${IMAGE_PULL_SECRET_NAME}"'"}]}'
+  else
+    if echo ${ACCOUNT_PULL_SECRETS} | jq -e '.[] | select(.name=="'"${IMAGE_PULL_SECRET_NAME}"'")' > /dev/null; then 
+    echo -e "Pull secret already found in default serviceAccount"
+  else
+    echo "Inserting toolchain pull secret into default serviceAccount"
+    MERGED_PULL_SECRETS=$(echo ${ACCOUNT_PULL_SECRETS} '[{ "name": "'"${IMAGE_PULL_SECRET_NAME}"'"}]' | jq -s '[.[][]]')
+    kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets": '"${MERGED_PULL_SECRETS}"'}'
   fi
   echo "default serviceAccount:"
-  kubectl get serviceAccount default --namespace ${CLUSTER_NAMESPACE} -o yaml
+  kubectl get serviceaccount default --namespace ${CLUSTER_NAMESPACE} -o yaml
   echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry using patched default serviceAccount"
 else
-  echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry using Helm chart imagePullSecret"
+  echo -e "Namespace ${CLUSTER_NAMESPACE} authorized with private image registry using Helm chart imagePullSecret"
 fi
 
 echo "=========================================================="
