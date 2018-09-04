@@ -75,7 +75,7 @@ if [ -z "$CHART_PULL_SECRET" ]; then
     if [ -z ${EXISTING_PULL_SECRETS} ]; then
       kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets":[{"name":"'"${IMAGE_PULL_SECRET_NAME}"'"}]}'
     else
-      MERGED_PULL_SECRETS=$(echo ${EXISTING_PULL_SECRETS} '[{ "name": "'"${IMAGE_PULL_SECRET_NAME}"'"}]' | jq -s '[.[][]]'
+      MERGED_PULL_SECRETS=$(echo ${EXISTING_PULL_SECRETS} '[{ "name": "'"${IMAGE_PULL_SECRET_NAME}"'"}]' | jq -s '[.[][]]')
       kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets": '"${MERGED_PULL_SECRETS}"'}'
     fi
   fi
