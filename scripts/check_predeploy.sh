@@ -74,11 +74,12 @@ if [ -z "$CHART_PULL_SECRET" ]; then
     kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets":[{"name":"'"${IMAGE_PULL_SECRET_NAME}"'"}]}'
   else
     if echo ${ACCOUNT_PULL_SECRETS} | jq -e '.[] | select(.name=="'"${IMAGE_PULL_SECRET_NAME}"'")' > /dev/null; then 
-    echo -e "Pull secret already found in default serviceAccount"
-  else
-    echo "Inserting toolchain pull secret into default serviceAccount"
-    MERGED_PULL_SECRETS=$(echo ${ACCOUNT_PULL_SECRETS} '[{ "name": "'"${IMAGE_PULL_SECRET_NAME}"'"}]' | jq -s '[.[][]]')
-    kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets": '"${MERGED_PULL_SECRETS}"'}'
+      echo -e "Pull secret already found in default serviceAccount"
+    else
+      echo "Inserting toolchain pull secret into default serviceAccount"
+      MERGED_PULL_SECRETS=$(echo ${ACCOUNT_PULL_SECRETS} '[{ "name": "'"${IMAGE_PULL_SECRET_NAME}"'"}]' | jq -s '[.[][]]')
+      kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets": '"${MERGED_PULL_SECRETS}"'}'
+    fi
   fi
   echo "default serviceAccount:"
   kubectl get serviceaccount default --namespace ${CLUSTER_NAMESPACE} -o yaml
