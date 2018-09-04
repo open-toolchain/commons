@@ -70,7 +70,7 @@ if [ -z "$CHART_PULL_SECRET" ]; then
   echo "      Learn how to inject pull secrets into the deployment chart at: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
   echo "      or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
   SERVICE_ACCOUNT=$(kubectl get serviceaccount default  -o json --namespace ${CLUSTER_NAMESPACE} )
-  if ! echo ${SERVICE_ACCOUNT} | jq '. | has("imagePullSecrets"); then
+  if ! echo ${SERVICE_ACCOUNT} | jq '. | has("imagePullSecrets")' ; then
     kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets":[{"name":"'"${IMAGE_PULL_SECRET_NAME}"'"}]}'
   else
     if echo ${SERVICE_ACCOUNT} | jq -e '.imagePullSecrets[] | select(.name=="'"${IMAGE_PULL_SECRET_NAME}"'")' > /dev/null ; then 
