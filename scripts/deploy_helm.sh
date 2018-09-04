@@ -73,7 +73,7 @@ do
   echo -e "REASON: ${REASON}"
   if [[ ${REASON} == *ErrImagePull* ]] || [[ ${REASON} == *ImagePullBackOff* ]]; then
     echo "Detected ErrImagePull or ImagePullBackOff failure. "
-    echo "Please check proper authenticating to from cluster to image registry (e.g. image pull secret)"
+    echo "Please check image still exists in registry, and proper permissions from cluster to image registry (e.g. image pull secret)"
     break; # no need to wait longer, error is fatal
   elif [[ ${REASON} == *CrashLoopBackOff* ]]; then
     echo "Detected CrashLoopBackOff failure. "
@@ -88,7 +88,7 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo "=========================================================="
   echo "DEPLOYMENT FAILED"
   echo "Deployed Services:"
-  kubectl describe services --namespace ${CLUSTER_NAMESPACE} |:
+  kubectl describe services --namespace ${CLUSTER_NAMESPACE}
   echo ""
   echo "Deployed Pods:"
   kubectl describe pods --namespace ${CLUSTER_NAMESPACE}
