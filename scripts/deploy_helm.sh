@@ -88,13 +88,13 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo "=========================================================="
   echo "DEPLOYMENT FAILED"
   echo "Deployed Services:"
-  kubectl describe services ${RELEASE_NAME}-${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
+  kubectl describe services --namespace ${CLUSTER_NAMESPACE} |:
   echo ""
   echo "Deployed Pods:"
-  kubectl describe pods --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
+  kubectl describe pods --namespace ${CLUSTER_NAMESPACE}
   echo ""
-  echo "Application Logs"
-  kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
+  #echo "Application Logs"
+  #kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
   echo "=========================================================="
   PREVIOUS_RELEASE=$( helm history ${RELEASE_NAME} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
   echo -e "Could rollback to previous release: ${PREVIOUS_RELEASE} using command:"
