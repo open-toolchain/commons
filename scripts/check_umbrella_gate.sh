@@ -41,6 +41,7 @@ for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
   export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
   POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${LOGICAL_APP_NAME} ${LOGICAL_ENV_NAME} )
+  export IBM_CLOUD_API_KEY=${PIPELINE_BLUEMIX_API_KEY} # TEMPORARY
   
   echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
   echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"

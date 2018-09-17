@@ -38,6 +38,7 @@ npm install -g grunt-idra3
 
 # Evaluate the gate against the version matching the git commit
 export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
+export IBM_CLOUD_API_KEY=${PIPELINE_BLUEMIX_API_KEY} # TEMPORARY
 
 echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
 echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"

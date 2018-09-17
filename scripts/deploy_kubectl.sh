@@ -8,28 +8,21 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_kubectl.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "IMAGE_NAME=${IMAGE_NAME}"
-echo "IMAGE_TAG=${IMAGE_TAG}"
-echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
-echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
+echo "IMAGE_NAME=${IMAGE_NAME}"
+echo "IMAGE_TAG=${IMAGE_TAG}"
 
-# View build properties
-if [ -f build.properties ]; then 
-  echo "build.properties:"
-  cat build.properties
-else 
-  echo "build.properties : not found"
-fi 
+#View build properties
+# cat build.properties
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
-echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
+CLUSTER_NAMESPACE=default
 echo "=========================================================="
 #Check cluster availability
 IP_ADDR=$( bx cs workers $PIPELINE_KUBERNETES_CLUSTER_NAME | grep normal | head -n 1 | awk '{ print $2 }' )
@@ -37,18 +30,63 @@ if [ -z "$IP_ADDR" ]; then
   echo "$PIPELINE_KUBERNETES_CLUSTER_NAME not created or workers not ready"
   exit 1
 fi
-#Connect to a different container-service api by uncommenting and specifying an api endpoint
-#bx cs init --host https://us-south.containers.bluemix.net
 echo ""
 echo "DEPLOYING USING MANIFEST:"
 cat deployment.yml
 kubectl apply -f deployment.yml  
 echo ""
-echo "DEPLOYED SERVICE:"
-kubectl describe services hello-service
+echo "=========================================================="
+IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
+echo -e "CHECKING deployment status of ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
 echo ""
+for ITERATION in {1..30}
+do
+  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
+  NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
+  if [[ -z "$NOT_READY" ]]; then
+    echo -e "All pods are ready:"
+    echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==true) '
+    break # deployment succeeded
+  fi
+  REASON=$(echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .state.waiting.reason')
+  echo -e "${ITERATION} : Deployment still pending..."
+  echo -e "NOT_READY:${NOT_READY}"
+  echo -e "REASON: ${REASON}"
+  if [[ ${REASON} == *ErrImagePull* ]] || [[ ${REASON} == *ImagePullBackOff* ]]; then
+    echo "Detected ErrImagePull or ImagePullBackOff failure. "
+    echo "Please check proper authenticating to from cluster to image registry (e.g. image pull secret)"
+    break; # no need to wait longer, error is fatal
+  elif [[ ${REASON} == *CrashLoopBackOff* ]]; then
+    echo "Detected CrashLoopBackOff failure. "
+    echo "Application is unable to start, check the application startup logs"
+    break; # no need to wait longer, error is fatal
+  fi
+  sleep 5
+done
+
+APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .name' | head -n 1)
+echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
-kubectl describe pods --selector app=hello-app
-PORT=$( kubectl get services | grep hello-service | sed 's/.*:\([0-9]*\).*/\1/g' )
+kubectl describe pods --selector app=${APP_NAME}
+APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
+echo -e "SERVICE: ${APP_SERVICE}"
+echo "DEPLOYED SERVICES:"
+kubectl describe services ${APP_SERVICE}
+echo "Application Logs"
+kubectl logs --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}  
 echo ""
-echo "VIEW THE APPLICATION AT: http://$IP_ADDR:$PORT"
+if [[ ! -z "$NOT_READY" ]]; then
+  echo ""
+  echo "=========================================================="
+  echo "DEPLOYMENT FAILED"
+  exit 1
+fi
+
+echo ""
+echo "=========================================================="
+echo "DEPLOYMENT SUCCEEDED"
+echo ""
+IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+PORT=$( kubectl get services | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+echo ""
+echo -e "VIEW THE APPLICATION AT: http://${IP_ADDR}:${PORT}"

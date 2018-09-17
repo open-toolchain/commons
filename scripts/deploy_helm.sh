@@ -12,7 +12,6 @@ echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "FETCH_BUILD_NUMBER=${FETCH_BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 
@@ -61,7 +60,7 @@ echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: $
 echo ""
 for ITERATION in {1..30}
 do
-  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -a -l release=${RELEASE_NAME} -o json )
+  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
   NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
@@ -74,7 +73,7 @@ do
   echo -e "REASON: ${REASON}"
   if [[ ${REASON} == *ErrImagePull* ]] || [[ ${REASON} == *ImagePullBackOff* ]]; then
     echo "Detected ErrImagePull or ImagePullBackOff failure. "
-    echo "Please check proper authenticating to from cluster to image registry (e.g. image pull secret)"
+    echo "Please check image still exists in registry, and proper permissions from cluster to image registry (e.g. image pull secret)"
     break; # no need to wait longer, error is fatal
   elif [[ ${REASON} == *CrashLoopBackOff* ]]; then
     echo "Detected CrashLoopBackOff failure. "
@@ -89,13 +88,13 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo "=========================================================="
   echo "DEPLOYMENT FAILED"
   echo "Deployed Services:"
-  kubectl describe services ${RELEASE_NAME}-${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
+  kubectl describe services --namespace ${CLUSTER_NAMESPACE}
   echo ""
   echo "Deployed Pods:"
-  kubectl describe pods --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
+  kubectl describe pods --namespace ${CLUSTER_NAMESPACE}
   echo ""
-  echo "Application Logs"
-  kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
+  #echo "Application Logs"
+  #kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
   echo "=========================================================="
   PREVIOUS_RELEASE=$( helm history ${RELEASE_NAME} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
   echo -e "Could rollback to previous release: ${PREVIOUS_RELEASE} using command:"
