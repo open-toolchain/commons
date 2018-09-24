@@ -20,20 +20,22 @@ fi
 # or learn more about the available environment variables at:
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
-# Input env variables from pipeline job
-echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
-
 # Infer CHART_NAME from path to chart (last segment per construction for valid charts)
 CHART_NAME=$(basename $CHART_PATH)
 
 echo "=========================================================="
 echo "Required env vars:"
-if [ -z "$CLUSTER_NAMESPACE" ]; then
+echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
+echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+if [ -z "$PIPELINE_KUBERNETES_CLUSTER_NAME" ] || [ -z "$CLUSTER_NAMESPACE" ]; then
   echo "One of the required env vars is missing"
   exit -1
 fi
+echo "ls -l charts"
 ls -al charts
+echo "=========================================================="
 
+echo ""
 echo "=========================================================="
 echo -e "Extracting component charts"
 mkdir -p temp_charts
@@ -70,10 +72,6 @@ do
     COMPONENTS_REPOS_TAGS=$COMPONENTS_REPOS_TAGS$COMPONENT_NAME:$IMAGE_REPOSITORY:$IMAGE_TAG$'\n'
 done
 echo "=========================================================="
-echo -e "Expected number of replicas:"
-COMPONENTS_AND_REPLICAS=$( grep -r "replicaCount:" temp_charts/*/values.yaml | awk '{if ( $NF ~ /[0-9]/ ) { n=split($1,a,"/"); print a[n-1] ":" $NF; }}' )
-echo -e "${COMPONENTS_AND_REPLICAS}"
-echo "=========================================================="
 MAX=${WAIT_FOR_DEPLOY_MAX:-30}
 for ((ITERATION = 1 ; ITERATION <= $MAX ; ITERATION++ ));
 do
@@ -82,35 +80,46 @@ do
     NOT_READY_COMPONENTS=
     echo -e "Retrieving pods in namespace ${CLUSTER_NAMESPACE}"
     ALL_PODS=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
+    echo -e "Retrieving replicasets in namespace ${CLUSTER_NAMESPACE}"
+    ALL_REPLICASETS=$( kubectl get rs --namespace ${CLUSTER_NAMESPACE} -o json )
+    echo -e "Retrieving statefulsets in namespace ${CLUSTER_NAMESPACE}"
+    ALL_STATEFULSETS=$( kubectl get sts --namespace ${CLUSTER_NAMESPACE} -o json )
     for COMPONENT_REPO_TAG in ${COMPONENTS_REPOS_TAGS}
     do
-        IFS=':' read COMPONENT_NAME IMAGE_REPOSITORY IMAGE_TAG <<< $COMPONENT_REPO_TAG
-        COMPONENT_AND_REPLICA=$( echo "${COMPONENTS_AND_REPLICAS}" | grep ${COMPONENT_NAME} )
-        IFS=':' read unused REPLICA <<< $COMPONENT_AND_REPLICA
-        if [[ "${REPLICA}" -eq "0" ]]; then
-            continue;
+        IFS=':' read COMPONENT_NAME IMAGE_REPOSITORY IMAGE_TAG <<< "${COMPONENT_REPO_TAG}"
+        COMPONENT_OWNER=$( echo $ALL_REPLICASETS | jq '[.items[]? | select(.metadata.name | startswith("'"${COMPONENT_NAME}"'")) | select(.spec.replicas != "0")] | max_by(.metadata.creationTimestamp) ' ) # max_by to take the latest replicaset, []? to handle null values
+        if [[ "$COMPONENT_OWNER" == "null" ]]; then
+            COMPONENT_OWNER=$( echo $ALL_STATEFULSETS | jq '[.items[]? | select(.metadata.name == "'"${COMPONENT_NAME}"'") | select(.spec.replicas != "0")] | max_by(.metadata.creationTimestamp) ' ) # max_by to take the latest statefull set, []? to handle null values
         fi
-        COMPONENT_PODS=$( echo $ALL_PODS | jq '.items[]?.status.containerStatuses[] | select(.image | startswith("'"${IMAGE_REPOSITORY}"'")) ' ) # []? - see https://github.ibm.com/org-ids/roadmap/issues/6264
-        if [[ -z "$COMPONENT_PODS" ]]; then
+        if [[ "$COMPONENT_OWNER" == "null" ]]; then
             NOT_READY_COMPONENTS="${NOT_READY_COMPONENTS}${COMPONENT_NAME} "
-            >&2 echo -e "${COMPONENT_NAME}: No pods deployed for this component, expecting ${REPLICA}"
+            >&2 echo -e "${COMPONENT_NAME}: No replica sets or stateful sets found for this component"
             STATUS=DEPLOYING
         else
-            IMAGE_PODS=$( echo $COMPONENT_PODS | jq '. | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") ' )
-            if [[ -z "$IMAGE_PODS" ]]; then
+            DESIRED_REPLICAS=$( echo $COMPONENT_OWNER | jq -r '.spec.replicas')  # -r to remove double-quotes
+            if [[ "${DESIRED_REPLICAS}" -eq "0" ]]; then
+                >&2 echo -e "${COMPONENT_NAME}: Skipping since desired replicas is ${DESIRED_REPLICAS}"
+                continue;
+            fi
+            OWNER_NAME=$( echo $COMPONENT_OWNER | jq -r '.metadata.name')
+            COMPONENT_PODS=$( echo $ALL_PODS | jq '.items[]? | select(.metadata.ownerReferences[]?.name=="'"$OWNER_NAME"'" and .status.containerStatuses[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .status.containerStatuses[]? ' ) # []? - see https://github.ibm.com/org-ids/roadmap/issues/6264
+            if [[ -z "$COMPONENT_PODS" ]]; then
                 NOT_READY_COMPONENTS="${NOT_READY_COMPONENTS}${COMPONENT_NAME} "
-                >&2 echo -e "${COMPONENT_NAME}: No pods deployed with image ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+                >&2 echo -e "${COMPONENT_NAME}: No pods deployed with image ${IMAGE_REPOSITORY}:${IMAGE_TAG}, expecting ${DESIRED_REPLICAS}"
                 STATUS=DEPLOYING
             else
-                NOT_READY_PODS=$( echo $IMAGE_PODS | jq '. | select(.ready==false) ' )
+                NOT_READY_PODS=$( echo $COMPONENT_PODS | jq '. | select(.ready==false) ' )
                 if [[ -z "$NOT_READY_PODS" ]]; then
-                    echo -e "${COMPONENT_NAME}: All pods are ready."
+                    READY_REPLICAS=$( echo $COMPONENT_OWNER | jq -r '.status.readyReplicas')
+                    if [[ "${DESIRED_REPLICAS}" -ne "${READY_REPLICAS}" ]]; then
+                        >&2 echo -e "${COMPONENT_NAME}: Not all pods deployed for this component, expecting ${DESIRED_REPLICAS}, found ${READY_REPLICAS}"
+                        STATUS=DEPLOYING
+                    else
+                        echo -e "${COMPONENT_NAME}: All pods are ready."
+                    fi
                 else
                     NOT_READY_COMPONENTS="${NOT_READY_COMPONENTS}${COMPONENT_NAME} "
                     REASON=$(echo $NOT_READY_PODS | jq '. | .state.waiting.reason')
-                    echo -e "${ITERATION} : Deployment still pending..."
-                    echo -e "NOT_READY_PODS:${NOT_READY_PODS}"
-                    echo -e "REASON: ${REASON}"
                     if [[ "${REASON}" == *"ErrImagePull"* ]] || [[ "${REASON}" == *"ImagePullBackOff"* ]]; then
                         echo "${COMPONENT_NAME}: Detected ErrImagePull or ImagePullBackOff failure. "
                         echo "Please check proper authenticating to from cluster to image registry (e.g. image pull secret)"
@@ -122,7 +131,7 @@ do
                         STATUS=FAILED
                         break; # no need to wait longer, error is fatal
                     fi
-                    >&2 echo -e "${COMPONENT_NAME}: Not all pods are ready for image ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+                    >&2 echo -e "${COMPONENT_NAME}: Not all pods are ready for image ${IMAGE_REPOSITORY}:${IMAGE_TAG}, expecting ${DESIRED_REPLICAS}"
                     STATUS=DEPLOYING
                 fi
             fi
@@ -158,7 +167,7 @@ if [[ "$STATUS" != "DONE" ]]; then
     echo " "
   done
   echo "=========================================================="
-  #exit 1
+  exit 1
 else
   echo ""
   echo "=========================================================="

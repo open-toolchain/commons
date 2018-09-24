@@ -63,7 +63,7 @@ if ! kubectl get secret ${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPAC
 else
   echo -e "Namespace ${CLUSTER_NAMESPACE} already has an imagePullSecret for this toolchain."
 fi
-echo "Checking ability to pass pull secret via Helm chart"
+echo "Checking ability to pass pull secret via Helm chart (see also https://console.bluemix.net/docs/containers/cs_images.html#images)"
 CHART_PULL_SECRET=$( grep 'pullSecret' ${CHART_PATH}/values.yaml || : )
 if [ -z "$CHART_PULL_SECRET" ]; then
   echo "INFO: Chart is not expecting an explicit private registry imagePullSecret. Patching the cluster default serviceAccount to pass it implicitly instead."
@@ -77,9 +77,7 @@ if [ -z "$CHART_PULL_SECRET" ]; then
       echo -e "Pull secret already found in default serviceAccount"
     else
       echo "Inserting toolchain pull secret into default serviceAccount"
-      ACCOUNT_PULL_SECRETS=$(echo ${SERVICE_ACCOUNT} | jq '.imagePullSecrets')
-      MERGED_PULL_SECRETS=$(echo ${ACCOUNT_PULL_SECRETS} '[{ "name": "'"${IMAGE_PULL_SECRET_NAME}"'"}]' | jq -s '[.[][]]')
-      kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default -p '{"imagePullSecrets": '"${MERGED_PULL_SECRETS}"'}'
+      kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/default --type='json' -p='[{"op":"add","path":"/imagePullSecrets/-","value":{"name": "'"${IMAGE_PULL_SECRET_NAME}"'"}}]'
     fi
   fi
   echo "default serviceAccount:"
