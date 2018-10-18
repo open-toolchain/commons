@@ -31,12 +31,15 @@ fi
 # To review or change build options use:
 # bx cr build --help
 
+if [ -z "${DOCKER_ROOT}" ]; then DOCKER_ROOT=. ; fi
+if [ -z "${DOCKER_FILE}" ]; then DOCKER_FILE=${DOCKER_ROOT}/Dockerfile ; fi
+
 echo "=========================================================="
 echo "Checking for Dockerfile at the repository root"
-if [ -f Dockerfile ]; then 
-echo "Dockerfile found"
+if [ -f "${DOCKER_FILE}" ]; then 
+echo -e "Dockerfile found at: ${DOCKER_FILE}"
 else
-    echo "Dockerfile not found"
+    echo "Dockerfile not found at: ${DOCKER_FILE}"
     exit 1
 fi
 echo "=========================================================="
@@ -65,7 +68,7 @@ fi
 echo "=========================================================="
 echo -e "Building container image: ${IMAGE_NAME}:${IMAGE_TAG}"
 set -x
-bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} .
+bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_ROOT} -f ${DOCKER_FILE}
 set +x
 bx cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
@@ -78,9 +81,10 @@ bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 # Copy any artifacts that will be needed for deployment and testing to $WORKSPACE    #
 ######################################################################################
 echo -e "Checking archive dir presence"
-mkdir -p $ARCHIVE_DIR
-# If already defined build.properties from prior build job, append to it.
-cp build.properties $ARCHIVE_DIR/ || :
+mkdir -p ${ARCHIVE_DIR}
+echo "Copy working dir into build archive"
+find . -not -path "." -not -path "./$ARCHIVE_DIR" -not -path "./$ARCHIVE_DIR/*" -exec cp -v '{}' "${ARCHIVE_DIR}/" ';'
+
 # pass image information along via build.properties for Vulnerability Advisor scan
 echo "IMAGE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties
 echo "IMAGE_TAG=${IMAGE_TAG}" >> $ARCHIVE_DIR/build.properties
@@ -88,15 +92,3 @@ echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties
 echo "File 'build.properties' created for passing env variables to subsequent pipeline jobs:"
 cat $ARCHIVE_DIR/build.properties      
-#Update deployment.yml with image name
-if [ -f deployment.yml ]; then
-    echo "UPDATING DEPLOYMENT MANIFEST:"
-    sed -i "s~^\([[:blank:]]*\)image:.*$~\1image: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}~" deployment.yml
-    cat deployment.yml
-    if [ ! -f $ARCHIVE_DIR/deployment.yml ]; then # no need to copy if working in ./ already    
-        cp deployment.yml $ARCHIVE_DIR/
-    fi
-else 
-    echo -e "${red}Kubernetes deployment file 'deployment.yml' not found at the repository root${no_color}"
-    exit 1
-fi     
