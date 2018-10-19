@@ -8,10 +8,12 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_kubectl.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "REGISTRY_URL=${REGISTRY_URL}"
-echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
+echo "REGISTRY_URL=${REGISTRY_URL}"
+echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
+echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 
 #View build properties
 # cat build.properties
@@ -21,7 +23,7 @@ echo "IMAGE_TAG=${IMAGE_TAG}"
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
-CLUSTER_NAMESPACE=default
+if [ -z "${CLUSTER_NAMESPACE}" ]; then CLUSTER_NAMESPACE=default ; fi
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 echo "=========================================================="

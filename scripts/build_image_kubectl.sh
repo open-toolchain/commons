@@ -80,10 +80,13 @@ bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 ######################################################################################
 # Copy any artifacts that will be needed for deployment and testing to $WORKSPACE    #
 ######################################################################################
-echo -e "Checking archive dir presence"
-mkdir -p ${ARCHIVE_DIR}
-echo "Copy working dir into build archive"
-find . -not -path "." -not -path "./$ARCHIVE_DIR" -not -path "./$ARCHIVE_DIR/*" -exec cp -v '{}' "${ARCHIVE_DIR}/" ';'
+if [ -z "${ARCHIVE_DIR}"]; then
+  echo -e "Build archive directory contains entire working directory."
+else
+  echo -e "Copying working dir into build archive directory: ${ARCHIVE_DIR} "
+  mkdir -p ${ARCHIVE_DIR}
+  find . -mindepth 1 -maxdepth 1 -not -path "./$ARCHIVE_DIR" -exec cp -Rv '{}' "${ARCHIVE_DIR}/" ';'
+fi
 
 # pass image information along via build.properties for Vulnerability Advisor scan
 echo "IMAGE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties

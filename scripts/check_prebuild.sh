@@ -11,6 +11,8 @@ echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
+echo "DOCKER_ROOT=${DOCKER_ROOT}"
+echo "DOCKER_FILE=${DOCKER_FILE}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -24,12 +26,13 @@ fi
 # https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 echo "=========================================================="
-echo "CHECKING DOCKERFILE"
-echo "Checking Dockerfile at the repository root"
-if [ -f Dockerfile ]; then 
-   echo "Dockerfile found"
+echo "Checking for Dockerfile at the repository root"
+if [ -z "${DOCKER_ROOT}" ]; then DOCKER_ROOT=. ; fi
+if [ -z "${DOCKER_FILE}" ]; then DOCKER_FILE=${DOCKER_ROOT}/Dockerfile ; fi
+if [ -f "${DOCKER_FILE}" ]; then 
+echo -e "Dockerfile found at: ${DOCKER_FILE}"
 else
-    echo "Dockerfile not found"
+    echo "Dockerfile not found at: ${DOCKER_FILE}"
     exit 1
 fi
 echo "Linting Dockerfile"
@@ -37,37 +40,20 @@ npm install -g dockerlint
 dockerlint -f Dockerfile
 
 echo "=========================================================="
-echo "CHECKING HELM CHART"
-echo "Looking for chart under /chart/<CHART_NAME>"
-CHART_ROOT="chart"
-
-if [ -d ${CHART_ROOT} ]; then
-  CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
-  CHART_PATH=${CHART_ROOT}/${CHART_NAME}
-fi
-if [ -z "${CHART_PATH}" ]; then
-    echo -e "No Helm chart found for Kubernetes deployment under ${CHART_ROOT}/<CHART_NAME>."
-    exit 1
-else
-    echo -e "Helm chart found for Kubernetes deployment : ${CHART_PATH}"
-fi
-echo "Linting Helm Chart"
-helm lint ${CHART_PATH}
-
-echo "=========================================================="
-echo "CHECKING REGISTRY namespace, current plan and quota"
+echo "Checking registry current plan and quota"
 bx cr plan
 bx cr quota
+echo "If needed, discard older images using: bx cr image-rm"
 echo "Checking registry namespace: ${REGISTRY_NAMESPACE}"
 NS=$( bx cr namespaces | grep ${REGISTRY_NAMESPACE} ||: )
 if [ -z "${NS}" ]; then
-    echo -e "Registry namespace ${REGISTRY_NAMESPACE} not found, creating it."
+    echo "Registry namespace ${REGISTRY_NAMESPACE} not found, creating it."
     bx cr namespace-add ${REGISTRY_NAMESPACE}
-    echo -e "Registry namespace ${REGISTRY_NAMESPACE} created."
+    echo "Registry namespace ${REGISTRY_NAMESPACE} created."
 else 
-    echo -e "Registry namespace ${REGISTRY_NAMESPACE} found."
+    echo "Registry namespace ${REGISTRY_NAMESPACE} found."
 fi
-echo -e "Current content of image registry namespace: ${REGISTRY_NAMESPACE}"
+echo -e "Existing images in registry"
 bx cr images --restrict ${REGISTRY_NAMESPACE}
 
 # echo "=========================================================="

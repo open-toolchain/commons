@@ -8,12 +8,11 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_helm.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
-echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
+echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -29,10 +28,12 @@ fi
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
+if [ -z "${CLUSTER_NAMESPACE}" ]; then CLUSTER_NAMESPACE=default ; fi
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 # Infer CHART_NAME from path to chart (last segment per construction for valid charts)
-CHART_NAME=$(basename $CHART_PATH)
+CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+CHART_PATH=${CHART_ROOT}/${CHART_NAME}
 
 echo "=========================================================="
 echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
