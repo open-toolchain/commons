@@ -44,15 +44,17 @@ do
   set +e
   STATUS=$( bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status' )
   set -e
-  if [[ ${STATUS} == "OK" || ${STATUS} == "FAIL" ]]; then
+  # Possible status from Vulnerability Advisor: OK, UNSUPPORTED, INCOMPLETE, UNSCANNED, FAIL, WARN
+  if [[ ${STATUS} != "INCOMPLETE" && ${STATUS} != "UNSCANNED" ]]; then
     break
   fi
   echo -e "${ITER} STATUS ${STATUS} : A vulnerability report was not found for the specified image."
   echo "Either the image doesn't exist or the scan hasn't completed yet. "
-  echo "Waiting for scan to complete.."
+  echo "Waiting for scan to complete..."
   sleep 10
 done
 set +e
 bx cr va -e ${PIPELINE_IMAGE_URL}
 set -e
-[[ $(bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status') == "OK" ]] || { echo "ERROR: The vulnerability scan was not successful, check the OUTPUT of the command and try again."; exit 1; }
+STATUS=$( bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status' )
+[[ STATUS == "OK" ]] || [[ STATUS == "UNSUPPORTED" ]] || [[ STATUS == "WARN" ]] || { echo "ERROR: The vulnerability scan was not successful, check the OUTPUT of the command and try again."; exit 1; }
