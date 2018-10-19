@@ -37,7 +37,7 @@ else
 fi
 echo "Linting Dockerfile"
 npm install -g dockerlint
-dockerlint -f Dockerfile
+dockerlint -f ${DOCKER_ROOT}/${DOCKER_FILE}
 
 echo "=========================================================="
 echo "Checking registry current plan and quota"
