@@ -70,7 +70,7 @@ if [ -z "${ARCHIVE_DIR}"]; then
 else
   echo -e "Copying working dir into build archive directory: ${ARCHIVE_DIR} "
   mkdir -p ${ARCHIVE_DIR}
-  find . -mindepth 1 -maxdepth 1 -not -path "./$ARCHIVE_DIR" -exec cp -Rv '{}' "${ARCHIVE_DIR}/" ';'
+  find . -mindepth 1 -maxdepth 1 -not -path "./$ARCHIVE_DIR" -exec cp -R '{}' "${ARCHIVE_DIR}/" ';'
 fi
 
 # Persist env variables into a properties file (build.properties) so that all pipeline stages consuming this

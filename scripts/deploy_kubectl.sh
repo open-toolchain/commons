@@ -12,7 +12,6 @@ echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
-echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 
 #View build properties
@@ -27,26 +26,20 @@ if [ -z "${CLUSTER_NAMESPACE}" ]; then CLUSTER_NAMESPACE=default ; fi
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 echo "=========================================================="
-#Check cluster availability
-IP_ADDR=$( bx cs workers $PIPELINE_KUBERNETES_CLUSTER_NAME | grep normal | head -n 1 | awk '{ print $2 }' )
-if [ -z "$IP_ADDR" ]; then
-  echo "$PIPELINE_KUBERNETES_CLUSTER_NAME not created or workers not ready"
-  exit 1
-fi
-echo ""
-echo "DEPLOYING USING MANIFEST:"
-#Update deployment.yml with image name
+echo "DEPLOYING using manifest"
+echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
 if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
 if [ -f ${DEPLOYMENT_FILE} ]; then
-    echo "UPDATING DEPLOYMENT MANIFEST:"
     sed -i "s~^\([[:blank:]]*\)image:.*$~\1image: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}~" ${DEPLOYMENT_FILE}
     cat ${DEPLOYMENT_FILE}
 else 
     echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
     exit 1
 fi    
+set -x
+kubectl apply --namespace ${CLUSTER_NAMESPACE} -f ${DEPLOYMENT_FILE} 
+set +x
 
-kubectl apply -f ${DEPLOYMENT_FILE} 
 echo ""
 echo "=========================================================="
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
@@ -81,11 +74,11 @@ APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.i
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME}
-if [ ! -z "${APP_SERVICE}" ]; then
+if [ ! -z "${APP_NAME}" ]; then
   APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
   echo -e "SERVICE: ${APP_SERVICE}"
   echo "DEPLOYED SERVICES:"
-  kubectl describe services ${APP_SERVICE}
+  kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
 fi
 echo "Application Logs"
 kubectl logs --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}  
@@ -103,7 +96,7 @@ echo "DEPLOYMENT SUCCEEDED"
 if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
-  PORT=$( kubectl get services | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+  PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
   echo ""
   echo -e "VIEW THE APPLICATION AT: http://${IP_ADDR}:${PORT}"
 fi
