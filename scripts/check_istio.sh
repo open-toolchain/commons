@@ -13,15 +13,6 @@
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 
-#Check cluster availability
-echo "=========================================================="
-echo "CHECKING CLUSTER readiness and namespace existence"
-IP_ADDR=$( bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | awk '{ print $2 }' )
-if [ -z "${IP_ADDR}" ]; then
-  echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
-  exit 1
-fi
-
 ISTIO_NAMESPACE=istio-system
 echo "Checking Istio configuration"
 if kubectl get namespace ${ISTIO_NAMESPACE}; then
@@ -64,3 +55,5 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo "ISTIO INSTALLATION FAILED"
   exit 1
 fi
+
+kubectl api-resources
