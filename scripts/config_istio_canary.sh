@@ -8,15 +8,20 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/config_istio_canary.sh
 
-# Configure Istio gateway with virtual service
+# Configure Istio gateway with a destination rule (stable/canary), and virtual service
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
+echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
-if [ -z "${GATEWAY_FILE}" ]; then GATEWAY_FILE=gateway.yaml ; fi
-if [ ! -f ${GATEWAY_FILE} ]; then
-  cat > ${GATEWAY_FILE} << EOF
+if kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE}; then
+  echo -e "Istio gateway found: gateway-${IMAGE_NAME}"
+  kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
+else
+  if [ -z "${CANARY_FILE}" ]; then CANARY_FILE=config_istio_config.yaml ; fi
+  if [ ! -f ${CANARY_FILE} ]; then
+    cat > ${CANARY_FILE} << EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -41,10 +46,10 @@ spec:
   subsets:
   - name: stable
     labels:
-      version: "stable"
+      version: 'stable'
   - name: canary
     labels:
-      version: "canary"
+      version: 'canary'
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -60,9 +65,9 @@ http:
         - destination:
             host: ${IMAGE_NAME}
 EOF
-  sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${GATEWAY_FILE}
+    sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${CANARY_FILE}
+  fi
+  kubect apply -f ${CANARY_FILE} --namespace ${CLUSTER_NAMESPACE}
 fi
-
-kubect apply -f ${GATEWAY_FILE} --namespace ${CLUSTER_NAMESPACE}
 
 kubectl get gateways, destinationrules, virtualservices --namespace ${CLUSTER_NAMESPACE}
