@@ -68,7 +68,7 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-name: virtual-service${IMAGE_NAME}
+name: virtual-service-${IMAGE_NAME}
 spec:
 hosts:
     - '*'
@@ -81,7 +81,7 @@ http:
 EOF
     sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${CANARY_FILE}
   fi
-  kubect apply -f ${CANARY_FILE} --namespace ${CLUSTER_NAMESPACE}
+  kubectl apply -f ${CANARY_FILE} --namespace ${CLUSTER_NAMESPACE}
 fi
 
 kubectl get gateways, destinationrules, virtualservices --namespace ${CLUSTER_NAMESPACE}
