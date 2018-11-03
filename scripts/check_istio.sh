@@ -36,13 +36,13 @@ echo ""
 for ITERATION in {1..30}
 do
   DATA=$( kubectl get pods --namespace ${ISTIO_NAMESPACE} -o json )
-  NOT_READY=$( echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.ready==false) ' )
+  NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==false and .state.terminated == null) '
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
-    echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.ready==true) '
+    echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==true or .state.terminated != null) ' 
     break # deployment succeeded
   fi
-  REASON=$(echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | .state.waiting.reason')
+  REASON=$(echo $DATA | jq '.items[].status.containerStatuses?[] | .state.waiting.reason')
   echo -e "${ITERATION} : Deployment still pending..."
   echo -e "NOT_READY:${NOT_READY}"
   echo -e "REASON: ${REASON}"

@@ -15,6 +15,20 @@ echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
+echo "=========================================================="
+echo "CHECK SIDECAR is automatically injected"
+AUTO_SIDECAR_INJECTION=$(kubectl get namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.metadata.labels."istio-injection"')
+if [[ "${AUTO_SIDECAR_INJECTION}" == "enabled"]]; then
+    echo "Automatic Istio sidecar injection already enabled"
+else
+    # https://istio.io/docs/setup/kubernetes/sidecar-injection/#automatic-sidecar-injection
+    kubectl label namespace ${CLUSTER_NAMESPACE} istio-injection=enabled
+    echo "Automatic Istio sidecar injection now enabled"
+    kubectl get namespace ${CLUSTER_NAMESPACE} -L istio-injection
+fi
+
+echo "=========================================================="
+echo "CHECK GATEWAY is configured"
 if kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE}; then
   echo -e "Istio gateway found: gateway-${IMAGE_NAME}"
   kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
