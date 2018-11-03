@@ -18,7 +18,7 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "=========================================================="
 echo "CHECK SIDECAR is automatically injected"
 AUTO_SIDECAR_INJECTION=$(kubectl get namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.metadata.labels."istio-injection"')
-if [[ "${AUTO_SIDECAR_INJECTION}" == "enabled"]]; then
+if [ "${AUTO_SIDECAR_INJECTION}" == "enabled" ]; then
     echo "Automatic Istio sidecar injection already enabled"
 else
     # https://istio.io/docs/setup/kubernetes/sidecar-injection/#automatic-sidecar-injection
