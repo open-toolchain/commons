@@ -36,7 +36,7 @@ echo ""
 for ITERATION in {1..30}
 do
   DATA=$( kubectl get pods --namespace ${ISTIO_NAMESPACE} -o json )
-  NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==false and .state.terminated == null) '
+  NOT_READY=$(echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==false and .state.terminated == null) ')
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
     echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==true or .state.terminated != null) ' 
