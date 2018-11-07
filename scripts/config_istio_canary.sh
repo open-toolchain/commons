@@ -43,9 +43,9 @@ if kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE}; t
   echo -e "Istio gateway found: gateway-${IMAGE_NAME}"
   kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 else
-  if [ -z "${CANARY_FILE}" ]; then CANARY_FILE=config_istio_config.yaml ; fi
-  if [ ! -f ${CANARY_FILE} ]; then
-    cat > ${CANARY_FILE} << EOF
+  if [ -z "${GATEWAY_FILE}" ]; then GATEWAY_FILE=istio_gateway.yaml ; fi
+  if [ ! -f ${GATEWAY_FILE} ]; then
+    cat > ${GATEWAY_FILE} << EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -89,9 +89,11 @@ http:
         - destination:
             host: ${IMAGE_NAME}
 EOF
-    sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${CANARY_FILE}
+    sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${GATEWAY_FILE}
   fi
-  kubectl apply -f ${CANARY_FILE} --namespace ${CLUSTER_NAMESPACE}
+  ls -al
+  cat ${GATEWAY_FILE}
+  kubectl apply -f ${GATEWAY_FILE} --namespace ${CLUSTER_NAMESPACE}
 fi
 
 kubectl get gateways, destinationrules, virtualservices --namespace ${CLUSTER_NAMESPACE}
