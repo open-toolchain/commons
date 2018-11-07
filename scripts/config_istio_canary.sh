@@ -15,6 +15,16 @@ echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
+#Check namespace availability
+echo "=========================================================="
+echo "CHECKING CLUSTER readiness and namespace existence"
+if kubectl get namespace ${CLUSTER_NAMESPACE}; then
+  echo -e "Namespace ${CLUSTER_NAMESPACE} found."
+else
+  kubectl create namespace ${CLUSTER_NAMESPACE}
+  echo -e "Namespace ${CLUSTER_NAMESPACE} created."
+fi
+
 echo "=========================================================="
 echo "CHECK SIDECAR is automatically injected"
 AUTO_SIDECAR_INJECTION=$(kubectl get namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.metadata.labels."istio-injection"')
