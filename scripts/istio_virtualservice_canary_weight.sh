@@ -46,10 +46,9 @@ spec:
             subset: canary
           weight: ${CANARY_WEIGHT}
 EOF
-    #sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${VIRTUAL_SERVICE_FILE}
-  fi
-  cat ${VIRTUAL_SERVICE_FILE}
-  kubectl apply -f ${VIRTUAL_SERVICE_FILE} --namespace ${CLUSTER_NAMESPACE}
+  #sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${VIRTUAL_SERVICE_FILE}
 fi
+cat ${VIRTUAL_SERVICE_FILE}
+kubectl apply -f ${VIRTUAL_SERVICE_FILE} --namespace ${CLUSTER_NAMESPACE}
 
 kubectl get gateways,destinationrules,virtualservices --namespace ${CLUSTER_NAMESPACE}
