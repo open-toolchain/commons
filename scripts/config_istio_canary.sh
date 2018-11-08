@@ -49,17 +49,31 @@ else
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-name: gateway-${IMAGE_NAME}
+  name: gateway-${IMAGE_NAME}
 spec:
-selector:
+  selector:
     istio: ingressgateway # use istio default controller
-servers:
-- port:
-    number: 80
-    name: http
-    protocol: HTTP
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
     hosts:
     - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: virtual-service-${IMAGE_NAME}
+spec:
+  hosts:
+    - '*'
+  gateways:
+    - gateway-${IMAGE_NAME}
+  http:
+    - route:
+        - destination:
+            host: ${IMAGE_NAME}
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
@@ -74,26 +88,11 @@ spec:
   - name: canary
     labels:
       version: 'canary'
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-name: virtual-service-${IMAGE_NAME}
-spec:
-hosts:
-    - '*'
-gateways:
-    - gateway-${IMAGE_NAME}
-http:
-    - route:
-        - destination:
-            host: ${IMAGE_NAME}
 EOF
-    sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${GATEWAY_FILE}
+    #sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${GATEWAY_FILE}
   fi
-  ls -al
   cat ${GATEWAY_FILE}
   kubectl apply -f ${GATEWAY_FILE} --namespace ${CLUSTER_NAMESPACE}
 fi
 
-kubectl get gateways, destinationrules, virtualservices --namespace ${CLUSTER_NAMESPACE}
+kubectl get gateways,destinationrules,virtualservices --namespace ${CLUSTER_NAMESPACE}

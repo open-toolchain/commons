@@ -22,7 +22,7 @@ else
   WORKING_DIR=$(pwd)
   mkdir ~/tmpbin && cd ~/tmpbin
   curl -L https://git.io/getLatestIstio | sh -
-  ISTIO_ROOT=$(pwd)/$(find istio* -maxdepth 0 -type d)
+  ISTIO_ROOT=$(pwd)/$(find istio-* -maxdepth 0 -type d)
   export PATH=${ISTIO_ROOT}/bin:$PATH
   cd $WORKING_DIR
 
