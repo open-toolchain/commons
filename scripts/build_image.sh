@@ -15,6 +15,7 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
+echo "GIT_BRANCH=${GIT_BRANCH}"
 echo "GIT_COMMIT=${GIT_COMMIT}"
 echo "DOCKER_ROOT=${DOCKER_ROOT}"
 echo "DOCKER_FILE=${DOCKER_FILE}"
@@ -36,11 +37,17 @@ fi
 echo -e "Existing images in registry"
 bx cr images
 
+# Minting image tag using format: BRANCH-COMMIT_ID-BUILD_NUMBER-TIMESTAMP
+# e.g. master-c123d456-12-20180615131912-
+
 TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
 IMAGE_TAG=${BUILD_NUMBER}-${TIMESTAMP}
 if [ ! -z ${GIT_COMMIT} ]; then
   GIT_COMMIT_SHORT=$( echo ${GIT_COMMIT} | head -c 8 ) 
-  IMAGE_TAG=${IMAGE_TAG}-${GIT_COMMIT_SHORT}; 
+  IMAGE_TAG=${GIT_COMMIT_SHORT}-${IMAGE_TAG}
+fi
+if [ ! -z ${GIT_BRANCH} ]; then
+  IMAGE_TAG=${GIT_BRANCH}-${IMAGE_TAG}
 fi
 echo "=========================================================="
 echo -e "BUILDING CONTAINER IMAGE: ${IMAGE_NAME}:${IMAGE_TAG}"
@@ -86,6 +93,7 @@ echo "IMAGE_TAG=${IMAGE_TAG}" >> $ARCHIVE_DIR/build.properties
 # REGISTRY information from build.properties is used in Helm Chart deployment to generate cluster secret
 echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties
+echo "GIT_BRANCH=${GIT_BRANCH}" >> $ARCHIVE_DIR/build.properties
 echo "File 'build.properties' created for passing env variables to subsequent pipeline jobs:"
 cat $ARCHIVE_DIR/build.properties
 
