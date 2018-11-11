@@ -37,15 +37,16 @@ fi
 echo -e "Existing images in registry"
 bx cr images
 
-# Minting image tag using format: BRANCH-COMMIT_ID-BUILD_NUMBER-TIMESTAMP
-# e.g. master-c123d456-12-20180615131912-
+# Minting image tag using format: BRANCH-BUILD_NUMBER-COMMIT_ID-TIMESTAMP
+# e.g. master-12-c123d456-20180615131912-
 
 TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
-IMAGE_TAG=${BUILD_NUMBER}-${TIMESTAMP}
+IMAGE_TAG=${TIMESTAMP}
 if [ ! -z ${GIT_COMMIT} ]; then
   GIT_COMMIT_SHORT=$( echo ${GIT_COMMIT} | head -c 8 ) 
   IMAGE_TAG=${GIT_COMMIT_SHORT}-${IMAGE_TAG}
 fi
+IMAGE_TAG=${BUILD_NUMBER}-${IMAGE_TAG}
 if [ ! -z ${GIT_BRANCH} ]; then
   IMAGE_TAG=${GIT_BRANCH}-${IMAGE_TAG}
 fi
