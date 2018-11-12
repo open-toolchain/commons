@@ -15,7 +15,7 @@ echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
-if [ -z "${VIRTUAL_SERVICE_FILE}" ]; then VIRTUAL_SERVICE_FILE=istio_virtualservice_canary_dark.yaml.yaml ; fi
+if [ -z "${VIRTUAL_SERVICE_FILE}" ]; then VIRTUAL_SERVICE_FILE=istio_virtualservice_canary_dark.yaml ; fi
 if [ ! -f ${VIRTUAL_SERVICE_FILE} ]; then
   cat > ${VIRTUAL_SERVICE_FILE} << EOF
 apiVersion: networking.istio.io/v1alpha3
