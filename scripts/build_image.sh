@@ -38,18 +38,16 @@ echo -e "Existing images in registry"
 bx cr images
 
 # Minting image tag using format: BRANCH-BUILD_NUMBER-COMMIT_ID-TIMESTAMP
-# e.g. master-12-c123d456-20180615131912-
+# e.g. master-3-50da6912-20181123114435
 
-TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
+TIMESTAMP=$( date -u "+%Y%m%d%H%M%S")
 IMAGE_TAG=${TIMESTAMP}
-if [ ! -z ${GIT_COMMIT} ]; then
+if [ ! -z "${GIT_COMMIT}" ]; then
   GIT_COMMIT_SHORT=$( echo ${GIT_COMMIT} | head -c 8 ) 
   IMAGE_TAG=${GIT_COMMIT_SHORT}-${IMAGE_TAG}
 fi
 IMAGE_TAG=${BUILD_NUMBER}-${IMAGE_TAG}
-if [ ! -z ${GIT_BRANCH} ]; then
-  IMAGE_TAG=${GIT_BRANCH}-${IMAGE_TAG}
-fi
+if [ ! -z "${GIT_BRANCH}" ]; then IMAGE_TAG=${GIT_BRANCH}-${IMAGE_TAG} ; fi
 echo "=========================================================="
 echo -e "BUILDING CONTAINER IMAGE: ${IMAGE_NAME}:${IMAGE_TAG}"
 if [ -z "${DOCKER_ROOT}" ]; then DOCKER_ROOT=. ; fi
@@ -57,7 +55,6 @@ if [ -z "${DOCKER_FILE}" ]; then DOCKER_FILE=${DOCKER_ROOT}/Dockerfile ; fi
 set -x
 bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_ROOT} -f ${DOCKER_FILE}
 set +x
-
 
 bx cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
@@ -73,7 +70,7 @@ echo "=========================================================="
 echo "COPYING ARTIFACTS needed for deployment and testing (in particular build.properties)"
 
 echo "Checking archive dir presence"
-if [ -z "${ARCHIVE_DIR}"]; then
+if [ -z "${ARCHIVE_DIR}" ]; then
   echo -e "Build archive directory contains entire working directory."
 else
   echo -e "Copying working dir into build archive directory: ${ARCHIVE_DIR} "

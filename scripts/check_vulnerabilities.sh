@@ -18,7 +18,7 @@ else
 fi 
 
 # If running after build_image.sh in same stage, reuse the exported variable PIPELINE_IMAGE_URL
-if [[ -z PIPELINE_IMAGE_URL ]]; then
+if [ -z "${PIPELINE_IMAGE_URL}" ]; then
   PIPELINE_IMAGE_URL=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 else
   # extract from img url
@@ -57,4 +57,4 @@ set +e
 bx cr va -e ${PIPELINE_IMAGE_URL}
 set -e
 STATUS=$( bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status' )
-[[ STATUS == "OK" ]] || [[ STATUS == "UNSUPPORTED" ]] || [[ STATUS == "WARN" ]] || { echo "ERROR: The vulnerability scan was not successful, check the OUTPUT of the command and try again."; exit 1; }
+[[ ${STATUS} == "OK" ]] || [[ ${STATUS} == "UNSUPPORTED" ]] || [[ ${STATUS} == "WARN" ]] || { echo "ERROR: The vulnerability scan was not successful, check the OUTPUT of the command and try again."; exit 1; }
