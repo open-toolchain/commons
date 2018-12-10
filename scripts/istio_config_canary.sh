@@ -96,7 +96,7 @@ EOF
 fi
 
 echo -e "Gateways, destination rules and virtual services in namespace: ${CLUSTER_NAMESPACE}"
-kubectl get gateways,destinationrules,virtualservices --namespace ${CLUSTER_NAMESPACE}
+kubectl get gateway,destinationrule,virtualservice --namespace ${CLUSTER_NAMESPACE}
 
 echo -e "Installed gateway details:"
 kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
@@ -105,5 +105,5 @@ echo -e "Installed destination rule details:"
 kubectl get destinationrule destination-rule-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 
 echo -e "Installed virtual service details:"
-kubectl get virtualservice virtual-services-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
+kubectl get virtualservice virtual-service-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 
