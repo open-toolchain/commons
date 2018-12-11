@@ -45,11 +45,21 @@ if kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE}; t
 else
   if [ -z "${GATEWAY_FILE}" ]; then GATEWAY_FILE=istio_gateway.yaml ; fi
   if [ ! -f ${GATEWAY_FILE} ]; then
+    if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
+    if [ ! -f ${DEPLOYMENT_FILE} ]; then
+        echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
+        exit 1
+    fi
+    # Install 'yq' to process yaml files
+    python -m site &> /dev/null && export PATH="$PATH:`python -m site --user-base`/bin"
+    pip install yq
+    echo -e "Updating $DEPLOYMENT_FILE to represent canary deployment: add label version, modify deployment name"
+    DEPLOYMENT_NAME=$( cat ${DEPLOYMENT_FILE} | yq -r '. | select(.kind=="Deployment") | .metadata.name' ) # read deployment name
     cat > ${GATEWAY_FILE} << EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: gateway-${IMAGE_NAME}
+  name: gateway-${DEPLOYMENT_NAME}
 spec:
   selector:
     istio: ingressgateway # use istio default controller
@@ -64,30 +74,30 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: virtual-service-${IMAGE_NAME}
+  name: virtual-service-${DEPLOYMENT_NAME}
 spec:
   hosts:
     - '*'
   gateways:
-    - gateway-${IMAGE_NAME}
+    - gateway-${DEPLOYMENT_NAME}
   http:
     - route:
         - destination:
-            host: ${IMAGE_NAME}
+            host: ${DEPLOYMENT_NAME}
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: destination-rule-${IMAGE_NAME}
+  name: destination-rule-${DEPLOYMENT_NAME}
 spec:
-  host: ${IMAGE_NAME}
+  host: ${DEPLOYMENT_NAME}
   subsets:
   - name: stable
     labels:
-      version: 'stable'
+      version: stable
   - name: canary
     labels:
-      version: 'canary'
+      version: canary
 EOF
     #sed -e "s/\${IMAGE_NAME}/${IMAGE_NAME}/g" ${GATEWAY_FILE}
   fi
@@ -95,15 +105,15 @@ EOF
   kubectl apply -f ${GATEWAY_FILE} --namespace ${CLUSTER_NAMESPACE}
 fi
 
-echo -e "Gateways, destination rules and virtual services in namespace: ${CLUSTER_NAMESPACE}"
-kubectl get gateway,destinationrule,virtualservice --namespace ${CLUSTER_NAMESPACE}
+# echo -e "Gateways, destination rules and virtual services in namespace: ${CLUSTER_NAMESPACE}"
+# kubectl get gateway,destinationrule,virtualservice --namespace ${CLUSTER_NAMESPACE}
 
-echo -e "Installed gateway details:"
-kubectl get gateway gateway-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
+# echo -e "Installed gateway details:"
+# kubectl get gateway gateway-${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 
-echo -e "Installed destination rule details:"
-kubectl get destinationrule destination-rule-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
+# echo -e "Installed destination rule details:"
+# kubectl get destinationrule destination-rule-${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 
-echo -e "Installed virtual service details:"
-kubectl get virtualservice virtual-service-${IMAGE_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
+# echo -e "Installed virtual service details:"
+# kubectl get virtualservice virtual-service-${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 
