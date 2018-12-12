@@ -13,6 +13,7 @@ echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
+echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
 
 #View build properties
 # cat build.properties
@@ -96,7 +97,11 @@ echo "DEPLOYMENT SUCCEEDED"
 if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
-  PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+  if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+    PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
+  else
+    PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+  fi
   echo ""
   echo -e "VIEW THE APPLICATION AT: http://${IP_ADDR}:${PORT}"
 fi
