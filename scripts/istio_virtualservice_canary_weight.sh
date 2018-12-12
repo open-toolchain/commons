@@ -25,6 +25,7 @@ fi
 let STABLE_WEIGHT=100-${CANARY_WEIGHT}
 if [ -z "${VIRTUAL_SERVICE_FILE}" ]; then VIRTUAL_SERVICE_FILE=istio_virtualservice_canary_weight.yaml ; fi
 if [ ! -f ${VIRTUAL_SERVICE_FILE} ]; then
+  echo -e "Inferring virtual service configuration using Kubernetes deployment yaml file : ${DEPLOYMENT_FILE}"
   if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
   if [ ! -f ${DEPLOYMENT_FILE} ]; then
       echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
@@ -33,30 +34,30 @@ if [ ! -f ${VIRTUAL_SERVICE_FILE} ]; then
   # Install 'yq' to process yaml files
   python -m site &> /dev/null && export PATH="$PATH:`python -m site --user-base`/bin"
   pip install yq
-  echo -e "Updating $DEPLOYMENT_FILE to represent canary deployment: add label version, modify deployment name"
-  DEPLOYMENT_NAME=$( cat ${DEPLOYMENT_FILE} | yq -r '. | select(.kind=="Deployment") | .metadata.name' ) # read deployment name
+  # read app name if present, if not default to deployment name
+  APP_NAME=$( cat ${DEPLOYMENT_FILE} | yq -r '. | select(.kind=="Deployment") | if (.metadata.labels.app) then .metadata.labels.app else .metadata.name end' ) # read deployment name  
   cat > ${VIRTUAL_SERVICE_FILE} << EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: virtual-service-${DEPLOYMENT_NAME}
+  name: virtual-service-${APP_NAME}
 spec:
   hosts:
     - '*'
   gateways:
-    - gateway-${DEPLOYMENT_NAME}
+    - gateway-${APP_NAME}
   http:
     - route:
         - destination:
-            host: ${DEPLOYMENT_NAME}
+            host: ${APP_NAME}
             subset: stable
           weight: ${STABLE_WEIGHT}
         - destination:
-            host: ${DEPLOYMENT_NAME}
+            host: ${APP_NAME}
             subset: canary
           weight: ${CANARY_WEIGHT}
 EOF
-  #sed -e "s/\${DEPLOYMENT_NAME}/${DEPLOYMENT_NAME}/g" ${VIRTUAL_SERVICE_FILE}
+  #sed -e "s/\${APP_NAME}/${APP_NAME}/g" ${VIRTUAL_SERVICE_FILE}
 fi
 cat ${VIRTUAL_SERVICE_FILE}
 kubectl apply -f ${VIRTUAL_SERVICE_FILE} --namespace ${CLUSTER_NAMESPACE}
@@ -64,10 +65,10 @@ kubectl apply -f ${VIRTUAL_SERVICE_FILE} --namespace ${CLUSTER_NAMESPACE}
 kubectl get gateways,destinationrules,virtualservices --namespace ${CLUSTER_NAMESPACE}
 
 # echo -e "Installed gateway details:"
-# kubectl get gateway gateway-${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
+# kubectl get gateway gateway-${APP_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 
 # echo -e "Installed destination rule details:"
-# kubectl get destinationrule destination-rule-${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
+# kubectl get destinationrule destination-rule-${APP_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 
 # echo -e "Installed virtual service details:"
-# kubectl get virtualservice virtual-service-${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
+# kubectl get virtualservice virtual-service-${APP_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
