@@ -16,7 +16,7 @@ echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "CANARY_WEIGHT=${CANARY_WEIGHT}"
 
-if [ -z "${CANARY_WEIGHT}"]; then
+if [ -z "${CANARY_WEIGHT}" ]; then
   echo "Weight of canary destination not set (CANARY_WEIGHT)"
   exit 1
 else
