@@ -38,7 +38,18 @@ else
     exit 1
 fi    
 set -x
-kubectl apply --namespace ${CLUSTER_NAMESPACE} -f ${DEPLOYMENT_FILE} 
+# if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+#   echo -e "Istio not found, installing it..."
+#   WORKING_DIR=$(pwd)
+#   mkdir ~/tmpbin && cd ~/tmpbin
+#   curl -L https://git.io/getLatestIstio | sh -
+#   ISTIO_ROOT=$(pwd)/$(find istio-* -maxdepth 0 -type d)
+#   export PATH=${ISTIO_ROOT}/bin:$PATH
+#   cd $WORKING_DIR
+#   kubectl apply --namespace ${CLUSTER_NAMESPACE} -f <(istioctl kube-inject -f ${DEPLOYMENT_FILE})
+# else
+kubectl apply --namespace ${CLUSTER_NAMESPACE} -f ${DEPLOYMENT_FILE}
+# fi
 set +x
 
 echo ""
