@@ -37,10 +37,8 @@ else
     kubectl get namespace ${CLUSTER_NAMESPACE} -L istio-injection
 fi
 
-## TODO BREAK IT IN SUB PIECES
-
 echo "=========================================================="
-echo "CONFIGURE GATEWAY"
+echo "CONFIGURE GATEWAY with 2 subsets 'stable' and 'canary'. Initially routing all traffic to 'stable' subset".
 if [ -z "${GATEWAY_FILE}" ]; then GATEWAY_FILE=istio_gateway.yaml ; fi
 if [ ! -f ${GATEWAY_FILE} ]; then
   echo -e "Inferring gateway configuration using Kubernetes deployment yaml file : ${DEPLOYMENT_FILE}"
@@ -71,20 +69,6 @@ spec:
     - "*"
 ---
 apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: virtual-service-${APP_NAME}
-spec:
-  hosts:
-    - '*'
-  gateways:
-    - gateway-${APP_NAME}
-  http:
-    - route:
-        - destination:
-            host: ${APP_NAME}
----
-apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
   name: destination-rule-${APP_NAME}
@@ -97,6 +81,20 @@ spec:
   - name: canary
     labels:
       version: canary
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: virtual-service-${APP_NAME}
+spec:
+  hosts:
+    - '*'
+  gateways:
+    - gateway-${APP_NAME}
+  http:
+    - route:
+        - destination:
+            host: ${APP_NAME}
 EOF
   #sed -e "s/\${APP_NAME}/${APP_NAME}/g" ${GATEWAY_FILE}
 fi
