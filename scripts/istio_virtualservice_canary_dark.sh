@@ -8,12 +8,13 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/istio_virtualservice_canary_dark.sh
 
-# Route all traffic to "stable" destination (using Istio)
+# Only traffic matching a user-agent rule is targeting "canary" destination, the rest goes to "stable" destination (using Istio)
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 
 if [ -z "${VIRTUAL_SERVICE_FILE}" ]; then VIRTUAL_SERVICE_FILE=istio_virtualservice_canary_dark.yaml ; fi
 if [ ! -f ${VIRTUAL_SERVICE_FILE} ]; then

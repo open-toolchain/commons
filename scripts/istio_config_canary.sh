@@ -14,6 +14,7 @@
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 
 #Check namespace availability
 echo "=========================================================="

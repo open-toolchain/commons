@@ -8,13 +8,14 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/istio_virtualservice_canary_weight.sh
 
-# Route all traffic to "stable" destination (using Istio)
+# Route a fraction of traffic to "canary" destination (CANARY_WEIGHT), and rest to "stable" destination (using Istio)
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "CANARY_WEIGHT=${CANARY_WEIGHT}"
+echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 
 if [ -z "${CANARY_WEIGHT}" ]; then
   echo "Weight of canary destination not set (CANARY_WEIGHT)"
