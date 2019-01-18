@@ -14,6 +14,7 @@ echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
+echo "HELM_VERSION=${HELM_VERSION}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -44,6 +45,28 @@ else
   RELEASE_NAME=${IMAGE_NAME}
 fi
 echo -e "Release name: ${RELEASE_NAME}"
+
+echo "=========================================================="
+echo "CHECKING HELM CLIENT VERSION"
+if [ -z "${HELM_VERSION}" ]; then
+  # use locally installed version of Helm
+  HELM_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+    echo -e "No required Helm version specified, defaulting to ${HELM_VERSION} found locally"
+else
+  LOCAL_VERSION==$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+  if [ "${HELM_VERSION}" = "${LOCAL_VERSION}" ]; then
+    echo -e "Required Helm version ${HELM_VERSION} already found locally"
+  else
+    echo -e "Installing required Helm version ${HELM_VERSION}"
+    WORKING_DIR=$(pwd)
+    mkdir ~/tmpbin && cd ~/tmpbin
+    curl -L https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz -o helm.tar.gz && tar -xzvf helm.tar.gz
+    cd linux-amd64
+    export PATH=$(pwd):$PATH
+    cd $WORKING_DIR
+  fi
+fi
+helm version --client
 
 echo "=========================================================="
 echo "DEPLOYING HELM chart"

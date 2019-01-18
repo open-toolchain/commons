@@ -16,6 +16,7 @@ echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
+echo "HELM_VERSION=${HELM_VERSION}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -81,7 +82,7 @@ else
 fi
 echo "Checking ability to pass pull secret via Helm chart (see also https://console.bluemix.net/docs/containers/cs_images.html#images)"
 CHART_PULL_SECRET=$( grep 'pullSecret' ${CHART_PATH}/values.yaml || : )
-if [ -z "$CHART_PULL_SECRET" ]; then
+if [ -z "${CHART_PULL_SECRET}" ]; then
   echo "INFO: Chart is not expecting an explicit private registry imagePullSecret. Patching the cluster default serviceAccount to pass it implicitly instead."
   echo "      Learn how to inject pull secrets into the deployment chart at: https://kubernetes.io/docs/concepts/containers/images/#referring-to-an-imagepullsecrets-on-a-pod"
   echo "      or check out this chart example: https://github.com/open-toolchain/hello-helm/tree/master/chart/hello"
@@ -104,13 +105,39 @@ else
 fi
 
 echo "=========================================================="
-echo "CONFIGURING TILLER enabled (Helm server-side component)"
-helm version
-helm init --upgrade --force-upgrade
-kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
-# TODO: once helm version >=2.8.2 replace above 2 lines with
-# helm init --upgrade --force-upgrade --wait
+echo "CHECKING HELM CLIENT VERSION"
+if [ -z "${HELM_VERSION}" ]; then
+  # use locally installed version of Helm
+  HELM_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+    echo -e "No required Helm version specified, defaulting to ${HELM_VERSION} found locally"
+else
+  LOCAL_VERSION==$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+  if [ "${HELM_VERSION}" = "${LOCAL_VERSION}" ]; then
+    echo -e "Required Helm version ${HELM_VERSION} already found locally"
+  else
+    echo -e "Installing required Helm version ${HELM_VERSION}"
+    WORKING_DIR=$(pwd)
+    mkdir ~/tmpbin && cd ~/tmpbin
+    curl -L https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz -o helm.tar.gz && tar -xzvf helm.tar.gz
+    cd linux-amd64
+    export PATH=$(pwd):$PATH
+    cd $WORKING_DIR
+  fi
+fi
+helm version --client
 
+echo "=========================================================="
+echo "CHECKING HELM SERVER VERSION (TILLER)"
+TILLER_VERSION=$( helm version --server | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+if [ -z "${TILLER_VERSION}" ]; then
+    echo -e "Helm Tiller not found. Installing Tiller matching client version: ${HELM_VERSION}"
+    helm init --upgrade --force-upgrade
+    kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
+    # TODO: once helm version >=2.8.2 replace above 2 lines with
+    # helm init --upgrade --force-upgrade --wait
+  else
+    echo -e "Helm Tiller ${TILLER_VERSION} already installed in cluster. Keeping it."
+fi
 helm version
 
 echo "=========================================================="
