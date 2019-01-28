@@ -108,8 +108,8 @@ echo "=========================================================="
 echo "CHECKING HELM CLIENT VERSION"
 if [ -z "${HELM_VERSION}" ]; then
   # use locally installed version of Helm
-  HELM_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
-    echo -e "No required Helm version specified, defaulting to ${HELM_VERSION} found locally"
+  LOCAL_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+    echo -e "No required Helm version specified, defaulting to ${LOCAL_VERSION} found locally"
 else
   LOCAL_VERSION==$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
   if [ "${HELM_VERSION}" = "${LOCAL_VERSION}" ]; then
