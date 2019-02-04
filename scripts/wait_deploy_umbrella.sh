@@ -18,7 +18,7 @@ else
 fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # Infer CHART_NAME from path to chart (last segment per construction for valid charts)
 CHART_NAME=$(basename $CHART_PATH)

@@ -20,7 +20,7 @@ else
 fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 echo "INSTANCE_NAME=${INSTANCE_NAME}"
 echo "SERVICE_NAME=${SERVICE_NAME}"

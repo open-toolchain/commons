@@ -35,7 +35,7 @@ echo "IMAGE_TAG=${IMAGE_TAG}"
 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"

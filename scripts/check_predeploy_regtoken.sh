@@ -30,7 +30,7 @@ else
 fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
@@ -53,7 +53,7 @@ else
 fi
 
 # Grant access to private image registry from namespace $CLUSTER_NAMESPACE
-# reference https://console.bluemix.net/docs/containers/cs_cluster.html#bx_registry_other
+# reference https://cloud.ibm.com/docs/containers/cs_cluster.html#bx_registry_other
 echo "=========================================================="
 echo -e "CONFIGURING ACCESS to private image registry from namespace ${CLUSTER_NAMESPACE}"
 IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_URL}"

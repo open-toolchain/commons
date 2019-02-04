@@ -17,7 +17,7 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 #env
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 #echo "Checking archive dir presence"
 cp -R -n ./ $ARCHIVE_DIR/ || true
