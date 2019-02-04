@@ -129,7 +129,9 @@ helm version --client
 
 echo "=========================================================="
 echo "CHECKING HELM SERVER VERSION (TILLER)"
+set +e
 TILLER_VERSION=$( helm version --server | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+set -e
 if [ -z "${TILLER_VERSION}" ]; then
     echo -e "Helm Tiller not found. Installing Tiller matching client version: ${HELM_VERSION} with cluster admin privileges (RBAC)"
     kubectl -n kube-system create serviceaccount tiller
