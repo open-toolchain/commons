@@ -13,10 +13,9 @@ echo "GIT_COMMIT=${SOURCE_GIT_COMMIT}"
 echo "GIT_USER=${SOURCE_GIT_USER}"
 echo "GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
 echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
-echo "CHART_PATH=${CHART_PATH}"
-echo "CHART_NAME=${CHART_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
+echo "CHART_ROOT=${CHART_ROOT}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
@@ -51,11 +50,24 @@ git config --global push.default simple
 
 echo "=========================================================="
 echo "PREPARING CHART PACKAGE"
-echo -e "Checking existence of ${CHART_PATH}"
-if [ ! -d ${CHART_PATH} ]; then
-    echo -e "Helm chart: ${CHART_PATH} NOT found"
-    exit 1
+
+echo "=========================================================="
+echo "CHECKING HELM CHART"
+if [ -z "${CHART_ROOT}" ]; then CHART_ROOT="chart" ; fi
+echo -e "Looking for chart under /${CHART_ROOT}/<CHART_NAME>"
+if [ -d ${CHART_ROOT} ]; then
+  CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+  CHART_PATH=${CHART_ROOT}/${CHART_NAME}
 fi
+if [ -z "${CHART_PATH}" ]; then
+    echo -e "No Helm chart found for Kubernetes deployment under ${CHART_ROOT}/<CHART_NAME>."
+    exit 1
+else
+    echo -e "Helm chart found for Kubernetes deployment : ${CHART_PATH}"
+fi
+echo "Linting Helm Chart"
+helm lint ${CHART_PATH}
+
 # Compute chart version number
 CHART_VERSION=$(cat ${CHART_PATH}/Chart.yaml | grep '^version:' | awk '{print $2}')
 MAJOR=`echo ${CHART_VERSION} | cut -d. -f1`
