@@ -10,6 +10,7 @@
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
+echo "CHART_ROOT=${CHART_ROOT}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
@@ -33,9 +34,20 @@ echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 if [ -z "${CLUSTER_NAMESPACE}" ]; then CLUSTER_NAMESPACE=default ; fi
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
-# Infer CHART_NAME from path to chart (last segment per construction for valid charts)
-CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
-CHART_PATH=${CHART_ROOT}/${CHART_NAME}
+echo "=========================================================="
+echo "CHECKING HELM CHART"
+if [ -z "${CHART_ROOT}" ]; then CHART_ROOT="chart" ; fi
+echo -e "Looking for chart under /${CHART_ROOT}/<CHART_NAME>"
+if [ -d ${CHART_ROOT} ]; then
+  CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+  CHART_PATH=${CHART_ROOT}/${CHART_NAME}
+fi
+if [ -z "${CHART_PATH}" ]; then
+    echo -e "No Helm chart found for Kubernetes deployment under ${CHART_ROOT}/<CHART_NAME>."
+    exit 1
+else
+    echo -e "Helm chart found for Kubernetes deployment : ${CHART_PATH}"
+fi
 
 echo "=========================================================="
 echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
