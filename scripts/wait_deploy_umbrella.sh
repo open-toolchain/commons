@@ -1,6 +1,6 @@
 #!/bin/bash
 # uncomment to debug the script
-#set -x
+# set -x
 # copy the script below into your app code repo (e.g. ./scripts/wait_deploy_umbrella.sh) and 'source' it from your pipeline job
 #    source ./scripts/wait_deploy_umbrella.sh
 # alternatively, you can source it from online script:
@@ -87,7 +87,7 @@ do
     for COMPONENT_REPO_TAG in ${COMPONENTS_REPOS_TAGS}
     do
         IFS=':' read COMPONENT_NAME IMAGE_REPOSITORY IMAGE_TAG <<< "${COMPONENT_REPO_TAG}"
-        COMPONENT_OWNER=$( echo $ALL_REPLICASETS | jq '[.items[]? | select(.metadata.name | startswith("'"${COMPONENT_NAME}"'")) | select(.spec.replicas != "0")] | max_by(.metadata.creationTimestamp) ' ) # max_by to take the latest replicaset, []? to handle null values
+        COMPONENT_OWNER=$( echo $ALL_REPLICASETS | jq '[.items[]? | select(.metadata.labels.app == "'"${COMPONENT_NAME}"'") | select(.spec.replicas != "0")] | max_by(.metadata.creationTimestamp) ' ) # max_by to take the latest replicaset, []? to handle null values
         if [[ "$COMPONENT_OWNER" == "null" ]]; then
             COMPONENT_OWNER=$( echo $ALL_STATEFULSETS | jq '[.items[]? | select(.metadata.name == "'"${COMPONENT_NAME}"'") | select(.spec.replicas != "0")] | max_by(.metadata.creationTimestamp) ' ) # max_by to take the latest statefull set, []? to handle null values
         fi
