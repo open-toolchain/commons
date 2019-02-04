@@ -17,7 +17,7 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 #env
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 #echo "Checking archive dir presence"
 cp -R -n ./ $ARCHIVE_DIR/ || true
@@ -29,6 +29,7 @@ GIT_PASSWORD=$( echo ${GIT_REMOTE_URL} | cut -d: -f3 | cut -d@ -f1 )
 
 mkdir -p $ARCHIVE_DIR
 echo "GIT_URL=${GIT_URL}" >> $ARCHIVE_DIR/build.properties
+echo "GIT_BRANCH=${GIT_BRANCH}" >> $ARCHIVE_DIR/build.properties
 echo "GIT_COMMIT=${GIT_COMMIT}" >> $ARCHIVE_DIR/build.properties
 echo "GIT_USER=${GIT_USER}" >> $ARCHIVE_DIR/build.properties
 echo "GIT_PASSWORD=${GIT_PASSWORD}" >> $ARCHIVE_DIR/build.properties

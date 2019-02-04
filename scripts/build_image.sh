@@ -15,7 +15,10 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
+echo "GIT_BRANCH=${GIT_BRANCH}"
 echo "GIT_COMMIT=${GIT_COMMIT}"
+echo "DOCKER_ROOT=${DOCKER_ROOT}"
+echo "DOCKER_FILE=${DOCKER_FILE}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -26,7 +29,7 @@ else
 fi 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # To review or change build options use:
 # bx cr build --help
@@ -34,17 +37,26 @@ fi
 echo -e "Existing images in registry"
 bx cr images
 
-TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
-IMAGE_TAG=${BUILD_NUMBER}-${TIMESTAMP}
-if [ ! -z ${GIT_COMMIT} ]; then
+# Minting image tag using format: BUILD_NUMBER--BRANCH-COMMIT_ID-TIMESTAMP
+# e.g. 3-master-50da6912-20181123114435
+# (use build number as first segment to allow image tag as a patch release name according to semantic versioning)
+
+TIMESTAMP=$( date -u "+%Y%m%d%H%M%S")
+IMAGE_TAG=${TIMESTAMP}
+if [ ! -z "${GIT_COMMIT}" ]; then
   GIT_COMMIT_SHORT=$( echo ${GIT_COMMIT} | head -c 8 ) 
-  IMAGE_TAG=${IMAGE_TAG}-${GIT_COMMIT_SHORT}; 
+  IMAGE_TAG=${GIT_COMMIT_SHORT}-${IMAGE_TAG}
 fi
+if [ ! -z "${GIT_BRANCH}" ]; then IMAGE_TAG=${GIT_BRANCH}-${IMAGE_TAG} ; fi
+IMAGE_TAG=${BUILD_NUMBER}-${IMAGE_TAG}
 echo "=========================================================="
 echo -e "BUILDING CONTAINER IMAGE: ${IMAGE_NAME}:${IMAGE_TAG}"
+if [ -z "${DOCKER_ROOT}" ]; then DOCKER_ROOT=. ; fi
+if [ -z "${DOCKER_FILE}" ]; then DOCKER_FILE=${DOCKER_ROOT}/Dockerfile ; fi
 set -x
-bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} .
+bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_ROOT} -f ${DOCKER_FILE}
 set +x
+
 bx cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
 # Set PIPELINE_IMAGE_URL for subsequent jobs in stage (e.g. Vulnerability Advisor)
@@ -52,11 +64,20 @@ export PIPELINE_IMAGE_URL="$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$IMAGE_
 
 bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 
+######################################################################################
+# Copy any artifacts that will be needed for deployment and testing to $WORKSPACE    #
+######################################################################################
 echo "=========================================================="
 echo "COPYING ARTIFACTS needed for deployment and testing (in particular build.properties)"
 
 echo "Checking archive dir presence"
-mkdir -p $ARCHIVE_DIR
+if [ -z "${ARCHIVE_DIR}" ]; then
+  echo -e "Build archive directory contains entire working directory."
+else
+  echo -e "Copying working dir into build archive directory: ${ARCHIVE_DIR} "
+  mkdir -p ${ARCHIVE_DIR}
+  find . -mindepth 1 -maxdepth 1 -not -path "./$ARCHIVE_DIR" -exec cp -R '{}' "${ARCHIVE_DIR}/" ';'
+fi
 
 # Persist env variables into a properties file (build.properties) so that all pipeline stages consuming this
 # build as input and configured with an environment properties file valued 'build.properties'
@@ -65,29 +86,13 @@ mkdir -p $ARCHIVE_DIR
 # If already defined build.properties from prior build job, append to it.
 cp build.properties $ARCHIVE_DIR/ || :
 
-CHART_ROOT="chart"
-echo "Copy Helm chart along with the build"
-if [ ! -d $ARCHIVE_DIR/CHART_ROOT ]; then # no need to copy if working in ./ already
-  cp -r $CHART_ROOT $ARCHIVE_DIR/
-fi
-
-# CHART information from build.properties is used in Helm Chart deployment to set the release name
-CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
-echo "CHART_NAME=${CHART_NAME}" >> $ARCHIVE_DIR/build.properties
-echo "CHART_PATH=${CHART_ROOT}/${CHART_NAME}" >> $ARCHIVE_DIR/build.properties
 # IMAGE information from build.properties is used in Helm Chart deployment to set the release name
 echo "IMAGE_NAME=${IMAGE_NAME}" >> $ARCHIVE_DIR/build.properties
 echo "IMAGE_TAG=${IMAGE_TAG}" >> $ARCHIVE_DIR/build.properties
 # REGISTRY information from build.properties is used in Helm Chart deployment to generate cluster secret
 echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties
+echo "GIT_BRANCH=${GIT_BRANCH}" >> $ARCHIVE_DIR/build.properties
 echo "File 'build.properties' created for passing env variables to subsequent pipeline jobs:"
 cat $ARCHIVE_DIR/build.properties
 
-echo "Copy pipeline scripts along with the build"
-# Copy scripts (incl. deploy scripts)
-if [ -d ./scripts/ ]; then
-  if [ ! -d $ARCHIVE_DIR/scripts/ ]; then # no need to copy if working in ./ already
-    cp -r ./scripts/ $ARCHIVE_DIR/
-  fi
-fi

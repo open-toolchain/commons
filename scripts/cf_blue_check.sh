@@ -23,7 +23,7 @@ echo "BLUE_APP_DOMAIN=${BLUE_APP_DOMAIN}"
 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 MAX_HEALTH_CHECKS=20
 EXPECTED_RESPONSE="200"

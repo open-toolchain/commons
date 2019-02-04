@@ -8,32 +8,50 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_kubectl.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "REGISTRY_URL=${REGISTRY_URL}"
-echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
+echo "REGISTRY_URL=${REGISTRY_URL}"
+echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
+echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
+echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
 
 #View build properties
 # cat build.properties
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
+if [ -z "${CLUSTER_NAMESPACE}" ]; then CLUSTER_NAMESPACE=default ; fi
+echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
-CLUSTER_NAMESPACE=default
 echo "=========================================================="
-#Check cluster availability
-IP_ADDR=$( bx cs workers $PIPELINE_KUBERNETES_CLUSTER_NAME | grep normal | head -n 1 | awk '{ print $2 }' )
-if [ -z "$IP_ADDR" ]; then
-  echo "$PIPELINE_KUBERNETES_CLUSTER_NAME not created or workers not ready"
-  exit 1
-fi
-echo ""
-echo "DEPLOYING USING MANIFEST:"
-cat deployment.yml
-kubectl apply -f deployment.yml  
+echo "DEPLOYING using manifest"
+echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
+if [ -f ${DEPLOYMENT_FILE} ]; then
+    sed -i "s~^\([[:blank:]]*\)image:.*$~\1image: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}~" ${DEPLOYMENT_FILE}
+    cat ${DEPLOYMENT_FILE}
+else 
+    echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
+    exit 1
+fi    
+set -x
+# if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+#   echo -e "Istio not found, installing it..."
+#   WORKING_DIR=$(pwd)
+#   mkdir ~/tmpbin && cd ~/tmpbin
+#   curl -L https://git.io/getLatestIstio | sh -
+#   ISTIO_ROOT=$(pwd)/$(find istio-* -maxdepth 0 -type d)
+#   export PATH=${ISTIO_ROOT}/bin:$PATH
+#   cd $WORKING_DIR
+#   kubectl apply --namespace ${CLUSTER_NAMESPACE} -f <(istioctl kube-inject -f ${DEPLOYMENT_FILE})
+# else
+kubectl apply --namespace ${CLUSTER_NAMESPACE} -f ${DEPLOYMENT_FILE}
+# fi
+set +x
+
 echo ""
 echo "=========================================================="
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
@@ -42,13 +60,13 @@ echo ""
 for ITERATION in {1..30}
 do
   DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
-  NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
+  NOT_READY=$( echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
-    echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==true) '
+    echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==true) '
     break # deployment succeeded
   fi
-  REASON=$(echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .state.waiting.reason')
+  REASON=$(echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .state.waiting.reason')
   echo -e "${ITERATION} : Deployment still pending..."
   echo -e "NOT_READY:${NOT_READY}"
   echo -e "REASON: ${REASON}"
@@ -64,16 +82,18 @@ do
   sleep 5
 done
 
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .name' | head -n 1)
+APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .name' | head -n 1)
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
-kubectl describe pods --selector app=${APP_NAME}
-APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
-echo -e "SERVICE: ${APP_SERVICE}"
-echo "DEPLOYED SERVICES:"
-kubectl describe services ${APP_SERVICE}
-echo "Application Logs"
-kubectl logs --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}  
+kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
+if [ ! -z "${APP_NAME}" ]; then
+  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
+  echo -e "SERVICE: ${APP_SERVICE}"
+  echo "DEPLOYED SERVICES:"
+  kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
+fi
+#echo "Application Logs"
+#kubectl logs --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}  
 echo ""
 if [[ ! -z "$NOT_READY" ]]; then
   echo ""
@@ -85,8 +105,15 @@ fi
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
-echo ""
-IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
-PORT=$( kubectl get services | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
-echo ""
-echo -e "VIEW THE APPLICATION AT: http://${IP_ADDR}:${PORT}"
+if [ ! -z "${APP_SERVICE}" ]; then
+  echo ""
+  echo ""
+  IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+  if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+    PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
+    echo -e "*** istio gateway enabled ***"
+  else
+    PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+  fi
+  echo -e "VIEW THE APPLICATION AT: http://${IP_ADDR}:${PORT}"
+fi

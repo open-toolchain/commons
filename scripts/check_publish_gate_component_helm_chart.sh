@@ -10,7 +10,6 @@
 
 # This script does test quality gates for all components in an umbrella chart which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_umbrella_gate.sh)
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "CHART_PATH=${CHART_PATH}"
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
@@ -30,11 +29,6 @@ ls -l
 # Install DRA CLI
 export PATH=/opt/IBM/node-v4.2/bin:$PATH
 npm install -g grunt-idra3
-
-#export LOGICAL_APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep LOGICAL_APP_NAME | cut -d'=' -f2 )
-#export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
-#export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
-#POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${LOGICAL_APP_NAME} ${LOGICAL_ENV_NAME} )
 
 # Evaluate the gate against the version matching the git commit
 export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}

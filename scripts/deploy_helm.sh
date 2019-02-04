@@ -8,12 +8,14 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_helm.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
-echo "BUILD_NUMBER=${BUILD_NUMBER}"
+echo "CHART_ROOT=${CHART_ROOT}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
+echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
+echo "HELM_VERSION=${HELM_VERSION}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -25,14 +27,27 @@ fi
 
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
-# https://console.bluemix.net/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
+# https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
+if [ -z "${CLUSTER_NAMESPACE}" ]; then CLUSTER_NAMESPACE=default ; fi
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
-# Infer CHART_NAME from path to chart (last segment per construction for valid charts)
-CHART_NAME=$(basename $CHART_PATH)
+echo "=========================================================="
+echo "CHECKING HELM CHART"
+if [ -z "${CHART_ROOT}" ]; then CHART_ROOT="chart" ; fi
+echo -e "Looking for chart under /${CHART_ROOT}/<CHART_NAME>"
+if [ -d ${CHART_ROOT} ]; then
+  CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+  CHART_PATH=${CHART_ROOT}/${CHART_NAME}
+fi
+if [ -z "${CHART_PATH}" ]; then
+    echo -e "No Helm chart found for Kubernetes deployment under ${CHART_ROOT}/<CHART_NAME>."
+    exit 1
+else
+    echo -e "Helm chart found for Kubernetes deployment : ${CHART_PATH}"
+fi
 
 echo "=========================================================="
 echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
@@ -42,6 +57,28 @@ else
   RELEASE_NAME=${IMAGE_NAME}
 fi
 echo -e "Release name: ${RELEASE_NAME}"
+
+echo "=========================================================="
+echo "CHECKING HELM CLIENT VERSION"
+if [ -z "${HELM_VERSION}" ]; then
+  # use locally installed version of Helm
+  LOCAL_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+    echo -e "No required Helm version specified, defaulting to ${LOCAL_VERSION} found locally"
+else
+  LOCAL_VERSION==$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+  if [ "${HELM_VERSION}" = "${LOCAL_VERSION}" ]; then
+    echo -e "Required Helm version ${HELM_VERSION} already found locally"
+  else
+    echo -e "Installing required Helm version ${HELM_VERSION}"
+    WORKING_DIR=$(pwd)
+    mkdir ~/tmpbin && cd ~/tmpbin
+    curl -L https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz -o helm.tar.gz && tar -xzvf helm.tar.gz
+    cd linux-amd64
+    export PATH=$(pwd):$PATH
+    cd $WORKING_DIR
+  fi
+fi
+helm version --client
 
 echo "=========================================================="
 echo "DEPLOYING HELM chart"
@@ -61,13 +98,13 @@ echo ""
 for ITERATION in {1..30}
 do
   DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
-  NOT_READY=$( echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
+  NOT_READY=$( echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
-    echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==true) '
+    echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==true) '
     break # deployment succeeded
   fi
-  REASON=$(echo $DATA | jq '.items[].status.containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .state.waiting.reason')
+  REASON=$(echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .state.waiting.reason')
   echo -e "${ITERATION} : Deployment still pending..."
   echo -e "NOT_READY:${NOT_READY}"
   echo -e "REASON: ${REASON}"
@@ -130,5 +167,9 @@ helm history ${RELEASE_NAME}
 
 echo "=========================================================="
 IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
-PORT=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${RELEASE_NAME} | sed 's/.*:\([0-9]*\).*/\1/g')
+if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+  PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
+else
+  PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${RELEASE_NAME} | sed 's/.*:\([0-9]*\).*/\1/g' )
+fi
 echo -e "View the application at: http://${IP_ADDR}:${PORT}"
