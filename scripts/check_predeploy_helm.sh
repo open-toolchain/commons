@@ -131,11 +131,13 @@ echo "=========================================================="
 echo "CHECKING HELM SERVER VERSION (TILLER)"
 TILLER_VERSION=$( helm version --server | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
 if [ -z "${TILLER_VERSION}" ]; then
-    echo -e "Helm Tiller not found. Installing Tiller matching client version: ${HELM_VERSION}"
-    helm init --upgrade --force-upgrade
-    kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
-    # TODO: once helm version >=2.8.2 replace above 2 lines with
-    # helm init --upgrade --force-upgrade --wait
+    echo -e "Helm Tiller not found. Installing Tiller matching client version: ${HELM_VERSION} with cluster admin privileges (RBAC)"
+    kubectl -n kube-system create serviceaccount tiller
+    kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
+    helm init --service-account tiller
+    # helm init --upgrade --force-upgrade
+    kubectl --namespace=kube-system rollout status deploy/tiller-deploy
+    # kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
   else
     echo -e "Helm Tiller ${TILLER_VERSION} already installed in cluster. Keeping it."
 fi
