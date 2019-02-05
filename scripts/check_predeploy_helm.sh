@@ -106,42 +106,38 @@ else
 fi
 
 echo "=========================================================="
-echo "CHECKING HELM CLIENT VERSION"
-if [ -z "${HELM_VERSION}" ]; then
-  # use locally installed version of Helm
-  LOCAL_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
-    echo -e "No required Helm version specified, defaulting to ${LOCAL_VERSION} found locally"
-else
-  LOCAL_VERSION==$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
-  if [ "${HELM_VERSION}" = "${LOCAL_VERSION}" ]; then
-    echo -e "Required Helm version ${HELM_VERSION} already found locally"
-  else
-    echo -e "Installing required Helm version ${HELM_VERSION}"
-    WORKING_DIR=$(pwd)
-    mkdir ~/tmpbin && cd ~/tmpbin
-    curl -L https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz -o helm.tar.gz && tar -xzvf helm.tar.gz
-    cd linux-amd64
-    export PATH=$(pwd):$PATH
-    cd $WORKING_DIR
-  fi
-fi
-helm version --client
-
-echo "=========================================================="
-echo "CHECKING HELM SERVER VERSION (TILLER)"
+echo "CHECKING HELM VERSION: matching Helm Tiller (server) if detected. "
 set +e
+LOCAL_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
 TILLER_VERSION=$( helm version --server | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
 set -e
 if [ -z "${TILLER_VERSION}" ]; then
-    echo -e "Helm Tiller not found. Installing Tiller matching client version: ${HELM_VERSION} with cluster admin privileges (RBAC)"
+  if [ -z "${HELM_VERSION}" ]; then
+    CLIENT_VERSION=${HELM_VERSION}
+  else
+    CLIENT_VERSION=${LOCAL_VERSION}
+  fi
+else
+  echo -e "Helm Tiller ${TILLER_VERSION} already installed in cluster. Keeping it, and aligning client."
+  CLIENT_VERSION=${TILLER_VERSION}
+fi
+if [ "${CLIENT_VERSION}" != "${LOCAL_VERSION}" ]; then
+  echo -e "Installing Helm client ${CLIENT_VERSION}"
+  WORKING_DIR=$(pwd)
+  mkdir ~/tmpbin && cd ~/tmpbin
+  curl -L https://storage.googleapis.com/kubernetes-helm/helm-v${CLIENT_VERSION}-linux-amd64.tar.gz -o helm.tar.gz && tar -xzvf helm.tar.gz
+  cd linux-amd64
+  export PATH=$(pwd):$PATH
+  cd $WORKING_DIR
+fi
+if [ -z "${TILLER_VERSION}" ]; then
+    echo -e "Installing Helm Tiller ${CLIENT_VERSION} with cluster admin privileges (RBAC)"
     kubectl -n kube-system create serviceaccount tiller
     kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
     helm init --service-account tiller
     # helm init --upgrade --force-upgrade
     kubectl --namespace=kube-system rollout status deploy/tiller-deploy
     # kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
-  else
-    echo -e "Helm Tiller ${TILLER_VERSION} already installed in cluster. Keeping it."
 fi
 helm version
 
