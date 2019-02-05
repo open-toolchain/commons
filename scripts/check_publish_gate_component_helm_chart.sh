@@ -14,6 +14,7 @@ echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "POLICY_NAME: ${POLICY_NAME}"
+echo "IBM_CLOUD_API_KEY: ${IBM_CLOUD_API_KEY}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -32,7 +33,6 @@ npm install -g grunt-idra3
 
 # Evaluate the gate against the version matching the git commit
 export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
-export IBM_CLOUD_API_KEY=${PIPELINE_BLUEMIX_API_KEY} # TEMPORARY
 
 echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
 echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
