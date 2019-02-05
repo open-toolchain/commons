@@ -59,7 +59,7 @@ fi
 echo -e "Release name: ${RELEASE_NAME}"
 
 echo "=========================================================="
-echo "CHECKING HELM VERSION: matching Helm Tiller (server) if detected. "
+echo "CHECKING HELM CLIENT VERSION: matching Helm Tiller (server) if detected. "
 set +e
 LOCAL_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
 TILLER_VERSION=$( helm version --server | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
