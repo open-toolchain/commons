@@ -11,6 +11,7 @@
 # This script does test quality gates for all components in an umbrella chart which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_umbrella_gate.sh)
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "CHART_PATH=${CHART_PATH}"
+echo "IBM_CLOUD_API_KEY=${IBM_CLOUD_API_KEY}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -41,7 +42,6 @@ for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
   export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
   POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${LOGICAL_APP_NAME} ${LOGICAL_ENV_NAME} )
-  export IBM_CLOUD_API_KEY=${PIPELINE_BLUEMIX_API_KEY} # TEMPORARY
   
   echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
   echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
