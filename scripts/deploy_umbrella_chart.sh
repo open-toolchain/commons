@@ -14,6 +14,7 @@ echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
+echo "IBM_CLOUD_API_KEY=${IBM_CLOUD_API_KEY}"
 
 echo "build.properties:"
 if [ -f build.properties ]; then 
@@ -97,7 +98,7 @@ else
     export LOGICAL_APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep LOGICAL_APP_NAME | cut -d'=' -f2 )
     export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
     export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
-    export IBM_CLOUD_API_KEY=${PIPELINE_BLUEMIX_API_KEY} # TEMPORARY
+ 
     echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
     echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
     echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
