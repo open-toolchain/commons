@@ -42,6 +42,7 @@ spec:
     - route:
         - destination:
             host: ${APP_NAME}
+            subset: stable
 EOF
   #sed -e "s/\${DEPLOYMENT_NAME}/${DEPLOYMENT_NAME}/g" ${VIRTUAL_SERVICE_FILE}
 fi
