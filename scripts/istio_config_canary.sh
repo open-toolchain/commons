@@ -96,6 +96,7 @@ spec:
     - route:
         - destination:
             host: ${APP_NAME}
+            subset: stable
 EOF
   #sed -e "s/\${APP_NAME}/${APP_NAME}/g" ${GATEWAY_FILE}
 fi
