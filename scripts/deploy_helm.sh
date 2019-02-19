@@ -154,7 +154,7 @@ fi
 
 echo ""
 echo "=========================================================="
-echo "DEPLOYMENT SUCCEEDED"
+echo "DEPLOYMENTS:"
 echo ""
 echo -e "Status for release:${RELEASE_NAME}"
 helm status ${RELEASE_NAME}
@@ -163,18 +163,36 @@ echo ""
 echo -e "History for release:${RELEASE_NAME}"
 helm history ${RELEASE_NAME}
 
-# echo ""
-# echo "Deployed Services:"
-# kubectl describe services ${RELEASE_NAME}-${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
-# echo ""
-# echo "Deployed Pods:"
-# kubectl describe pods --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
-
 echo "=========================================================="
-IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
-if [ "${USE_ISTIO_GATEWAY}" = true ]; then
-  PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
-else
-  PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${RELEASE_NAME} | sed 's/.*:\([0-9]*\).*/\1/g' )
+APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[.items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'")] | first | .metadata.labels.app')
+echo -e "APP: ${APP_NAME}"
+echo "DEPLOYED PODS:"
+kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
+
+# lookup service for current release
+APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
+if [ -z "${APP_SERVICE}" ]; then
+  # lookup service for current app
+  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
 fi
-echo -e "View the application at: http://${IP_ADDR}:${PORT}"
+if [ ! -z "${APP_SERVICE}" ]; then
+  echo -e "SERVICE: ${APP_SERVICE}"
+  echo "DEPLOYED SERVICES:"
+  kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
+fi
+
+echo ""
+echo "=========================================================="
+echo "DEPLOYMENT SUCCEEDED"
+if [ ! -z "${APP_SERVICE}" ]; then
+  echo ""
+  echo ""
+  IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+  if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+    PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
+    echo -e "*** istio gateway enabled ***"
+  else
+    PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+  fi
+  echo -e "VIEW THE APPLICATION AT: http://${IP_ADDR}:${PORT}"
+fi
