@@ -82,16 +82,6 @@ do
   sleep 5
 done
 
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.labels.app')
-echo -e "APP: ${APP_NAME}"
-echo "DEPLOYED PODS:"
-kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
-if [ ! -z "${APP_NAME}" ]; then
-  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
-  echo -e "SERVICE: ${APP_SERVICE}"
-  echo "DEPLOYED SERVICES:"
-  kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
-fi
 #echo "Application Logs"
 #kubectl logs --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}  
 echo ""
@@ -100,6 +90,24 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo "=========================================================="
   echo "DEPLOYMENT FAILED"
   exit 1
+fi
+
+echo "=========================================================="
+APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[.items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'")] | first | .metadata.labels.app')
+echo -e "APP: ${APP_NAME}"
+echo "DEPLOYED PODS:"
+kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
+
+# lookup service for current release
+APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
+if [ -z "${APP_SERVICE}" ]; then
+  # lookup service for current app
+  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
+fi
+if [ ! -z "${APP_SERVICE}" ]; then
+  echo -e "SERVICE: ${APP_SERVICE}"
+  echo "DEPLOYED SERVICES:"
+  kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
 fi
 
 echo ""
