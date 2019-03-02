@@ -11,7 +11,11 @@
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
+echo "REGISTRY_URL=${REGISTRY_URL}"
+echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+
+IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 
 IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
 
