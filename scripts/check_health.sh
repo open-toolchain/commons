@@ -19,7 +19,7 @@ IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 
 IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
 
-LIVENESS_PROBE_URL=$(kubectl get deployments --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[].spec.template.spec.containers[]? | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .livenessProbe?.httpGet | ("http://" + '"${IP_ADDR}"' + .path + ":" + .port)' | head -n 1)
+LIVENESS_PROBE_URL=$(kubectl get deployments --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[].spec.template.spec.containers[]? | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .livenessProbe?.httpGet | ("http://" + env.IP_ADDR + .path + ":" + .port)' | head -n 1)
 if [ ! -z "${LIVENESS_PROBE_URL}" ]; then
 if [ "$(curl -Is ${LIVENESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 | head -n 1 | grep 200)" != "" ]; then
     echo "Successfully reached liveness probe endpoint: ${LIVENESS_PROBE_URL}"
@@ -32,7 +32,7 @@ else
     echo "No liveness probe endpoint defined (should be specified in deployment resource."
 fi
 
-READINESS_PROBE_URL=$(kubectl get deployments --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[].spec.template.spec.containers[]? | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .readinessProbe?.httpGet | ("http://" + "'${IP_ADDR}'" + .path + ":" + .port) ' | head -n 1)
+READINESS_PROBE_URL=$(kubectl get deployments --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[].spec.template.spec.containers[]? | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .readinessProbe?.httpGet | ("http://" + env.IP_ADDR + .path + ":" + .port) ' | head -n 1)
 if [ ! -z "${READINESS_PROBE_URL}" ]; then
 if [ "$(curl -Is ${READINESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 | head -n 1 | grep 200)" != "" ]; then
     echo "Successfully reached readiness probe endpoint: ${READINESS_PROBE_URL}"
