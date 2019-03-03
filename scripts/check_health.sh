@@ -25,7 +25,7 @@ echo $CONTAINERS_JSON | jq .
 LIVENESS_PROBE_PATH=$(echo $CONTAINERS_JSON | jq -r ".livenessProbe?.httpGet.path" | head -n 1)
 LIVENESS_PROBE_PORT=$(echo $CONTAINERS_JSON | jq -r ".livenessProbe?.httpGet.port" | head -n 1)
 if [ ! -z "${LIVENESS_PROBE_PATH}" ]; then
-  LIVENESS_PROBE_URL=http://${IP_ADDR}/${LIVENESS_PROBE_PATH}:${LIVENESS_PROBE_PATH}
+  LIVENESS_PROBE_URL=http://${IP_ADDR}${LIVENESS_PROBE_PATH}:${LIVENESS_PROBE_PATH}
   if [ "$(curl -Is ${LIVENESS_PROBE_PATH} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 | head -n 1 | grep 200)" != "" ]; then
     echo "Successfully reached liveness probe endpoint: ${LIVENESS_PROBE_URL}"
     echo "====================================================================="
@@ -40,7 +40,7 @@ fi
 READINESS_PROBE_PATH=$(echo $CONTAINERS_JSON | jq -r ".readinessProbe?.httpGet.path" | head -n 1)
 READINESS_PROBE_PORT=$(echo $CONTAINERS_JSON | jq -r ".readinessProbe?.httpGet.port" | head -n 1)
 if [ ! -z "${READINESS_PROBE_PATH}" ]; then
-  READINESS_PROBE_URL=http://${IP_ADDR}/${LIVENESS_PROBE_PATH}:${LIVENESS_PROBE_PATH}
+  READINESS_PROBE_URL=http://${IP_ADDR}${READINESS_PROBE_PATH}:${READINESS_PROBE_PORT}
   if [ "$(curl -Is ${READINESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 | head -n 1 | grep 200)" != "" ]; then
     echo "Successfully reached readiness probe endpoint: ${READINESS_PROBE_URL}"
     echo "====================================================================="
