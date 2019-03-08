@@ -52,9 +52,9 @@ IMAGE_TAG=${BUILD_NUMBER}-${IMAGE_TAG}
 echo "=========================================================="
 echo -e "BUILDING CONTAINER IMAGE: ${IMAGE_NAME}:${IMAGE_TAG}"
 if [ -z "${DOCKER_ROOT}" ]; then DOCKER_ROOT=. ; fi
-if [ -z "${DOCKER_FILE}" ]; then DOCKER_FILE=${DOCKER_ROOT}/Dockerfile ; fi
+if [ -z "${DOCKER_FILE}" ]; then DOCKER_FILE=Dockerfile ; fi
 set -x
-bx cr build -f ${DOCKER_FILE} -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_ROOT}
+bx cr build -f ${DOCKER_ROOT}/${DOCKER_FILE} -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_ROOT}
 set +x
 
 bx cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
