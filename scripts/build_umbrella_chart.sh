@@ -10,6 +10,7 @@
 
 # This script does build a complete umbrella chart with resolved dependencies, leveraging a sibling local chart repo (/charts)
 # which would be updated from respective CI pipelines (see also https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_helm_package.sh)
+CHART_NAME=${CHART_NAME:-'umbrella-chart'}
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 echo "CHART_NAME=${CHART_NAME}"
@@ -36,7 +37,6 @@ helm init --client-only
 #helm repo add components ${GIT_REMOTE_URL}/raw/master/charts
 #helm repo add components "${GIT_REMOTE_URL%'.git'}/raw/master/charts"
 
-CHART_NAME=umbrella-chart
 CHART_PATH=./${CHART_NAME}
 
 # Compute chart version number
