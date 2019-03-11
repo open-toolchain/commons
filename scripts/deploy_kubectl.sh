@@ -123,5 +123,6 @@ if [ ! -z "${APP_SERVICE}" ]; then
   else
     PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
   fi
-  echo -e "VIEW THE APPLICATION AT: http://${IP_ADDR}:${PORT}"
+  export APP_URL=http://${IP_ADDR}:${PORT}
+  echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
 fi
