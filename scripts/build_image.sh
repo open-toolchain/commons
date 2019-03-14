@@ -1,6 +1,6 @@
 #!/bin/bash
 # uncomment to debug the script
-#set -x
+# set -x
 # copy the script below into your app code repo (e.g. ./scripts/build_image.sh) and 'source' it from your pipeline job
 #    source ./scripts/build_image.sh
 # alternatively, you can source it from online script:
@@ -8,8 +8,11 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/build_image.sh
 
-# This script does build a Docker image into IBM Container Service private image registry, and copies information into
-# a build.properties file, so they can be reused later on by other scripts (e.g. image url, chart name, ...)
+# This script does build a Docker image into IBM Container Service private image registry.
+# Minting image tag using format: BUILD_NUMBER-BRANCH-COMMIT_ID-TIMESTAMP
+# Also copies information into a build.properties file, so they can be reused later on by other scripts (e.g. image url, chart name, ...)
+
+# Input env variables (can be received via a pipeline environment properties.file.
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
@@ -37,7 +40,7 @@ fi
 echo -e "Existing images in registry"
 bx cr images
 
-# Minting image tag using format: BUILD_NUMBER--BRANCH-COMMIT_ID-TIMESTAMP
+# Minting image tag using format: BUILD_NUMBER-BRANCH-COMMIT_ID-TIMESTAMP
 # e.g. 3-master-50da6912-20181123114435
 # (use build number as first segment to allow image tag as a patch release name according to semantic versioning)
 

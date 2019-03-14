@@ -7,8 +7,10 @@
 #    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_vulnerabilities.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_vulnerabilities.sh
-# Input env variables (can be received via a pipeline environment properties.file.
 
+# Check for vulnerabilities of built image using Vulnerability Advisor
+
+# Input env variables (can be received via a pipeline environment properties.file.
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"

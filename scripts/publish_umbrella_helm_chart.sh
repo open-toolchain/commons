@@ -1,6 +1,6 @@
 #!/bin/bash
 # uncomment to debug the script
-#set -x
+# set -x
 # copy the script below into your app code repo (e.g. ./scripts/publish_umbrella_helm_chart.sh) and 'source' it from your pipeline job
 #    source ./scripts/publish_umbrella_helm_chart.sh
 # alternatively, you can source it from online script:

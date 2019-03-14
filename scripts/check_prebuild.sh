@@ -7,6 +7,10 @@
 #    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_prebuild.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_prebuild.sh
+
+# This script lints Dockerfile and checks presence of registry namespace.
+
+# Input env variables (can be received via a pipeline environment properties.file.
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
