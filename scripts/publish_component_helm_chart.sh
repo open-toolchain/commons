@@ -97,7 +97,7 @@ helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
 echo "Capture Insights matching config"
 mkdir -p ./.publish/insights
 INSIGHTS_FILE=./.publish/insights/${CHART_NAME}-${VERSION}
-rm -f INSIGHTS_FILE # override if already exists
+rm -f $INSIGHTS_FILE # override if already exists
 # Evaluate the gate against the version matching the git commit
 PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE

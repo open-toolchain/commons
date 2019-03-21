@@ -34,7 +34,7 @@ echo "Checking for Dockerfile at the repository root"
 if [ -z "${DOCKER_ROOT}" ]; then DOCKER_ROOT=. ; fi
 if [ -z "${DOCKER_FILE}" ]; then DOCKER_FILE=Dockerfile ; fi
 if [ -f ${DOCKER_ROOT}/${DOCKER_FILE} ]; then 
-echo -e "Dockerfile found at: ${DOCKER_FILE}"
+    echo -e "Dockerfile found at: ${DOCKER_FILE}"
 else
     echo "Dockerfile not found at: ${DOCKER_FILE}"
     exit 1
