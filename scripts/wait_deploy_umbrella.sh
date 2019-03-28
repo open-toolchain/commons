@@ -31,15 +31,15 @@ if [ -z "$PIPELINE_KUBERNETES_CLUSTER_NAME" ] || [ -z "$CLUSTER_NAMESPACE" ]; th
   echo "One of the required env vars is missing"
   exit -1
 fi
-echo "ls -l charts"
-ls -al charts
+echo "ls -l ${CHART_PATH}/charts"
+ls -al ${CHART_PATH}/charts
 echo "=========================================================="
 
 echo ""
 echo "=========================================================="
 echo -e "Extracting component charts"
 mkdir -p temp_charts
-for tarfile in charts/*.tgz ; do
+for tarfile in ${CHART_PATH}/charts/*.tgz ; do
     echo $tarfile
     tar -xf $tarfile -C temp_charts/
 done
