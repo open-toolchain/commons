@@ -95,6 +95,15 @@ else
       STATUS='fail'
   fi
 
+  # Insight deployment record for the umbrella application
+  if [ "${SOURCE_BUILD_NUMBER}" ]; then 
+    export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
+  fi
+  # If LOGICAL_APP_NAME is defined then create a deployment record the umbrella chart deployment
+  if [ "$LOGICAL_APP_NAME" ]; then
+    idra --publishdeployrecord --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+  fi
+
   ls ./insights/*
   echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
   for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
