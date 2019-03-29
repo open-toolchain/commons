@@ -38,11 +38,8 @@ fi
 echo "=========================================================="
 echo "CONFIGURING UMBRELLA CHART REPO"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
-if [ -z ${TOOLCHAIN_JSON} ]; then
-  echo "### TODO remove this once TOOLCHAIN_JSON publicly available"
-  TOOLCHAIN_JSON=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
-fi
-UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_JSON} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
+ls -al
+UMBRELLA_REPO_URL=$( cat _toolchain.json | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL%".git"} #remove trailing .git if present
 # Augment URL with git user & password
 UMBRELLA_ACCESS_REPO_URL=${UMBRELLA_REPO_URL:0:8}${GIT_USER}:${GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
