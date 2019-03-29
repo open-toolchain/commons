@@ -77,9 +77,6 @@ sed -i "s~^\([[:blank:]]*\)tag:.*$~\1tag: ${BUILD_NUMBER}~" ${CHART_PATH}/values
 echo "Linting injected Helm chart"
 helm init --client-only
 helm lint ${CHART_PATH}
-echo "Packaging chart"
-mkdir -p ./.publish/charts
-helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
 
 echo "Capture Insights matching config"
 mkdir -p ./.publish/insights
@@ -89,6 +86,13 @@ echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
 echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $INSIGHTS_FILE
 cat $INSIGHTS_FILE
+
+# Add the insights file in the packaged umbrella helm chart
+cp $INSIGHTS_FILE ${CHART_PATH}/devops-insights.properties
+
+echo "Packaging chart"
+mkdir -p ./.publish/charts
+helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
 
 echo "=========================================================="
 echo "PUBLISH CHART PACKAGE"
