@@ -17,6 +17,7 @@ echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
+echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
@@ -74,6 +75,11 @@ sed -i "s~^\([[:blank:]]*\)tag:.*$~\1tag: ${BUILD_NUMBER}~" ${CHART_PATH}/values
 echo "Linting injected Helm chart"
 helm init --client-only
 helm lint ${CHART_PATH}
+
+# Evaluate the gate against the version (reprsented by $SOURCE_BUILD_NUMBER) matching the git commit
+if [ "${SOURCE_BUILD_NUMBER}" ]; then 
+  export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
+fi
 
 echo "Capture Insights matching config"
 mkdir -p ./.publish/insights
