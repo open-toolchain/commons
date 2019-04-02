@@ -101,8 +101,12 @@ else
   fi
   # If LOGICAL_APP_NAME is defined then create a deployment record the umbrella chart deployment
   if [ "$LOGICAL_APP_NAME" ]; then
-    idra --publishdeployrecord --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+    idra --publishdeployrecord --env=${LOGICAL_ENV_NAME} --status=${STATUS}        
   fi
+
+  # Keep the current LOGICAL_APP_NAME and BUILD_PREFIX to restore it after sub-component IDRa deployment record
+  PREVIOUS_LOGICAL_APP_NAME=$LOGICAL_APP_NAME
+  PREVIOUS_BUILD_PREFIX=$BUILD_PREFIX
 
   ls ./insights/*
   echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
@@ -126,6 +130,10 @@ else
     fi
   done
 fi
+
+  # Restore LOGICAL_APP_NAME and BUILD_PREFIX after sub-component IDRa deployment record
+  export LOGICAL_APP_NAME=$PREVIOUS_LOGICAL_APP_NAME
+  export BUILD_PREFIX=$PREVIOUS_BUILD_PREFIX
 
 echo "=========================================================="
 IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
