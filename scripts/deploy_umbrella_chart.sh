@@ -80,8 +80,8 @@ helm history ${RELEASE_NAME}
 
 echo ""
 echo -e "Updating Insights deployment records:${RELEASE_NAME}"
-if [[ ! -d ./insights ]]; then
-  echo "Cannot find Insights config information in /insights folder"
+if [[ ! -d ${CHART_PATH}/insights ]]; then
+  echo "Cannot find Insights config information in ${CHART_PATH}/insights folder"
 else
   # Install DRA CLI
   export PATH=/opt/IBM/node-v4.2/bin:$PATH
@@ -108,7 +108,7 @@ else
   PREVIOUS_LOGICAL_APP_NAME=$LOGICAL_APP_NAME
   PREVIOUS_BUILD_PREFIX=$BUILD_PREFIX
 
-  ls ./insights/*
+  ls ${CHART_PATH}/insights/*
   echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
   for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
     echo -e "Publish results for component: ${INSIGHT_CONFIG}"
@@ -131,9 +131,9 @@ else
   done
 fi
 
-  # Restore LOGICAL_APP_NAME and BUILD_PREFIX after sub-component IDRa deployment record
-  export LOGICAL_APP_NAME=$PREVIOUS_LOGICAL_APP_NAME
-  export BUILD_PREFIX=$PREVIOUS_BUILD_PREFIX
+# Restore LOGICAL_APP_NAME and BUILD_PREFIX after sub-component IDRa deployment record
+export LOGICAL_APP_NAME=$PREVIOUS_LOGICAL_APP_NAME
+export BUILD_PREFIX=$PREVIOUS_BUILD_PREFIX
 
 echo "=========================================================="
 IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
