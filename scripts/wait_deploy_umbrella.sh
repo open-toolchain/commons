@@ -37,12 +37,16 @@ echo "=========================================================="
 
 echo ""
 echo "=========================================================="
-echo -e "Extracting component charts"
+echo -e "Extracting packaged component charts"
 mkdir -p temp_charts
-for tarfile in ${CHART_PATH}/charts/*.tgz ; do
-    echo $tarfile
-    tar -xf $tarfile -C temp_charts/
-done
+if ls ${CHART_PATH}/charts/*.tgz; then
+  for tarfile in ${CHART_PATH}/charts/*.tgz ; do
+      echo $tarfile
+      tar -xf $tarfile -C temp_charts/
+  done
+fi
+echo -e "Copying expanded component charts"
+find ${CHART_PATH}/charts -mindepth 1 -maxdepth 1 -type d | xargs -I subchart cp -r subchart ./temp_charts/
 echo "=========================================================="
 echo ""
 echo "=========================================================="
