@@ -12,7 +12,7 @@ echo "CHART_PATH=${CHART_PATH}"
 
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 

@@ -11,10 +11,14 @@
 # Publish a component chart into an umbrella chart stored in a git repo
 
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "GIT_URL=${SOURCE_GIT_URL}"
-echo "GIT_COMMIT=${SOURCE_GIT_COMMIT}"
-echo "GIT_USER=${SOURCE_GIT_USER}"
-echo "GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
+echo "SOURCE_GIT_URL=${SOURCE_GIT_URL}"
+echo "SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT}"
+echo "SOURCE_GIT_USER=${SOURCE_GIT_USER}"
+if [ -z "${SOURCE_GIT_PASSWORD}" ]; then
+  echo "SOURCE_GIT_PASSWORD="
+else
+  echo "SOURCE_GIT_PASSWORD=***"
+fi
 echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
@@ -30,7 +34,7 @@ echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 

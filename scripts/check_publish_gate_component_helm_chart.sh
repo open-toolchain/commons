@@ -19,7 +19,7 @@ echo "IBM_CLOUD_API_KEY: ${IBM_CLOUD_API_KEY}"
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 

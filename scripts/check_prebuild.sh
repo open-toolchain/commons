@@ -21,7 +21,7 @@ echo "DOCKER_FILE=${DOCKER_FILE}"
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 
