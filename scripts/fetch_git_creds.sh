@@ -35,4 +35,4 @@ echo "GIT_USER=${GIT_USER}" >> $ARCHIVE_DIR/build.properties
 echo "GIT_PASSWORD=${GIT_PASSWORD}" >> $ARCHIVE_DIR/build.properties
 echo "SOURCE_BUILD_NUMBER=${BUILD_NUMBER}" >> $ARCHIVE_DIR/build.properties
 
-cat $ARCHIVE_DIR/build.properties
+cat $ARCHIVE_DIR/build.properties | grep -v -i password
