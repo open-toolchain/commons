@@ -40,7 +40,7 @@ echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
 echo -e "POLICY_NAME: ${POLICY_NAME}"
 
 # get the decision
-ibmcloud doi --evaluategate --policy="${POLICY_NAME}" --forcedecision=true
+idra --evaluategate --policy="${POLICY_NAME}" --forcedecision=true
 # get the process exit code
 RESULT=$?  
 if [[ ${RESULT} != 0 ]]; then
