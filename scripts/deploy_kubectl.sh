@@ -17,6 +17,13 @@ echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
+echo "KUBERNETES_SERVICE_ACCOUNT_NAME=${KUBERNETES_SERVICE_ACCOUNT_NAME}"
+
+echo "Use for custom Kubernetes cluster target:"
+echo "KUBERNETES_MASTER_ADDRESS=${KUBERNETES_MASTER_ADDRESS}"
+echo "KUBERNETES_MASTER_PORT=${KUBERNETES_MASTER_PORT}"
+echo "KUBERNETES_SERVICE_ACCOUNT_TOKEN=${KUBERNETES_SERVICE_ACCOUNT_TOKEN}"
+
 
 #View build properties
 # cat build.properties
@@ -28,6 +35,15 @@ echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 if [ -z "${CLUSTER_NAMESPACE}" ]; then CLUSTER_NAMESPACE=default ; fi
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
+
+# If custom cluster credentials available, connect to this cluster instead
+if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+  kubectl config set-cluster custom-cluster --server=https://${KUBERNETES_MASTER_ADDRESS}:${KUBERNETES_MASTER_PORT} --insecure-skip-tls-verify=true
+  kubectl config set-credentials sa-user --token="${KUBERNETES_SERVICE_ACCOUNT_TOKEN}"
+  kubectl config set-context custom-context --cluster=custom-cluster --user=sa-user --namespace="${CLUSTER_NAMESPACE}"
+  kubectl config use-context custom-context
+fi
+kubectl cluster-info
 
 echo "=========================================================="
 echo "DEPLOYING using manifest"
@@ -119,13 +135,21 @@ echo "DEPLOYMENT SUCCEEDED"
 if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   echo ""
-  IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+    IP_ADDR=$( bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
+    if [ -z "${IP_ADDR}" ]; then
+      echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
+      exit 1
+    fi
+  else
+    IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
+  fi  
   if [ "${USE_ISTIO_GATEWAY}" = true ]; then
     PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
     echo -e "*** istio gateway enabled ***"
   else
     PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
   fi
-  export APP_URL=http://${IP_ADDR}:${PORT}
+  export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
   echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
 fi
