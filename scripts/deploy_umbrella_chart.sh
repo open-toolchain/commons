@@ -1,12 +1,16 @@
 #!/bin/bash
 # uncomment to debug the script
-#set -x
+# set -x
 # copy the script below into your app code repo (e.g. ./scripts/deploy_umbrella_chart.sh) and 'source' it from your pipeline job
 #    source ./scripts/deploy_helm.sh
 # alternatively, you can source it from online script:
 #    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_umbrella_chart.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/deploy_umbrella_chart.sh
+
+# Performs deployment of a Helm umbrella chart, checking all components were successfully deployed
+# and feeds deployment information for all components to DevOps Insights
+
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}" # TODO improve into RELEASE NAME

@@ -1,6 +1,6 @@
 #!/bin/bash
 # uncomment to debug the script
-#set -x
+# set -x
 #CF_TRACE=true
 # copy the script below into your app code repo (e.g. ./scripts/cf_blue_check.sh) and 'source' it from your pipeline job
 #    source ./scripts/cf_blue_check.sh

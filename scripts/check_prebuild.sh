@@ -7,6 +7,10 @@
 #    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_prebuild.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_prebuild.sh
+
+# This script lints Dockerfile and checks presence of registry namespace.
+
+# Input env variables (can be received via a pipeline environment properties.file.
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
@@ -30,7 +34,7 @@ echo "Checking for Dockerfile at the repository root"
 if [ -z "${DOCKER_ROOT}" ]; then DOCKER_ROOT=. ; fi
 if [ -z "${DOCKER_FILE}" ]; then DOCKER_FILE=Dockerfile ; fi
 if [ -f ${DOCKER_ROOT}/${DOCKER_FILE} ]; then 
-echo -e "Dockerfile found at: ${DOCKER_FILE}"
+    echo -e "Dockerfile found at: ${DOCKER_FILE}"
 else
     echo "Dockerfile not found at: ${DOCKER_FILE}"
     exit 1

@@ -1,12 +1,15 @@
 #!/bin/bash
 # uncomment to debug the script
-#set -x
+# set -x
 # copy the script below into your app code repo (e.g. ./scripts/publish_component_helm_chart.sh) and 'source' it from your pipeline job
 #    source ./scripts/publish_component_helm_chart.sh
 # alternatively, you can source it from online script:
 #    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_component_helm_chart.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_component_helm_chart.sh
+
+# Publish a component chart into an umbrella chart stored in a git repo
+
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "GIT_URL=${SOURCE_GIT_URL}"
 echo "GIT_COMMIT=${SOURCE_GIT_COMMIT}"
@@ -94,7 +97,7 @@ helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
 echo "Capture Insights matching config"
 mkdir -p ./.publish/insights
 INSIGHTS_FILE=./.publish/insights/${CHART_NAME}-${VERSION}
-rm -f INSIGHTS_FILE # override if already exists
+rm -f $INSIGHTS_FILE # override if already exists
 # Evaluate the gate against the version matching the git commit
 PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
