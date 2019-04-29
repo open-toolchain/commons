@@ -44,7 +44,14 @@ echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
 for ITER in {1..30}
 do
   set +e
-  STATUS=$( bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status' )
+  VA_OUPUT=$(bx cr va -e -o json ${PIPELINE_IMAGE_URL})
+  # bx cr va returns a non valid json output if image not yet scanned
+  if echo $VA_OUPUT | jq -r '.'; then
+    STATUS=$( echo $VA_OUPUT | jq -r '.[0].status' )
+  else
+    echo "$VA_OUPUT"
+    STATUS="UNSCANNED"
+  fi
   set -e
   # Possible status from Vulnerability Advisor: OK, UNSUPPORTED, INCOMPLETE, UNSCANNED, FAIL, WARN
   if [[ ${STATUS} != "INCOMPLETE" && ${STATUS} != "UNSCANNED" ]]; then
