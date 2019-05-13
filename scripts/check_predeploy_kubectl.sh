@@ -9,7 +9,7 @@
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_predeploy_kubectl.sh
 
 # This script checks the IBM Container Service cluster is ready, has a namespace configured with access to the private
-# image registry (using an IBM Cloud API Key). It also configures Helm Tiller service to later perform a deploy with Helm.
+# image registry (using an IBM Cloud API Key).
 
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "IMAGE_NAME=${IMAGE_NAME}"
