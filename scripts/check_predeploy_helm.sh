@@ -77,6 +77,7 @@ echo -e "Checking for presence of ${IMAGE_PULL_SECRET_NAME} imagePullSecret for 
 if ! kubectl get secret ${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}; then
   echo -e "${IMAGE_PULL_SECRET_NAME} not found in ${CLUSTER_NAMESPACE}, creating it"
   # for Container Registry, docker username is 'token' and email does not matter
+    if [ -z "PIPELINE_BLUEMIX_API_KEY" ]; then PIPELINE_BLUEMIX_API_KEY=${IBM_CLOUD_API_KEY}; fi #when used outside build-in kube job
   kubectl --namespace ${CLUSTER_NAMESPACE} create secret docker-registry ${IMAGE_PULL_SECRET_NAME} --docker-server=${REGISTRY_URL} --docker-password=${PIPELINE_BLUEMIX_API_KEY} --docker-username=iamapikey --docker-email=a@b.com
 else
   echo -e "Namespace ${CLUSTER_NAMESPACE} already has an imagePullSecret for this toolchain."
