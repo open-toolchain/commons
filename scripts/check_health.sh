@@ -16,12 +16,21 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "APP_URL=${APP_URL}"
 
-IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
+# If custom cluster credentials available, connect to this cluster instead
+if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+  kubectl config set-cluster custom-cluster --server=https://${KUBERNETES_MASTER_ADDRESS}:${KUBERNETES_MASTER_PORT} --insecure-skip-tls-verify=true
+  kubectl config set-credentials sa-user --token="${KUBERNETES_SERVICE_ACCOUNT_TOKEN}"
+  kubectl config set-context custom-context --cluster=custom-cluster --user=sa-user --namespace="${CLUSTER_NAMESPACE}"
+  kubectl config use-context custom-context
+fi
+kubectl cluster-info
 
+IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 CONTAINERS_JSON=$(kubectl get deployments --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ".items[].spec.template.spec.containers[]? | select(.image==\"${IMAGE_REPOSITORY}:${IMAGE_TAG}\") ")
 echo $CONTAINERS_JSON | jq .
 
 LIVENESS_PROBE_PATH=$(echo $CONTAINERS_JSON | jq -r ".livenessProbe.httpGet.path" | head -n 1)
+echo ".$LIVENESS_PROBE_PATH."
 # LIVENESS_PROBE_PORT=$(echo $CONTAINERS_JSON | jq -r ".livenessProbe.httpGet.port" | head -n 1)
 if [ ${LIVENESS_PROBE_PATH} != null ]; then
   LIVENESS_PROBE_URL=${APP_URL}${LIVENESS_PROBE_PATH}
@@ -33,10 +42,11 @@ if [ ${LIVENESS_PROBE_PATH} != null ]; then
     exit 1;
   fi
 else
-  echo "No liveness probe endpoint defined (should be specified in deployment resource."
+  echo "No liveness probe endpoint defined (should be specified in deployment resource)."
 fi
 
 READINESS_PROBE_PATH=$(echo $CONTAINERS_JSON | jq -r ".readinessProbe.httpGet.path" | head -n 1)
+echo ".$READINESS_PROBE_PATH."
 # READINESS_PROBE_PORT=$(echo $CONTAINERS_JSON | jq -r ".readinessProbe.httpGet.port" | head -n 1)
 if [ ${READINESS_PROBE_PATH} != null ]; then
   READINESS_PROBE_URL=${APP_URL}${READINESS_PROBE_PATH}
@@ -48,5 +58,5 @@ if [ ${READINESS_PROBE_PATH} != null ]; then
     exit 1;
   fi
 else
-  echo "No readiness probe endpoint defined (should be specified in deployment resource."
+  echo "No readiness probe endpoint defined (should be specified in deployment resource)."
 fi
