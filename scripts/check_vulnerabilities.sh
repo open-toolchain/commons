@@ -40,6 +40,10 @@ echo "IMAGE_TAG=${IMAGE_TAG}"
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
+
+echo -e "Details for image: ${PIPELINE_IMAGE_URL}"
+bx cr image-inspect ${PIPELINE_IMAGE_URL}
+
 echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
 for ITER in {1..30}
 do
