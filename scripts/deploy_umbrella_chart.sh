@@ -23,7 +23,7 @@ echo "IBM_CLOUD_API_KEY=${IBM_CLOUD_API_KEY}"
 echo "build.properties:"
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 
@@ -58,7 +58,7 @@ helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set glo
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
 helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set global.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
 
-source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/wait_deploy_umbrella.sh")
+source <(curl -sSL "https://raw.githubusercontent.com/jauninb/commons/next/scripts/wait_deploy_umbrella.sh")
 
 echo ""
 echo "=========================================================="
@@ -80,8 +80,8 @@ helm history ${RELEASE_NAME}
 
 echo ""
 echo -e "Updating Insights deployment records:${RELEASE_NAME}"
-if [[ ! -d ./insights ]]; then
-  echo "Cannot find Insights config information in /insights folder"
+if [[ ! -d ${CHART_PATH}/insights ]]; then
+  echo "Cannot find Insights config information in ${CHART_PATH}/insights folder"
 else
   # Install DRA CLI
   export PATH=/opt/IBM/node-v4.2/bin:$PATH
@@ -95,7 +95,20 @@ else
       STATUS='fail'
   fi
 
-  ls ./insights/*
+  # Insight deployment record for the umbrella application
+  if [ "${SOURCE_BUILD_NUMBER}" ]; then 
+    export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
+  fi
+  # If LOGICAL_APP_NAME is defined then create a deployment record the umbrella chart deployment
+  if [ "$LOGICAL_APP_NAME" ]; then
+    idra --publishdeployrecord --env=${LOGICAL_ENV_NAME} --status=${STATUS}        
+  fi
+
+  # Keep the current LOGICAL_APP_NAME and BUILD_PREFIX to restore it after sub-component IDRa deployment record
+  PREVIOUS_LOGICAL_APP_NAME=$LOGICAL_APP_NAME
+  PREVIOUS_BUILD_PREFIX=$BUILD_PREFIX
+
+  ls ${CHART_PATH}/insights/*
   echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
   for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
     echo -e "Publish results for component: ${INSIGHT_CONFIG}"
@@ -117,6 +130,10 @@ else
     fi
   done
 fi
+
+# Restore LOGICAL_APP_NAME and BUILD_PREFIX after sub-component IDRa deployment record
+export LOGICAL_APP_NAME=$PREVIOUS_LOGICAL_APP_NAME
+export BUILD_PREFIX=$PREVIOUS_BUILD_PREFIX
 
 echo "=========================================================="
 IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')

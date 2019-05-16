@@ -11,10 +11,14 @@
 # Publish a component chart into an umbrella chart stored in a git repo
 
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "GIT_URL=${SOURCE_GIT_URL}"
-echo "GIT_COMMIT=${SOURCE_GIT_COMMIT}"
-echo "GIT_USER=${SOURCE_GIT_USER}"
-echo "GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
+echo "SOURCE_GIT_URL=${SOURCE_GIT_URL}"
+echo "SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT}"
+echo "SOURCE_GIT_USER=${SOURCE_GIT_USER}"
+if [ -z "${SOURCE_GIT_PASSWORD}" ]; then
+  echo "SOURCE_GIT_PASSWORD="
+else
+  echo "SOURCE_GIT_PASSWORD=***"
+fi
 echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
@@ -30,7 +34,7 @@ echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 
@@ -78,7 +82,7 @@ MINOR=`echo ${CHART_VERSION} | cut -d. -f2`
 REVISION=`echo ${CHART_VERSION} | cut -d. -f3`
 if [ -z ${MAJOR} ]; then MAJOR=0; fi
 if [ -z ${MINOR} ]; then MINOR=0; fi
-if [ -z ${REVISION} ]; then REVISION=${IMAGE_TAG}; else REVISION=${REVISION}.${IMAGE_TAG}; fi
+if [ -z ${REVISION} ]; then REVISION=${IMAGE_TAG}; else REVISION=${REVISION}-${IMAGE_TAG}; fi
 VERSION="${MAJOR}.${MINOR}.${REVISION}"
 echo -e "VERSION:${VERSION}"
 #echo -e "Injecting pipeline build values into ${CHART_PATH}/Chart.yaml"
@@ -90,9 +94,6 @@ sed -i "s~^\([[:blank:]]*\)tag:.*$~\1tag: ${IMAGE_TAG}~" ${CHART_PATH}/values.ya
 echo "Linting injected Helm chart"
 helm init --client-only
 helm lint ${CHART_PATH}
-echo "Packaging chart"
-mkdir -p ./.publish/charts
-helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
 
 echo "Capture Insights matching config"
 mkdir -p ./.publish/insights
@@ -100,10 +101,18 @@ INSIGHTS_FILE=./.publish/insights/${CHART_NAME}-${VERSION}
 rm -f $INSIGHTS_FILE # override if already exists
 # Evaluate the gate against the version matching the git commit
 PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
+echo "TOOLCHAIN_ID=${PIPELINE_TOOLCHAIN_ID}" >> $INSIGHTS_FILE
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
 echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $INSIGHTS_FILE
 cat $INSIGHTS_FILE
+
+# Add the insights file in the packaged helm chart
+cp $INSIGHTS_FILE ${CHART_PATH}/devops-insights.properties
+
+echo "Packaging chart"
+mkdir -p ./.publish/charts
+helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
 
 echo "=========================================================="
 echo "PUBLISH CHART PACKAGE"

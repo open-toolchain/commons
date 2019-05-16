@@ -18,7 +18,7 @@ echo "CHART_NAME=${CHART_NAME}"
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 
@@ -109,7 +109,7 @@ echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $ARCHIVE_DIR/buil
 echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties
 echo "File 'build.properties' created for passing env variables to subsequent pipeline jobs:"
-cat $ARCHIVE_DIR/build.properties
+cat $ARCHIVE_DIR/build.properties | grep -v -i password
 
 echo "Copy updated Helm umbrella chart"
 cp -R -n ${CHART_PATH} ${ARCHIVE_DIR} || true

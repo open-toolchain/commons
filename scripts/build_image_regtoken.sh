@@ -20,7 +20,7 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 
@@ -91,7 +91,7 @@ echo "REGISTRY_URL=${REGISTRY_URL}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}" >> $ARCHIVE_DIR/build.properties
 echo "REGISTRY_TOKEN=${REGISTRY_TOKEN}" >> $ARCHIVE_DIR/build.properties
 echo "File 'build.properties' created for passing env variables to subsequent pipeline jobs:"
-cat $ARCHIVE_DIR/build.properties
+cat $ARCHIVE_DIR/build.properties | grep -v -i password
 
 echo "Copy pipeline scripts along with the build"
 # Copy scripts (incl. deploy scripts)
