@@ -39,7 +39,7 @@ do
   NOT_READY=$(echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==false and .state.terminated == null) ')
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
-    # echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==true or .state.terminated != null) ' 
+    # echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==false or .state.terminated != null) ' 
     break # istio installation succeeded
   fi
   REASON=$(echo $DATA | jq '.items[].status.containerStatuses?[] | .state.waiting.reason')
