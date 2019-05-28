@@ -8,9 +8,8 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/fetch_git_creds.sh
 
-# This script does perform an entire fetch of associated git repo, and copies it into archive_dir output
-# along with git credentials stored in build.properties, so as a consuming job could leverage these to repost
-# to same or another git repo.
+# This script does perform a fetch of associated git repo credentials and stored it in build.properties,
+# so as a consuming job could leverage these to repost to same or another git repo.
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
 echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 
@@ -20,7 +19,6 @@ echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 #echo "Checking archive dir presence"
-#cp -R -n ./ $ARCHIVE_DIR/ || true
 mkdir -p $ARCHIVE_DIR
 
 # Record git info to later contribute to umbrella chart repo
