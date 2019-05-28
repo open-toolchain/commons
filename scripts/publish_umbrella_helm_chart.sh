@@ -8,15 +8,20 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/publish_umbrella_helm_chart.sh
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "GIT_URL=${SOURCE_GIT_URL}"
-echo "GIT_COMMIT=${SOURCE_GIT_COMMIT}"
-echo "GIT_USER=${SOURCE_GIT_USER}"
-echo "GIT_PASSWORD=${SOURCE_GIT_PASSWORD}"
+echo "SOURCE_GIT_URL=${SOURCE_GIT_URL}"
+echo "SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT}"
+echo "SOURCE_GIT_USER=${SOURCE_GIT_USER}"
+if [ -z "${SOURCE_GIT_PASSWORD}" ]; then
+  echo "SOURCE_GIT_PASSWORD="
+else
+  echo "SOURCE_GIT_PASSWORD=***"
+fi
 echo "UMBRELLA_REPO_NAME=${UMBRELLA_REPO_NAME}"
 echo "CHART_PATH=${CHART_PATH}"
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
+echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
@@ -27,7 +32,7 @@ echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 
@@ -38,11 +43,8 @@ fi
 echo "=========================================================="
 echo "CONFIGURING UMBRELLA CHART REPO"
 echo -e "Locating target umbrella repo: ${UMBRELLA_REPO_NAME}"
-if [ -z ${TOOLCHAIN_JSON} ]; then
-  echo "### TODO remove this once TOOLCHAIN_JSON publicly available"
-  TOOLCHAIN_JSON=$( curl -H "Authorization: ${TOOLCHAIN_TOKEN}" https://otc-api.ng.bluemix.net/api/v1/toolchains/${PIPELINE_TOOLCHAIN_ID}/services )
-fi
-UMBRELLA_REPO_URL=$( echo ${TOOLCHAIN_JSON} | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
+ls -al
+UMBRELLA_REPO_URL=$( cat _toolchain.json | jq -r '.services[] | select (.parameters.repo_name=="'"${UMBRELLA_REPO_NAME}"'") | .parameters.repo_url ' )
 UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL%".git"} #remove trailing .git if present
 # Augment URL with git user & password
 UMBRELLA_ACCESS_REPO_URL=${UMBRELLA_REPO_URL:0:8}${GIT_USER}:${GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
@@ -65,7 +67,7 @@ MINOR=`echo ${CHART_VERSION} | cut -d. -f2`
 REVISION=`echo ${CHART_VERSION} | cut -d. -f3`
 if [ -z ${MAJOR} ]; then MAJOR=0; fi
 if [ -z ${MINOR} ]; then MINOR=0; fi
-if [ -z ${REVISION} ]; then REVISION=${IMAGE_TAG}; else REVISION=${REVISION}.${IMAGE_TAG}; fi
+if [ -z ${REVISION} ]; then REVISION=${BUILD_NUMBER}; else REVISION=${REVISION}-${BUILD_NUMBER}; fi
 VERSION="${MAJOR}.${MINOR}.${REVISION}"
 echo -e "VERSION:${VERSION}"
 #echo -e "Injecting pipeline build values into ${CHART_PATH}/Chart.yaml"
@@ -77,18 +79,28 @@ sed -i "s~^\([[:blank:]]*\)tag:.*$~\1tag: ${BUILD_NUMBER}~" ${CHART_PATH}/values
 echo "Linting injected Helm chart"
 helm init --client-only
 helm lint ${CHART_PATH}
-echo "Packaging chart"
-mkdir -p ./.publish/charts
-helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
+
+# Evaluate the gate against the version (reprsented by $SOURCE_BUILD_NUMBER) matching the git commit
+if [ "${SOURCE_BUILD_NUMBER}" ]; then 
+  export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
+fi
 
 echo "Capture Insights matching config"
 mkdir -p ./.publish/insights
 INSIGHTS_FILE=./.publish/insights/${CHART_NAME}-${VERSION}
 rm -f INSIGHTS_FILE # override if already exists
+echo "TOOLCHAIN_ID=${PIPELINE_TOOLCHAIN_ID}" >> $INSIGHTS_FILE
 echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
 echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
 echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $INSIGHTS_FILE
 cat $INSIGHTS_FILE
+
+# Add the insights file in the packaged umbrella helm chart
+cp $INSIGHTS_FILE ${CHART_PATH}/devops-insights.properties
+
+echo "Packaging chart"
+mkdir -p ./.publish/charts
+helm package ${CHART_PATH} --version $VERSION -d ./.publish/charts
 
 echo "=========================================================="
 echo "PUBLISH CHART PACKAGE"

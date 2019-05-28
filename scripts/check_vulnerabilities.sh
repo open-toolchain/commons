@@ -14,7 +14,7 @@
 # View build properties
 if [ -f build.properties ]; then 
   echo "build.properties:"
-  cat build.properties
+  cat build.properties | grep -v -i password
 else 
   echo "build.properties : not found"
 fi 
@@ -40,11 +40,22 @@ echo "IMAGE_TAG=${IMAGE_TAG}"
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
+
+echo -e "Details for image: ${PIPELINE_IMAGE_URL}"
+bx cr image-inspect ${PIPELINE_IMAGE_URL}
+
 echo -e "Checking vulnerabilities in image: ${PIPELINE_IMAGE_URL}"
 for ITER in {1..30}
 do
   set +e
-  STATUS=$( bx cr va -e -o json ${PIPELINE_IMAGE_URL} | jq -r '.[0].status' )
+  VA_OUPUT=$(bx cr va -e -o json ${PIPELINE_IMAGE_URL})
+  # bx cr va returns a non valid json output if image not yet scanned
+  if echo $VA_OUPUT | jq -r '.'; then
+    STATUS=$( echo $VA_OUPUT | jq -r '.[0].status' )
+  else
+    echo "$VA_OUPUT"
+    STATUS="UNSCANNED"
+  fi
   set -e
   # Possible status from Vulnerability Advisor: OK, UNSUPPORTED, INCOMPLETE, UNSCANNED, FAIL, WARN
   if [[ ${STATUS} != "INCOMPLETE" && ${STATUS} != "UNSCANNED" ]]; then
