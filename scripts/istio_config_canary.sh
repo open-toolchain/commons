@@ -48,8 +48,8 @@ if [ ! -f ${GATEWAY_FILE} ]; then
       echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
       exit 1
   fi
-  # read app name if present, if not default to deployment name
-  APP_NAME=$( cat ${DEPLOYMENT_FILE} | yq -r '. | select(.kind=="Deployment") | if (.metadata.labels.app) then .metadata.labels.app else .metadata.name end' ) # read deployment name
+  # read app name if present, if not default to deployment name (using yq to translate yaml into json)
+  APP_NAME=$( cat ${DEPLOYMENT_FILE} | yq r - -j | jq -r '. | select(.kind=="Deployment") | if (.metadata.labels.app) then .metadata.labels.app else .metadata.name end' ) # read deployment name
   cat > ${GATEWAY_FILE} << EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
