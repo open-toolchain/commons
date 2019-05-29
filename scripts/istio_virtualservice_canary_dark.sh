@@ -25,7 +25,7 @@ if [ ! -f ${VIRTUAL_SERVICE_FILE} ]; then
       exit 1
   fi
   # read app name if present, if not default to deployment name
-  APP_NAME=$( cat ${DEPLOYMENT_FILE} | yq -r '. | select(.kind=="Deployment") | if (.metadata.labels.app) then .metadata.labels.app else .metadata.name end' ) # read deployment name  
+  APP_NAME=$( cat ${DEPLOYMENT_FILE} | yq r - -j | jq -r '. | select(.kind=="Deployment") | if (.metadata.labels.app) then .metadata.labels.app else .metadata.name end' ) # read deployment name  
   cat > ${VIRTUAL_SERVICE_FILE} << EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
