@@ -12,16 +12,18 @@
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
+echo "DEFAULT_ISTIO_VERSION=${DEFAULT_ISTIO_VERSION}"
 
 ISTIO_NAMESPACE=istio-system
 echo "Checking Istio configuration"
 if kubectl get namespace ${ISTIO_NAMESPACE}; then
   echo -e "Namespace ${ISTIO_NAMESPACE} found."
 else
-  echo -e "Istio not found, installing it..."
+  echo -e "Istio not found, installing version: ${DEFAULT_ISTIO_VERSION}"
   WORKING_DIR=$(pwd)
   mkdir ~/tmpbin && cd ~/tmpbin
-  curl -L https://git.io/getLatestIstio | sh -
+  ISTIO_VERSION=${DEFAULT_ISTIO_VERSION}
+  curl -L https://git.io/getLatestIstio | sh - 
   ISTIO_ROOT=$(pwd)/$(find istio-* -maxdepth 0 -type d)
   export PATH=${ISTIO_ROOT}/bin:$PATH
   cd $WORKING_DIR
