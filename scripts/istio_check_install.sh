@@ -19,7 +19,10 @@ echo "Checking Istio configuration"
 if kubectl get namespace ${ISTIO_NAMESPACE}; then
   echo -e "Namespace ${ISTIO_NAMESPACE} found."
 else
-  echo -e "Istio not found, installing version: ${DEFAULT_ISTIO_VERSION}"
+  echo "ISTIO NOT FOUND ! "
+  echo "You should have enabled the Managed Istio add-on in the Kubernetes Cluster."
+  echo -e "Proceeding with installing custom version: ${DEFAULT_ISTIO_VERSION}"
+  echo "WARNING: Istio 1.0 is deprecated (https://istio.io/blog/2019/announcing-1.0-eol/), be aware you'll need a STANDARD cluster to run recent versions of Istio >1.1 ."
   WORKING_DIR=$(pwd)
   mkdir ~/tmpbin && cd ~/tmpbin
   ISTIO_VERSION=${DEFAULT_ISTIO_VERSION}
