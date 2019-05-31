@@ -8,30 +8,18 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_istio.sh
 
-# Install ISTIO in target cluster, and wait for ready state
+# Check ISTIO installation in target cluster
 
 # Input env variables from pipeline job
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
-echo "DEFAULT_ISTIO_VERSION=${DEFAULT_ISTIO_VERSION}"
 
 ISTIO_NAMESPACE=istio-system
 echo "Checking Istio configuration"
 if kubectl get namespace ${ISTIO_NAMESPACE}; then
   echo -e "Namespace ${ISTIO_NAMESPACE} found."
 else
-  echo "ISTIO NOT FOUND ! "
-  echo "You should have enabled the Managed Istio add-on in the Kubernetes Cluster."
-  echo -e "Proceeding with installing custom version: ${DEFAULT_ISTIO_VERSION}"
-  echo "WARNING: Istio 1.0 is deprecated (https://istio.io/blog/2019/announcing-1.0-eol/), be aware you'll need a STANDARD cluster to run recent versions of Istio >1.1 ."
-  WORKING_DIR=$(pwd)
-  mkdir ~/tmpbin && cd ~/tmpbin
-  ISTIO_VERSION=${DEFAULT_ISTIO_VERSION}
-  curl -L https://git.io/getLatestIstio | sh - 
-  ISTIO_ROOT=$(pwd)/$(find istio-* -maxdepth 0 -type d)
-  export PATH=${ISTIO_ROOT}/bin:$PATH
-  cd $WORKING_DIR
-
-  kubectl apply -f ${ISTIO_ROOT}/install/kubernetes/istio-demo.yaml
+  echo "ISTIO NOT FOUND ! Please enable the Managed Istio add-on for this cluster."
+  exit 1
 fi
 
 echo ""
@@ -58,6 +46,8 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo ""
   echo "=========================================================="
   echo "ISTIO INSTALLATION FAILED"
+  echo ""
+  echo "Note: Latest Istio requirements do exceed the resources of a lite cluster, recommending to use a standard clusteer with sufficient capacity and the managed Istio add-on."
   exit 1
 fi
 
