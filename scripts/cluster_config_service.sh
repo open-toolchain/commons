@@ -23,11 +23,13 @@ fi
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 export SERVICE_LOCATION=${SERVICE_LOCATION:-$IBM_CLOUD_REGION}
+export SERVICE_IAM_ROLE=${SERVICE_IAM_ROLE:-"Manager"}
 
 echo "INSTANCE_NAME=${INSTANCE_NAME}"
 echo "SERVICE_NAME=${SERVICE_NAME}"
 echo "SERVICE_PLAN=${SERVICE_PLAN}"
 echo "SERVICE_LOCATION=${SERVICE_LOCATION}"
+echo "SERVICE_IAM_ROLE=${SERVICE_IAM_ROLE}"
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
@@ -42,7 +44,8 @@ fi
 SERVICE_ID=$(bx resource service-instance ${INSTANCE_NAME} --output json | jq -r '.[0].guid')
 BINDING=$( bx cs cluster-services -n $CLUSTER_NAMESPACE $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
 if [ -z "$BINDING" ]; then
-  bx cs cluster-service-bind $PIPELINE_KUBERNETES_CLUSTER_NAME $CLUSTER_NAMESPACE $SERVICE_ID
+  bx cs cluster-service-bind --cluster $PIPELINE_KUBERNETES_CLUSTER_NAME \
+    --namespace $CLUSTER_NAMESPACE --service $SERVICE_ID --role $SERVICE_IAM_ROLE
 else
   echo -e "Service already bound in cluster namespace: ${CLUSTER_NAMESPACE}"
 fi
