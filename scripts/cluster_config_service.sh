@@ -22,17 +22,19 @@ fi
 # or learn more about the available environment variables at:
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
+export SERVICE_LOCATION=${SERVICE_LOCATION:-IBM_CLOUD_REGION}
+
 echo "INSTANCE_NAME=${INSTANCE_NAME}"
 echo "SERVICE_NAME=${SERVICE_NAME}"
 echo "SERVICE_PLAN=${SERVICE_PLAN}"
-echo "STAGING_REGION_ID=${STAGING_REGION_ID}"
+echo "SERVICE_LOCATION=${SERVICE_LOCATION}"
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 # Create service (if needed)
 SERVICE=$(bx resource service-instances | grep ${INSTANCE_NAME} ||:)
 if [ -z "$SERVICE" ]; then
-  bx resource service-instance-create ${INSTANCE_NAME} ${SERVICE_NAME} ${STAGING_REGION_ID}
+  bx resource service-instance-create ${INSTANCE_NAME} ${SERVICE_NAME} ${SERVICE_LOCATION}
 else
   echo -e "Keeping existing service: ${INSTANCE_NAME}"
 fi
