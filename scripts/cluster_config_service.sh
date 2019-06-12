@@ -25,15 +25,16 @@ fi
 echo "INSTANCE_NAME=${INSTANCE_NAME}"
 echo "SERVICE_NAME=${SERVICE_NAME}"
 echo "SERVICE_PLAN=${SERVICE_PLAN}"
+echo "STAGING_REGION_ID=${STAGING_REGION_ID}"
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 # Create service (if needed)
 SERVICE=$(bx resource service-instances | grep ${INSTANCE_NAME} ||:)
 if [ -z "$SERVICE" ]; then
-  echo -e "Keeping existing service: ${INSTANCE_NAME}"
-else
   bx resource service-instance-create ${INSTANCE_NAME} ${SERVICE_NAME} ${STAGING_REGION_ID}
+else
+  echo -e "Keeping existing service: ${INSTANCE_NAME}"
 fi
 # Bind service to cluster
 SERVICE_ID=$(bx resource service-instance ${INSTANCE_NAME} --output json | jq -r '.[0].guid')
