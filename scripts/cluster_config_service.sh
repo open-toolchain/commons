@@ -22,7 +22,7 @@ fi
 # or learn more about the available environment variables at:
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
-export SERVICE_LOCATION=${SERVICE_LOCATION:-IBM_CLOUD_REGION}
+export SERVICE_LOCATION=${SERVICE_LOCATION:-$IBM_CLOUD_REGION}
 
 echo "INSTANCE_NAME=${INSTANCE_NAME}"
 echo "SERVICE_NAME=${SERVICE_NAME}"
