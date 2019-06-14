@@ -22,24 +22,30 @@ fi
 # or learn more about the available environment variables at:
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
+export SERVICE_LOCATION=${SERVICE_LOCATION:-$IBM_CLOUD_REGION}
+export SERVICE_IAM_ROLE=${SERVICE_IAM_ROLE:-"Manager"}
+
 echo "INSTANCE_NAME=${INSTANCE_NAME}"
 echo "SERVICE_NAME=${SERVICE_NAME}"
 echo "SERVICE_PLAN=${SERVICE_PLAN}"
+echo "SERVICE_LOCATION=${SERVICE_LOCATION}"
+echo "SERVICE_IAM_ROLE=${SERVICE_IAM_ROLE}"
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 # Create service (if needed)
 SERVICE=$(bx resource service-instances | grep ${INSTANCE_NAME} ||:)
 if [ -z "$SERVICE" ]; then
-  echo -e "Keeping existing service: ${INSTANCE_NAME}"
+  bx resource service-instance-create ${INSTANCE_NAME} ${SERVICE_NAME} ${SERVICE_PLAN} ${SERVICE_LOCATION}
 else
-  bx resource service-instance-create ${INSTANCE_NAME} ${SERVICE_NAME} ${STAGING_REGION_ID}
+  echo -e "Keeping existing service: ${INSTANCE_NAME}"
 fi
 # Bind service to cluster
 SERVICE_ID=$(bx resource service-instance ${INSTANCE_NAME} --output json | jq -r '.[0].guid')
 BINDING=$( bx cs cluster-services -n $CLUSTER_NAMESPACE $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
 if [ -z "$BINDING" ]; then
-  bx cs cluster-service-bind $PIPELINE_KUBERNETES_CLUSTER_NAME $CLUSTER_NAMESPACE $SERVICE_ID
+  bx cs cluster-service-bind --cluster $PIPELINE_KUBERNETES_CLUSTER_NAME \
+    --namespace $CLUSTER_NAMESPACE --service $SERVICE_ID --role $SERVICE_IAM_ROLE
 else
   echo -e "Service already bound in cluster namespace: ${CLUSTER_NAMESPACE}"
 fi
