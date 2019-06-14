@@ -37,7 +37,7 @@ fi
 
 echo ""
 echo "=========================================================="
-echo -e "CHECKING deployment status of ISTIO"
+echo -e "CHECKING installation status of ISTIO"
 echo ""
 for ITERATION in {1..30}
 do
@@ -55,7 +55,7 @@ done
 if [[ ! -z "$NOT_READY" ]]; then
   echo ""
   echo "=========================================================="
-  echo "ISTIO INSTALLATION FAILED"
+  echo "ISTIO INSTALLATION CHECK : FAILED"
   echo "Please check that the target cluster meets the Istio system requirements (e.g. LITE clusters do not have enough capacity)."
   exit 1
 fi
