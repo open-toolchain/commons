@@ -56,7 +56,7 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo ""
   echo "=========================================================="
   echo "ISTIO INSTALLATION FAILED"
-  echo "Please check that the target cluster meets the Istio system requirements (e.g. a LITE cluster doesn't have enough capacity)."
+  echo "Please check that the target cluster meets the Istio system requirements (e.g. LITE clusters do not have enough capacity)."
   exit 1
 fi
 
