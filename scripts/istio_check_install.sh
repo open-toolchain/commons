@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 # uncomment to debug the script
 # set -x
 # copy the script below into your app code repo (e.g. ./scripts/istio_check_install.sh) and 'source' it from your pipeline job
