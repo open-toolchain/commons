@@ -23,8 +23,8 @@ else
   ibmcloud ks cluster-addon-enable istio --cluster ${PIPELINE_KUBERNETES_CLUSTER_NAME}
 
   # Alternative commands for installing a custom Istio version (DEFAULT_ISTIO_VERSION)
+  # Reminder: Istio 1.0 is deprecated (https://istio.io/blog/2019/announcing-1.0-eol/), be aware you'll need a STANDARD cluster to run recent versions of Istio >1.1 ."
   # echo -e "Proceeding with installing custom version: ${DEFAULT_ISTIO_VERSION}"
-  # echo "WARNING: Istio 1.0 is deprecated (https://istio.io/blog/2019/announcing-1.0-eol/), be aware you'll need a STANDARD cluster to run recent versions of Istio >1.1 ."
   # WORKING_DIR=$(pwd)
   # mkdir ~/tmpbin && cd ~/tmpbin
   # ISTIO_VERSION=${DEFAULT_ISTIO_VERSION}
@@ -42,16 +42,13 @@ echo ""
 for ITERATION in {1..30}
 do
   DATA=$( kubectl get pods --namespace ${ISTIO_NAMESPACE} -o json )
-  NOT_READY=$(echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==false and .state.terminated == null) ')
+  NOT_READY=$(echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.ready==false and .state.terminated==null)')
   if [[ -z "$NOT_READY" ]]; then
     echo -e "All pods are ready:"
-    # echo $DATA | jq '.items[].status.containerStatuses?[] | select(.ready==false or .state.terminated != null) ' 
     break # istio installation succeeded
   fi
-  REASON=$(echo $DATA | jq '.items[].status.containerStatuses?[] | .state.waiting.reason')
   echo -e "${ITERATION} : Deployment still pending..."
   echo -e "NOT_READY:${NOT_READY}"
-  echo -e "REASON: ${REASON}"
   sleep 5
 done
 
@@ -59,6 +56,7 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo ""
   echo "=========================================================="
   echo "ISTIO INSTALLATION FAILED"
+  echo "Please check that the target cluster meets the Istio system requirements (e.g. a LITE cluster doesn't have enough capacity)."
   exit 1
 fi
 
