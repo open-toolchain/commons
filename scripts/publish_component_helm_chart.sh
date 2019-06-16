@@ -119,8 +119,8 @@ for ITER in {1..30}
 do
   echo "Fetching umbrella repo"
   git clone ${UMBRELLA_ACCESS_REPO_URL}
-  git checkout hack ################## HACK
   cd ${UMBRELLA_REPO_NAME}
+  git checkout hack ################## HACK
   ls -al
   echo "Remove previous component data"
   ls -al
