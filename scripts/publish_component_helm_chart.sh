@@ -28,8 +28,8 @@ echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 # Insights variables
-echo "BUILD_PREFIX=${BUILD_PREFIX}"
-echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
+echo "GIT_BRANCH=${GIT_BRANCH}"
+echo "APP_NAME=${APP_NAME}"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -100,11 +100,10 @@ mkdir -p ./.publish/insights
 INSIGHTS_FILE=./.publish/insights/${CHART_NAME}-${VERSION}
 rm -f $INSIGHTS_FILE # override if already exists
 # Evaluate the gate against the version matching the git commit
-PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
 echo "TOOLCHAIN_ID=${PIPELINE_TOOLCHAIN_ID}" >> $INSIGHTS_FILE
-echo "BUILD_PREFIX=${BUILD_PREFIX}" >> $INSIGHTS_FILE
-echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}" >> $INSIGHTS_FILE
-echo "PIPELINE_STAGE_INPUT_REV=${PIPELINE_STAGE_INPUT_REV}" >> $INSIGHTS_FILE
+echo "GIT_BRANCH=${GIT_BRANCH}" >> $INSIGHTS_FILE
+echo "APP_NAME=${APP_NAME}" >> $INSIGHTS_FILE
+echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}" >> $INSIGHTS_FILE
 cat $INSIGHTS_FILE
 
 # Add the insights file in the packaged helm chart

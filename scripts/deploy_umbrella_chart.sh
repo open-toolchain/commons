@@ -83,10 +83,6 @@ echo -e "Updating Insights deployment records:${RELEASE_NAME}"
 if [[ ! -d ${CHART_PATH}/insights ]]; then
   echo "Cannot find Insights config information in ${CHART_PATH}/insights folder"
 else
-  # Install DRA CLI
-  export PATH=/opt/IBM/node-v4.2/bin:$PATH
-  npm install -g grunt-idra3
-
   # get the deployment result from helm status command
   STATUS=$( helm status ${RELEASE_NAME} | grep STATUS: | awk '{print $2}' )
   if [[ $STATUS -eq 'DEPLOYED' ]]; then
@@ -95,33 +91,30 @@ else
       STATUS='fail'
   fi
 
-  # Insight deployment record for the umbrella application
-  if [ "${SOURCE_BUILD_NUMBER}" ]; then 
-    export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
-  fi
-  # If LOGICAL_APP_NAME is defined then create a deployment record the umbrella chart deployment
-  if [ "$LOGICAL_APP_NAME" ]; then
-    idra --publishdeployrecord --env=${LOGICAL_ENV_NAME} --status=${STATUS}        
+  # If APP_NAME is defined then create a deployment record the umbrella chart deployment
+  if [ "$APP_NAME" ]; then
+    ibmcloud doi publishdeployrecord --logicalappname="{$APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+       
   fi
 
-  # Keep the current LOGICAL_APP_NAME and BUILD_PREFIX to restore it after sub-component IDRa deployment record
-  PREVIOUS_LOGICAL_APP_NAME=$LOGICAL_APP_NAME
-  PREVIOUS_BUILD_PREFIX=$BUILD_PREFIX
+  # Keep the current APP_NAME and SOURCE_BUILD_NUMBER to restore it after sub-component DOI deployment record
+  PREVIOUS_APP_NAME=$APP_NAME
+  PREVIOS_SOURCE_BUILD_NUMBER=$SOURCE_BUILD_NUMBER
 
   ls ${CHART_PATH}/insights/*
   echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
   for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
-    echo -e "Publish results for component: ${INSIGHT_CONFIG}"
-    export LOGICAL_APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep LOGICAL_APP_NAME | cut -d'=' -f2 )
-    export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
-    export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
+    echo -e "Publish deploy record for component: ${INSIGHT_CONFIG}"
+    APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep APP_NAME | cut -d'=' -f2 )
+    GIT_BRANCH=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep GIT_BRANCH | cut -d'=' -f2 )
+    SOURCE_BUILD_NUMBER=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep SOURCE_BUILD_NUMBER | cut -d'=' -f2 )
  
-    echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
-    echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
-    echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
+    echo -e "APP_NAME: ${APP_NAME}"
+    echo -e "GIT_BRANCH: ${GIT_BRANCH}"
+    echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
 
-    # publish deploy records for 3 microservices
-    idra --publishdeployrecord  --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+    # publish deploy records for each microservice
+    ibmcloud doi publishdeployrecord --logicalappname="{$APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
 
     # get the process exit code
     RESULT=$?  
@@ -131,9 +124,9 @@ else
   done
 fi
 
-# Restore LOGICAL_APP_NAME and BUILD_PREFIX after sub-component IDRa deployment record
-export LOGICAL_APP_NAME=$PREVIOUS_LOGICAL_APP_NAME
-export BUILD_PREFIX=$PREVIOUS_BUILD_PREFIX
+# Restore APP_NAME and SOURCE_BUILD_NUMBER after sub-component DOI deployment record
+export APP_NAME=$PREVIOUS_APP_NAME
+export SOURCE_BUILD_NUMBER=$PREVIOUS_SOURCE_BUILD_NUMBER
 
 echo "=========================================================="
 IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
