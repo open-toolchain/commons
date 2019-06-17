@@ -50,7 +50,10 @@ echo "DEPLOYING using manifest"
 echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
 if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
 if [ -f ${DEPLOYMENT_FILE} ]; then
-    sed -i "s~^\([[:blank:]]*\)image:.*$~\1image: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}~" ${DEPLOYMENT_FILE}
+    # sed -i "s~^\([[:blank:]]*\)image:.*$~\1image: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}~" ${DEPLOYMENT_FILE}
+    NEW_DEPLOYMENT_FILE=tmp.${DEPLOYMENT_FILE}
+    cat $DEPLOYMENT_FILE | yq r - -j | jq --arg i ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} '.spec.template.spec.containers[0].image = $i ' | yq r - > ${NEW_DEPLOYMENT_FILE}
+    DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # replace file
     cat ${DEPLOYMENT_FILE}
 else 
     echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
@@ -58,9 +61,10 @@ else
 fi    
 set -x
 # if [ "${USE_ISTIO_GATEWAY}" = true ]; then
-#   echo -e "Istio not found, installing it..."
+#   echo -e "Istio not found, installing version: ${DEFAULT_ISTIO_VERSION}"
 #   WORKING_DIR=$(pwd)
 #   mkdir ~/tmpbin && cd ~/tmpbin
+#   ISTIO_VERSION=${DEFAULT_ISTIO_VERSION}
 #   curl -L https://git.io/getLatestIstio | sh -
 #   ISTIO_ROOT=$(pwd)/$(find istio-* -maxdepth 0 -type d)
 #   export PATH=${ISTIO_ROOT}/bin:$PATH
@@ -112,7 +116,7 @@ if [[ ! -z "$NOT_READY" ]]; then
 fi
 
 echo "=========================================================="
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[.items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'")] | first | .metadata.labels.app')
+APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.labels.app] [1]')
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
