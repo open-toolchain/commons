@@ -126,7 +126,7 @@ else
 
   # Keep the current APP_NAME and SOURCE_BUILD_NUMBER to restore it after sub-component DOI deployment record
   PREVIOUS_APP_NAME=$APP_NAME
-  PREVIOS_SOURCE_BUILD_NUMBER=$SOURCE_BUILD_NUMBER
+  PREVIOUS_SOURCE_BUILD_NUMBER=$SOURCE_BUILD_NUMBER
 
   ls ${CHART_PATH}/insights/*
   echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
@@ -141,7 +141,7 @@ else
     echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
 
     # publish deploy records for each microservice
-    ibmcloud doi publishdeployrecord --logicalappname="{$APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
 
     # get the process exit code
     RESULT=$?  
