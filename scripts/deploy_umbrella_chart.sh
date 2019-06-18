@@ -120,7 +120,7 @@ else
 
   # If APP_NAME is defined then create a deployment record the umbrella chart deployment
   if [ "$APP_NAME" ]; then
-    ibmcloud doi publishdeployrecord --logicalappname="{$APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
        
   fi
 
