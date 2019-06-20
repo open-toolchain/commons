@@ -31,7 +31,7 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 if [ -n "$LOGICAL_APP_NAME"]; then
   # the script is used in a toolchain created with a template that was using iDRA tool
   # ensure compatibility with ibmcloud doi plugin
-  export APP_NAME=${LOGICAL_APP_NAME}
+  export APP_NAME="$LOGICAL_APP_NAME"
 fi
 # Insights variables
 echo "GIT_BRANCH=${GIT_BRANCH}"

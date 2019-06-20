@@ -31,7 +31,7 @@ else
   # the script is used in a toolchain created with a template that was using iDRA tool
   # ensure compatibility with ibmcloud doi plugin
   export DOI_NO_AUTO=true
-  export APP_NAME=${LOGICAL_APP_NAME}
+  export APP_NAME="${LOGICAL_APP_NAME}"
   export DOI_BUILD_NUMBER="${BUILD_PREFIX}:${SOURCE_BUILD_NUMBER}"
 fi
 
