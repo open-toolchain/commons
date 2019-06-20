@@ -120,8 +120,7 @@ else
 
   # If APP_NAME is defined then create a deployment record the umbrella chart deployment
   if [ "$APP_NAME" ]; then
-    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
-       
+    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}       
   fi
 
   # Keep the current APP_NAME and SOURCE_BUILD_NUMBER to restore it after sub-component DOI deployment record
@@ -140,8 +139,17 @@ else
     echo -e "GIT_BRANCH: ${GIT_BRANCH}"
     echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
 
+    # If DOI_BUILD_PREFIX exists in the devops-insights properties file, the script is used in the context
+    # of toolchain created from a template using iDRA.
+    DOI_BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep DOI_BUILD_PREFIX | cut -d'=' -f2 )
+    if [ -z "$DOI_BUILD_PREFIX" ]; then
+      DOI_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}
+    else
+      DOI_BUILD_NUMBER="${DOI_BUILD_PREFIX}:${SOURCE_BUILD_NUMBER}"
+    fi
+
     # publish deploy records for each microservice
-    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${DOI_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
 
     # get the process exit code
     RESULT=$?  
