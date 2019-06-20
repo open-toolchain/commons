@@ -28,7 +28,7 @@ echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 # Ensure comptability with iDRA previous usage in the templates
-if [ -n "$LOGICAL_APP_NAME"]; then
+if [ -n "$LOGICAL_APP_NAME" ]; then
   # the script is used in a toolchain created with a template that was using iDRA tool
   # ensure compatibility with ibmcloud doi plugin
   export APP_NAME="$LOGICAL_APP_NAME"
@@ -111,7 +111,7 @@ echo "GIT_BRANCH=${GIT_BRANCH}" >> $INSIGHTS_FILE
 echo "APP_NAME=${APP_NAME}" >> $INSIGHTS_FILE
 echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}" >> $INSIGHTS_FILE
 # Ensure comptability with iDRA previous usage in the templates
-if [ -n "$LOGICAL_APP_NAME"]; then
+if [ -n "$LOGICAL_APP_NAME" ]; then
   # the script is used in a toolchain created with a template that was using iDRA tool
   # ensure compatibility with ibmcloud doi plugin as iDRA was using BUILD_PREFIX to create
   # the corresponding build record identifier
