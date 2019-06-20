@@ -39,8 +39,18 @@ for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   echo -e "APP_NAME: ${APP_NAME}"
   echo -e "GIT_BRANCH: ${GIT_BRANCH}"
   echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
+
+  # If DOI_BUILD_PREFIX exists in the devops-insights properties file, the script is used in the context
+  # of toolchain created from a template using iDRA.
+  DOI_BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep DOI_BUILD_PREFIX | cut -d'=' -f2 )
+  if [ -z "$DOI_BUILD_PREFIX" ]; then
+    DOI_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}
+  else
+    DOI_BUILD_NUMBER="${DOI_BUILD_PREFIX}:${SOURCE_BUILD_NUMBER}"
+  fi
+
   # publish the results for each component
-  ibmcloud doi publishtestrecord --logicalappname="$APP_NAME" --buildnumber=$SOURCE_BUILD_NUMBER --filelocation=${FILE_LOCATION} --type=${TEST_TYPE}
+  ibmcloud doi publishtestrecord --logicalappname="$APP_NAME" --buildnumber=${DOI_BUILD_NUMBER} --filelocation=${FILE_LOCATION} --type=${TEST_TYPE}
 
   # get the process exit code
   RESULT=$?  
