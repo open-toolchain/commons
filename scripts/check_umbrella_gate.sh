@@ -45,8 +45,17 @@ for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
   echo -e "POLICY_NAME: ${POLICY_NAME}"
 
+  # If DOI_BUILD_PREFIX exists in the devops-insights properties file, the script is used in the context
+  # of toolchain created from a template using iDRA.
+  DOI_BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep DOI_BUILD_PREFIX | cut -d'=' -f2 )
+  if [ -z "$DOI_BUILD_PREFIX" ]; then
+    DOI_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}
+  else
+    DOI_BUILD_NUMBER="${DOI_BUILD_PREFIX}:${SOURCE_BUILD_NUMBER}"
+  fi
+
   # Evaluate the gate against the version matching the git commit
-  ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
+  ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${DOI_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
   # get the process exit code
   RESULT=$?  
   if [[ ${RESULT} != 0 ]]; then
