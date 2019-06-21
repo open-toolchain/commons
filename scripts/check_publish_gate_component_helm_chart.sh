@@ -24,23 +24,12 @@ else
   echo "build.properties : not found"
 fi 
 
-# Ensure comptability with iDRA previous usage in the templates
-if [ -z "$LOGICAL_APP_NAME" ]; then
-  export DOI_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}
-else 
-  # the script is used in a toolchain created with a template that was using iDRA tool
-  # ensure compatibility with ibmcloud doi plugin
-  export DOI_NO_AUTO=true
-  export APP_NAME="${LOGICAL_APP_NAME}"
-  export DOI_BUILD_NUMBER="${BUILD_PREFIX}:${SOURCE_BUILD_NUMBER}"
-fi
-
 # List files available
 ls -l 
 
 # Evaluate the gate against the version matching the git commit
 ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
-ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${DOI_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
+ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
 
 # get the process exit code
 RESULT=$?  
