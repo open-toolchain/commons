@@ -46,6 +46,10 @@ if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   kubectl config use-context custom-context
 fi
 kubectl cluster-info
+if [ "$?" != "0" ]; then
+  echo -e "${red}Kubernetes cluster seems not reachable${no_color}"
+  exit 1
+fi
 
 echo "=========================================================="
 echo "CHECKING DEPLOYMENT.YML manifest"
