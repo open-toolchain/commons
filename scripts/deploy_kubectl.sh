@@ -112,7 +112,7 @@ if [[ ! -z "$NOT_READY" ]]; then
 fi
 
 echo "=========================================================="
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[.items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'")] | first | .metadata.labels.app')
+APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.labels.app] [1]')
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
