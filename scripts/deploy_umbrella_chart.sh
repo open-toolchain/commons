@@ -91,6 +91,9 @@ else
       STATUS='fail'
   fi
 
+echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being deprecated"
+echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/deploy_umbrella_chart.sh"
+
   # If APP_NAME is defined then create a deployment record the umbrella chart deployment
   if [ "$APP_NAME" ]; then
     ibmcloud doi publishdeployrecord --logicalappname="{$APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}

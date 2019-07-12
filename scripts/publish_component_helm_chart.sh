@@ -95,6 +95,9 @@ echo "Linting injected Helm chart"
 helm init --client-only
 helm lint ${CHART_PATH}
 
+echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being deprecated"
+echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/publish_component_helm_chart.sh"
+
 echo "Capture Insights matching config"
 mkdir -p ./.publish/insights
 INSIGHTS_FILE=./.publish/insights/${CHART_NAME}-${VERSION}

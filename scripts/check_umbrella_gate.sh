@@ -30,6 +30,9 @@ if [[ ! -d ./insights ]]; then
   exit 1
 fi
 
+echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being deprecated"
+echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/check_umbrella_gate.sh"
+
 ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
 
 ls ./insights/*
