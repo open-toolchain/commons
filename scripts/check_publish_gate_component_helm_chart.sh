@@ -10,7 +10,7 @@
 
 # Checks a component quality gate
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
+echo "APP_NAME=${APP_NAME}"
 echo "BUILD_PREFIX=${BUILD_PREFIX}"
 echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "POLICY_NAME: ${POLICY_NAME}"
@@ -27,20 +27,10 @@ fi
 # List files available
 ls -l 
 
-# Install DRA CLI
-export PATH=/opt/IBM/node-v4.2/bin:$PATH
-npm install -g grunt-idra3
-
 # Evaluate the gate against the version matching the git commit
-export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
+ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
+ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
 
-echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
-echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
-echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
-echo -e "POLICY_NAME: ${POLICY_NAME}"
-
-# get the decision
-idra --evaluategate --policy="${POLICY_NAME}" --forcedecision=true
 # get the process exit code
 RESULT=$?  
 if [[ ${RESULT} != 0 ]]; then
