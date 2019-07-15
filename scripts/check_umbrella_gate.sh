@@ -30,26 +30,26 @@ if [[ ! -d ./insights ]]; then
   exit 1
 fi
 
-# Install DRA CLI
-export PATH=/opt/IBM/node-v4.2/bin:$PATH
-npm install -g grunt-idra3
+echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being deprecated"
+echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/check_umbrella_gate.sh"
+
+ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
 
 ls ./insights/*
 for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
   echo -e "Checking gate for component: ${INSIGHT_CONFIG}"
 
-  export LOGICAL_APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep LOGICAL_APP_NAME | cut -d'=' -f2 )
-  export BUILD_PREFIX=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep BUILD_PREFIX | cut -d'=' -f2 )
-  export PIPELINE_STAGE_INPUT_REV=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep PIPELINE_STAGE_INPUT_REV | cut -d'=' -f2 )
-  POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${LOGICAL_APP_NAME} ${LOGICAL_ENV_NAME} )
+  APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep APP_NAME | cut -d'=' -f2 )
+  GIT_BRANCH=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep GIT_BRANCH | cut -d'=' -f2 )
+  SOURCE_BUILD_NUMBER=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep SOURCE_BUILD_NUMBER | cut -d'=' -f2 )
+  POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${APP_NAME} ${LOGICAL_ENV_NAME} )
   
-  echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
-  echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
-  echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
+  echo -e "APP_NAME: ${APP_NAME}"
+  echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
   echo -e "POLICY_NAME: ${POLICY_NAME}"
 
-  # get the decision
-  idra --evaluategate --policy="${POLICY_NAME}" --forcedecision=true
+  # Evaluate the gate against the version matching the git commit
+  ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
   # get the process exit code
   RESULT=$?  
   if [[ ${RESULT} != 0 ]]; then

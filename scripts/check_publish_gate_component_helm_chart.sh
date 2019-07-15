@@ -10,8 +10,8 @@
 
 # Checks a component quality gate
 echo "BUILD_NUMBER=${BUILD_NUMBER}"
-echo "LOGICAL_APP_NAME=${LOGICAL_APP_NAME}"
-echo "BUILD_PREFIX=${BUILD_PREFIX}"
+echo "APP_NAME=${APP_NAME}"
+echo "GIT_BRANCH=${GIT_BRANCH}"
 echo "SOURCE_BUILD_NUMBER=${SOURCE_BUILD_NUMBER}"
 echo "POLICY_NAME: ${POLICY_NAME}"
 echo "IBM_CLOUD_API_KEY: ${IBM_CLOUD_API_KEY}"
@@ -27,20 +27,13 @@ fi
 # List files available
 ls -l 
 
-# Install DRA CLI
-export PATH=/opt/IBM/node-v4.2/bin:$PATH
-npm install -g grunt-idra3
+echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being deprecated"
+echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/check_publish_gate_component_helm_chart.sh"
 
 # Evaluate the gate against the version matching the git commit
-export PIPELINE_STAGE_INPUT_REV=${SOURCE_BUILD_NUMBER}
+ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
+ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
 
-echo -e "LOGICAL_APP_NAME: ${LOGICAL_APP_NAME}"
-echo -e "BUILD_PREFIX: ${BUILD_PREFIX}"
-echo -e "PIPELINE_STAGE_INPUT_REV: ${PIPELINE_STAGE_INPUT_REV}"
-echo -e "POLICY_NAME: ${POLICY_NAME}"
-
-# get the decision
-idra --evaluategate --policy="${POLICY_NAME}" --forcedecision=true
 # get the process exit code
 RESULT=$?  
 if [[ ${RESULT} != 0 ]]; then
