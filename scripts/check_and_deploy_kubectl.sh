@@ -1,8 +1,8 @@
 #!/bin/bash
 # uncomment to debug the script
 # set -x
-# copy the script below into your app code repo (e.g. ./scripts/check_predeploy.sh) and 'source' it from your pipeline job
-#    source ./scripts/check_predeploy_kubectl.sh
+# copy the script below into your app code repo (e.g. ./scripts/check_and_deploy_kubectl.sh) and 'source' it from your pipeline job
+#    source ./scripts/check_and_deploy_kubectl.sh
 # alternatively, you can source it from online script:
 #    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/check_and_deploy_kubectl.sh")
 # ------------------
@@ -48,6 +48,10 @@ if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   kubectl config use-context custom-context
 fi
 kubectl cluster-info
+if [ "$?" != "0" ]; then
+  echo -e "${red}Kubernetes cluster seems not reachable${no_color}"
+  exit 1
+fi
 
 #Check cluster availability
 echo "=========================================================="
