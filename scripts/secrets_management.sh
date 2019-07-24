@@ -927,6 +927,7 @@ function iam_writer_access {
       grep -A 2 "Target service name:       $VAULT_SERVICE_NAME" | \
       grep -q "Reader"; then
       #echo "Authorization policy exists"
+      PROCEED=1
     else
       #echo "Authorization policy does not exist"
       ibmcloud iam authorization-policy-create \
