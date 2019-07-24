@@ -118,7 +118,7 @@ echo "UPDATING manifest with image information"
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
 NEW_DEPLOYMENT_FILE=tmp.${DEPLOYMENT_FILE}
-cat $DEPLOYMENT_FILE | yq r - -j | jq --arg i ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} '.spec.template.spec.containers[0].image = $i ' | yq r - > ${NEW_DEPLOYMENT_FILE}
+cat $DEPLOYMENT_FILE | yq r - -j | jq --arg i "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}xxx" '.spec.template.spec.containers[0].image = $i ' | yq r - > ${NEW_DEPLOYMENT_FILE}
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
 
