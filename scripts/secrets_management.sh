@@ -67,7 +67,7 @@ function save_byok_secret {
     check_value $SECRET_NAME
     check_value $SECRET_MATERIAL
 
-    section "Begin: save_byok_secret: $VAULT_SERVICE_NAME"
+    #section "Begin: save_byok_secret: $VAULT_SERVICE_NAME"
 
     ibmcloud target -g $RESOURCE_GROUP
 
@@ -75,9 +75,9 @@ function save_byok_secret {
     # create an instance of the secrets management vault if it's not already there...
     ##
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
-        echo "Reusing secrets management vault service named '$VAULT_SERVICE_NAME' as it already exists..."
+        #echo "Reusing secrets management vault service named '$VAULT_SERVICE_NAME' as it already exists..."
     else
-        echo "Creating new secrets management vault service instance named '$VAULT_SERVICE_NAME'..."
+        #echo "Creating new secrets management vault service instance named '$VAULT_SERVICE_NAME'..."
         ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
     fi
 
@@ -96,9 +96,9 @@ function save_byok_secret {
     # need this in order to work with iam to get credentials...
     ##
     if check_exists "$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME 2>&1)"; then
-        echo "Reusing secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME' as it already exists..."
+        #echo "Reusing secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME' as it already exists..."
     else
-        echo "Creating new secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
+        #echo "Creating new secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
         ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
             --instance-id "$VAULT_INSTANCE_ID" || exit 1
     fi
@@ -110,21 +110,21 @@ function save_byok_secret {
     VAULT_ACCESS_TOKEN=$(get_access_token $VAULT_IAM_APIKEY)
     check_value $VAULT_ACCESS_TOKEN
 
-    echo "-----------------"
-    echo "VAULT_REGION=$VAULT_REGION"
-    echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
-    echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
-    echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
-    echo "VAULT_GUID=$VAULT_GUID"
-    echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
-    echo "-----------------"
-    echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
-    echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
-    echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
-    echo "-----------------"
-    echo "SECRET_NAME=$SECRET_NAME"
-    echo "SECRET_MATERIAL=$SECRET_MATERIAL"
-    echo "-----------------"
+    #echo "-----------------"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
+    #echo "-----------------"
+    #echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
+    #echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
+    #echo "-----------------"
+    #echo "SECRET_NAME=$SECRET_NAME"
+    #echo "SECRET_MATERIAL=$SECRET_MATERIAL"
+    #echo "-----------------"
 
     # get a list of secrets on this vault secrets management instance first...
     VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
@@ -132,15 +132,15 @@ function save_byok_secret {
     --header "Bluemix-Instance: $VAULT_GUID")
     check_value $VAULT_SECRETS
 
-    echo "Current list of vault secrets:"
-    echo "$VAULT_SECRETS"
-    echo "-----------------"
+    #echo "Current list of vault secrets:"
+    #echo "$VAULT_SECRETS"
+    #echo "-----------------"
 
     # now check if the we're trying to save a secret that already preexists...
     if echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'")' > /dev/null; then
-      echo "Reusing saved vault BYOK secret named '${SECRET_NAME}' as it already exists..."
+      #echo "Reusing saved vault BYOK secret named '${SECRET_NAME}' as it already exists..."
     else
-      echo "Creating new vault BYOK secret named '$SECRET_NAME' with specified secret material..."
+      #echo "Creating new vault BYOK secret named '$SECRET_NAME' with specified secret material..."
       NEW_VAULT_SECRET=$(curl -s -X POST $VAULT_MANAGEMENT_URL \
         --header "Authorization: Bearer $VAULT_ACCESS_TOKEN" \
         --header "Bluemix-Instance: $VAULT_GUID" \
@@ -163,9 +163,9 @@ function save_byok_secret {
         }')
       check_value $NEW_VAULT_SECRET
 
-      echo "New vault BYOK secret named '${SECRET_NAME}' creation response from secrets management vault service:"
-      echo "$NEW_VAULT_SECRET"
-      echo "-----------------"
+      #echo "New vault BYOK secret named '${SECRET_NAME}' creation response from secrets management vault service:"
+      #echo "$NEW_VAULT_SECRET"
+      #echo "-----------------"
 
       # retrieve the updated secrets list...
       VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
@@ -177,11 +177,11 @@ function save_byok_secret {
     # extract the id of our newly saved (or refetched) secret...
     VAULT_SECRET_ID=$(echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .id')
     check_value $VAULT_SECRET_ID
-    echo "New (or refetched) vault BYOK secret named '${SECRET_NAME}' has public facing ID:"
-    echo "$VAULT_SECRET_ID"
-    echo "-----------------"
+    #echo "New (or refetched) vault BYOK secret named '${SECRET_NAME}' has public facing ID:"
+    #echo "$VAULT_SECRET_ID"
+    #echo "-----------------"
 
-    section "End: save_byok_secret: $VAULT_SERVICE_NAME"
+    #section "End: save_byok_secret: $VAULT_SERVICE_NAME"
 
     echo $VAULT_SECRET_ID
 }
@@ -216,7 +216,7 @@ function generate_auto_secret {
     check_value $SECRET_NAME
     check_value $EXTRACTABLE
 
-    section "Begin: generate_auto_secret: $VAULT_SERVICE_NAME"
+    #section "Begin: generate_auto_secret: $VAULT_SERVICE_NAME"
 
     ibmcloud target -g $RESOURCE_GROUP
 
@@ -224,9 +224,9 @@ function generate_auto_secret {
     # create an instance of the secrets management vault if it's not already there...
     ##
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
-        echo "Reusing secrets management vault service named '$VAULT_SERVICE_NAME' as it already exists..."
+        #echo "Reusing secrets management vault service named '$VAULT_SERVICE_NAME' as it already exists..."
     else
-        echo "Creating new secrets management vault service instance named '$VAULT_SERVICE_NAME'..."
+        #echo "Creating new secrets management vault service instance named '$VAULT_SERVICE_NAME'..."
         ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
     fi
 
@@ -245,9 +245,9 @@ function generate_auto_secret {
     # need this in order to work with iam to get credentials...
     ##
     if check_exists "$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME 2>&1)"; then
-        echo "Reusing secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME' as it already exists..."
+        #echo "Reusing secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME' as it already exists..."
     else
-        echo "Creating new secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
+        #echo "Creating new secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
         ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
             --instance-id "$VAULT_INSTANCE_ID" || exit 1
     fi
@@ -259,21 +259,21 @@ function generate_auto_secret {
     VAULT_ACCESS_TOKEN=$(get_access_token $VAULT_IAM_APIKEY)
     check_value $VAULT_ACCESS_TOKEN
 
-    echo "-----------------"
-    echo "VAULT_REGION=$VAULT_REGION"
-    echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
-    echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
-    echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
-    echo "VAULT_GUID=$VAULT_GUID"
-    echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
-    echo "-----------------"
-    echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
-    echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
-    echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
-    echo "-----------------"
-    echo "SECRET_NAME=$SECRET_NAME"
-    echo "EXTRACTABLE=$EXTRACTABLE"
-    echo "-----------------"
+    #echo "-----------------"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "-----------------"
+    #echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
+    #echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
+    #echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
+    #echo "-----------------"
+    #echo "SECRET_NAME=$SECRET_NAME"
+    #echo "EXTRACTABLE=$EXTRACTABLE"
+    #echo "-----------------"
 
     # get a list of secrets on this vault secrets management service instance first...
     VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
@@ -281,15 +281,15 @@ function generate_auto_secret {
     --header "Bluemix-Instance: $VAULT_GUID")
     check_value $VAULT_SECRETS
 
-    echo "Current list of vault secrets:"
-    echo "$VAULT_SECRETS"
-    echo "-----------------"
+    #echo "Current list of vault secrets:"
+    #echo "$VAULT_SECRETS"
+    #echo "-----------------"
 
     # now check if the we're trying to save a key that already preexists...
     if echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'")' > /dev/null; then
-      echo "Reusing saved vault auto secret named '${SECRET_NAME}' as it already exists..."
+      #echo "Reusing saved vault auto secret named '${SECRET_NAME}' as it already exists..."
     else
-      echo "Creating new vault auto secret named '$SECRET_NAME' with specified secret material..."
+      #echo "Creating new vault auto secret named '$SECRET_NAME' with specified secret material..."
       NEW_VAULT_SECRET=$(curl -s -X POST $VAULT_MANAGEMENT_URL \
         --header "Authorization: Bearer $VAULT_ACCESS_TOKEN" \
         --header "Bluemix-Instance: $VAULT_GUID" \
@@ -311,9 +311,9 @@ function generate_auto_secret {
         }')
       check_value $NEW_VAULT_SECRET
 
-      echo "New vault auto secret named '${SECRET_NAME}' creation response from secrets management vault service:"
-      echo "$NEW_VAULT_SECRET"
-      echo "-----------------"
+      #echo "New vault auto secret named '${SECRET_NAME}' creation response from secrets management vault service:"
+      #echo "$NEW_VAULT_SECRET"
+      #echo "-----------------"
 
       # retrieve the updated secrets list...
       VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
@@ -325,11 +325,11 @@ function generate_auto_secret {
     # extract the id of our newly saved (or refetched) auto secret...
     VAULT_SECRET_ID=$(echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .id')
     check_value $VAULT_SECRET_ID
-    echo "New (or refetched) vault auto secret named '${SECRET_NAME}' has public facing ID:"
-    echo "$VAULT_SECRET_ID"
-    echo "-----------------"
+    #echo "New (or refetched) vault auto secret named '${SECRET_NAME}' has public facing ID:"
+    #echo "$VAULT_SECRET_ID"
+    #echo "-----------------"
 
-    section "End: generate_auto_secret: $VAULT_SERVICE_NAME"
+    #section "End: generate_auto_secret: $VAULT_SERVICE_NAME"
 
     echo $VAULT_SECRET_ID
 }
@@ -361,7 +361,7 @@ function retrieve_secret {
     check_value $RESOURCE_GROUP
     check_value $SECRET_NAME
 
-    section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+    #section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
     ibmcloud target -g $RESOURCE_GROUP
 
@@ -382,20 +382,20 @@ function retrieve_secret {
     VAULT_ACCESS_TOKEN=$(get_access_token $VAULT_IAM_APIKEY)
     check_value $VAULT_ACCESS_TOKEN
 
-    echo "-----------------"
-    echo "VAULT_REGION=$VAULT_REGION"
-    echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
-    echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
-    echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
-    echo "VAULT_GUID=$VAULT_GUID"
-    echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
-    echo "-----------------"
-    echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
-    echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
-    echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
-    echo "-----------------"
-    echo "SECRET_NAME=$SECRET_NAME"
-    echo "-----------------"
+    #echo "-----------------"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "-----------------"
+    #echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
+    #echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
+    #echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
+    #echo "-----------------"
+    #echo "SECRET_NAME=$SECRET_NAME"
+    #echo "-----------------"
 
     # get a list of secrets on this vault secrets management service instance first...
     VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
@@ -403,16 +403,16 @@ function retrieve_secret {
     --header "Bluemix-Instance: $VAULT_GUID")
     check_value $VAULT_SECRETS
 
-    echo "Current list of vault secrets:"
-    echo "$VAULT_SECRETS"
-    echo "-----------------"
+    #echo "Current list of vault secrets:"
+    #echo "$VAULT_SECRETS"
+    #echo "-----------------"
 
     # extract the id of our newly saved (or refetched) auto secret...
     VAULT_SECRET_ID=$(echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .id')
     check_value $VAULT_SECRET_ID
-    echo "New (or refetched) vault secret named '${SECRET_NAME}' has public facing ID:"
-    echo "$VAULT_SECRET_ID"
-    echo "-----------------"
+    #echo "New (or refetched) vault secret named '${SECRET_NAME}' has public facing ID:"
+    #echo "$VAULT_SECRET_ID"
+    #echo "-----------------"
 
     # retrieve the specific vault secret itself...
     VAULT_SECRET=$(curl -s ${VAULT_MANAGEMENT_URL}/${VAULT_SECRET_ID} \
@@ -421,11 +421,299 @@ function retrieve_secret {
     check_value $VAULT_SECRET
     RETRIEVED_SECRET_MATERIAL=$(echo "$VAULT_SECRET" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .payload')
     check_value $RETRIEVED_SECRET_MATERIAL
-    echo "New (or refetched) vault secret named '${SECRET_NAME}' has Base64 Key Material:"
-    echo "$RETRIEVED_SECRET_MATERIAL"
-    echo "-----------------"
+    #echo "New (or refetched) vault secret named '${SECRET_NAME}' has Base64 Key Material:"
+    #echo "$RETRIEVED_SECRET_MATERIAL"
+    #echo "-----------------"
 
-    section "End: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+    #section "End: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+
+    echo $RETRIEVED_SECRET_MATERIAL
+}
+
+## ----------------------------------------------------------------------------
+
+function retrieve_secret_byname {
+    ##
+    # retrieve_secret_byid $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_NAME
+    #
+
+    ##
+    # Typical usage:
+    # --------------
+    #source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/secrets_management.sh")
+    #retrieve_secret_byname \
+    #  "my_key_protect_instance_name" \
+    #  "us-south" \
+    #  "my_resource_group" \
+    #  "my_secret_name"
+
+    VAULT_SERVICE_NAME=$1
+    VAULT_REGION=$2
+    RESOURCE_GROUP=$3
+    SECRET_NAME=$4
+
+    check_value $VAULT_SERVICE_NAME
+    check_value $VAULT_REGION
+    check_value $RESOURCE_GROUP
+    check_value $SECRET_NAME
+
+    #section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+
+    ibmcloud target -g $RESOURCE_GROUP
+
+    VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
+    VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
+    VAULT_GUID=$(get_guid $VAULT_SERVICE_NAME)
+    VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_NAME-service-key-$VAULT_GUID
+
+    check_value $VAULT_MANAGEMENT_URL
+    check_value $VAULT_INSTANCE_ID
+    check_value $VAULT_GUID
+    check_value $VAULT_SERVICE_SERVICE_KEY_NAME
+
+    VAULT_CREDENTIALS=$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME --output JSON)
+    check_value $VAULT_CREDENTIALS
+    VAULT_IAM_APIKEY=$(echo "$VAULT_CREDENTIALS" | jq -r .[0].credentials.apikey)
+    check_value $VAULT_IAM_APIKEY
+    VAULT_ACCESS_TOKEN=$(get_access_token $VAULT_IAM_APIKEY)
+    check_value $VAULT_ACCESS_TOKEN
+
+    #echo "-----------------"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "-----------------"
+    #echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
+    #echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
+    #echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
+    #echo "-----------------"
+    #echo "SECRET_NAME=$SECRET_NAME"
+    #echo "-----------------"
+
+    # get a list of secrets on this vault secrets management service instance first...
+    VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
+    --header "Authorization: Bearer $VAULT_ACCESS_TOKEN" \
+    --header "Bluemix-Instance: $VAULT_GUID")
+    check_value $VAULT_SECRETS
+
+    #echo "Current list of vault secrets:"
+    #echo "$VAULT_SECRETS"
+    #echo "-----------------"
+
+    # extract the id of our newly saved (or refetched) auto secret...
+    VAULT_SECRET_ID=$(echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .id')
+    check_value $VAULT_SECRET_ID
+    #echo "New (or refetched) vault secret named '${SECRET_NAME}' has public facing ID:"
+    #echo "$VAULT_SECRET_ID"
+    #echo "-----------------"
+
+    # retrieve the specific vault secret itself...
+    VAULT_SECRET=$(curl -s ${VAULT_MANAGEMENT_URL}/${VAULT_SECRET_ID} \
+    --header "Authorization: Bearer $VAULT_ACCESS_TOKEN" \
+    --header "Bluemix-Instance: $VAULT_GUID")
+    check_value $VAULT_SECRET
+    RETRIEVED_SECRET_MATERIAL=$(echo "$VAULT_SECRET" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .payload')
+    check_value $RETRIEVED_SECRET_MATERIAL
+    #echo "New (or refetched) vault secret named '${SECRET_NAME}' has Base64 Key Material:"
+    #echo "$RETRIEVED_SECRET_MATERIAL"
+    #echo "-----------------"
+
+    #section "End: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+
+    echo $RETRIEVED_SECRET_MATERIAL
+}
+
+## ----------------------------------------------------------------------------
+
+function retrieve_secret_byid {
+    ##
+    # retrieve_secret_byid $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_ID
+    #
+
+    ##
+    # Typical usage:
+    # --------------
+    #source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/secrets_management.sh")
+    #retrieve_secret_byid \
+    #  "my_key_protect_instance_name" \
+    #  "us-south" \
+    #  "my_resource_group" \
+    #  "my_secret_id"
+
+    VAULT_SERVICE_NAME=$1
+    VAULT_REGION=$2
+    RESOURCE_GROUP=$3
+    SECRET_NAME=$4
+
+    check_value $VAULT_SERVICE_NAME
+    check_value $VAULT_REGION
+    check_value $RESOURCE_GROUP
+    check_value $SECRET_NAME
+
+    #section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+
+    ibmcloud target -g $RESOURCE_GROUP
+
+    VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
+    VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
+    VAULT_GUID=$(get_guid $VAULT_SERVICE_NAME)
+    VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_NAME-service-key-$VAULT_GUID
+
+    check_value $VAULT_MANAGEMENT_URL
+    check_value $VAULT_INSTANCE_ID
+    check_value $VAULT_GUID
+    check_value $VAULT_SERVICE_SERVICE_KEY_NAME
+
+    VAULT_CREDENTIALS=$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME --output JSON)
+    check_value $VAULT_CREDENTIALS
+    VAULT_IAM_APIKEY=$(echo "$VAULT_CREDENTIALS" | jq -r .[0].credentials.apikey)
+    check_value $VAULT_IAM_APIKEY
+    VAULT_ACCESS_TOKEN=$(get_access_token $VAULT_IAM_APIKEY)
+    check_value $VAULT_ACCESS_TOKEN
+
+    #echo "-----------------"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "-----------------"
+    #echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
+    #echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
+    #echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
+    #echo "-----------------"
+    #echo "SECRET_NAME=$SECRET_NAME"
+    #echo "-----------------"
+
+    # get a list of secrets on this vault secrets management service instance first...
+    VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
+    --header "Authorization: Bearer $VAULT_ACCESS_TOKEN" \
+    --header "Bluemix-Instance: $VAULT_GUID")
+    check_value $VAULT_SECRETS
+
+    #echo "Current list of vault secrets:"
+    #echo "$VAULT_SECRETS"
+    #echo "-----------------"
+
+    # extract the id of our newly saved (or refetched) auto secret...
+    VAULT_SECRET_ID=$(echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .id')
+    check_value $VAULT_SECRET_ID
+    #echo "New (or refetched) vault secret named '${SECRET_NAME}' has public facing ID:"
+    #echo "$VAULT_SECRET_ID"
+    #echo "-----------------"
+
+    # retrieve the specific vault secret itself...
+    VAULT_SECRET=$(curl -s ${VAULT_MANAGEMENT_URL}/${VAULT_SECRET_ID} \
+    --header "Authorization: Bearer $VAULT_ACCESS_TOKEN" \
+    --header "Bluemix-Instance: $VAULT_GUID")
+    check_value $VAULT_SECRET
+    RETRIEVED_SECRET_MATERIAL=$(echo "$VAULT_SECRET" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .payload')
+    check_value $RETRIEVED_SECRET_MATERIAL
+    #echo "New (or refetched) vault secret named '${SECRET_NAME}' has Base64 Key Material:"
+    #echo "$RETRIEVED_SECRET_MATERIAL"
+    #echo "-----------------"
+
+    #section "End: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+
+    echo $RETRIEVED_SECRET_MATERIAL
+}
+
+## ----------------------------------------------------------------------------
+
+function retrieve_secret_bydesc {
+    ##
+    # retrieve_secret_bydesc $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_DESC
+    #
+
+    ##
+    # Typical usage:
+    # --------------
+    #source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/secrets_management.sh")
+    #retrieve_secret_bydesc \
+    #  "my_key_protect_instance_name" \
+    #  "us-south" \
+    #  "my_resource_group" \
+    #  "my_secret_desc"
+
+    VAULT_SERVICE_NAME=$1
+    VAULT_REGION=$2
+    RESOURCE_GROUP=$3
+    SECRET_NAME=$4
+
+    check_value $VAULT_SERVICE_NAME
+    check_value $VAULT_REGION
+    check_value $RESOURCE_GROUP
+    check_value $SECRET_NAME
+
+    #section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+
+    ibmcloud target -g $RESOURCE_GROUP
+
+    VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
+    VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
+    VAULT_GUID=$(get_guid $VAULT_SERVICE_NAME)
+    VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_NAME-service-key-$VAULT_GUID
+
+    check_value $VAULT_MANAGEMENT_URL
+    check_value $VAULT_INSTANCE_ID
+    check_value $VAULT_GUID
+    check_value $VAULT_SERVICE_SERVICE_KEY_NAME
+
+    VAULT_CREDENTIALS=$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME --output JSON)
+    check_value $VAULT_CREDENTIALS
+    VAULT_IAM_APIKEY=$(echo "$VAULT_CREDENTIALS" | jq -r .[0].credentials.apikey)
+    check_value $VAULT_IAM_APIKEY
+    VAULT_ACCESS_TOKEN=$(get_access_token $VAULT_IAM_APIKEY)
+    check_value $VAULT_ACCESS_TOKEN
+
+    #echo "-----------------"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "-----------------"
+    #echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
+    #echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
+    #echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
+    #echo "-----------------"
+    #echo "SECRET_NAME=$SECRET_NAME"
+    #echo "-----------------"
+
+    # get a list of secrets on this vault secrets management service instance first...
+    VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
+    --header "Authorization: Bearer $VAULT_ACCESS_TOKEN" \
+    --header "Bluemix-Instance: $VAULT_GUID")
+    check_value $VAULT_SECRETS
+
+    #echo "Current list of vault secrets:"
+    #echo "$VAULT_SECRETS"
+    #echo "-----------------"
+
+    # extract the id of our newly saved (or refetched) auto secret...
+    VAULT_SECRET_ID=$(echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .id')
+    check_value $VAULT_SECRET_ID
+    #echo "New (or refetched) vault secret named '${SECRET_NAME}' has public facing ID:"
+    #echo "$VAULT_SECRET_ID"
+    #echo "-----------------"
+
+    # retrieve the specific vault secret itself...
+    VAULT_SECRET=$(curl -s ${VAULT_MANAGEMENT_URL}/${VAULT_SECRET_ID} \
+    --header "Authorization: Bearer $VAULT_ACCESS_TOKEN" \
+    --header "Bluemix-Instance: $VAULT_GUID")
+    check_value $VAULT_SECRET
+    RETRIEVED_SECRET_MATERIAL=$(echo "$VAULT_SECRET" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .payload')
+    check_value $RETRIEVED_SECRET_MATERIAL
+    #echo "New (or refetched) vault secret named '${SECRET_NAME}' has Base64 Key Material:"
+    #echo "$RETRIEVED_SECRET_MATERIAL"
+    #echo "-----------------"
+
+    #section "End: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
     echo $RETRIEVED_SECRET_MATERIAL
 }
@@ -457,7 +745,7 @@ function delete_secret {
     check_value $RESOURCE_GROUP
     check_value $SECRET_NAME
 
-    section "Begin: delete_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+    #section "Begin: delete_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
     ibmcloud target -g $RESOURCE_GROUP
 
@@ -478,20 +766,20 @@ function delete_secret {
     VAULT_ACCESS_TOKEN=$(get_access_token $VAULT_IAM_APIKEY)
     check_value $VAULT_ACCESS_TOKEN
 
-    echo "-----------------"
-    echo "VAULT_REGION=$VAULT_REGION"
-    echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
-    echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
-    echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
-    echo "VAULT_GUID=$VAULT_GUID"
-    echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
-    echo "-----------------"
-    echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
-    echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
-    echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
-    echo "-----------------"
-    echo "SECRET_NAME=$SECRET_NAME"
-    echo "-----------------"
+    #echo "-----------------"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_MANAGEMENT_URL=$VAULT_MANAGEMENT_URL"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "-----------------"
+    #echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
+    #echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
+    #echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
+    #echo "-----------------"
+    #echo "SECRET_NAME=$SECRET_NAME"
+    #echo "-----------------"
 
     # get a list of secrets on this vault secrets management service instance first...
     VAULT_SECRETS=$(curl -s $VAULT_MANAGEMENT_URL \
@@ -499,16 +787,16 @@ function delete_secret {
     --header "Bluemix-Instance: $VAULT_GUID")
     check_value $VAULT_SECRETS
 
-    echo "Current list of vault secrets:"
-    echo "$VAULT_SECRETS"
-    echo "-----------------"
+    #echo "Current list of vault secrets:"
+    #echo "$VAULT_SECRETS"
+    #echo "-----------------"
 
     # extract the id of our newly saved (or refetched) auto secret...
     VAULT_SECRET_ID=$(echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .id')
     check_value $VAULT_SECRET_ID
-    echo "Fetched vault secret named '${SECRET_NAME}' (for deletion) has public facing ID:"
-    echo "$VAULT_SECRET_ID"
-    echo "-----------------"
+    #echo "Fetched vault secret named '${SECRET_NAME}' (for deletion) has public facing ID:"
+    #echo "$VAULT_SECRET_ID"
+    #echo "-----------------"
 
     # delete the specific vault secret itself...
     DELETE_SECRET_RESPONSE=$(curl -s -X DELETE ${VAULT_MANAGEMENT_URL}/${VAULT_SECRET_ID} \
@@ -517,7 +805,7 @@ function delete_secret {
     --header "Accept: application/vnd.ibm.kms.key+json")
     #check_value $DELETE_SECRET_RESPONSE
 
-    section "End: delete_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
+    #section "End: delete_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
     echo $DELETE_SECRET_RESPONSE
 }
@@ -552,7 +840,7 @@ function iam_writer_access {
     check_value $SOURCE_SERVICE_NAME
     check_value $SOURCE_SERVICE_GUID
 
-    section "Begin: iam_writer_access: $VAULT_SERVICE_NAME"
+    #section "Begin: iam_writer_access: $VAULT_SERVICE_NAME"
 
     ibmcloud target -g $RESOURCE_GROUP
 
@@ -565,44 +853,44 @@ function iam_writer_access {
     check_value $VAULT_GUID
     check_value $VAULT_SERVICE_SERVICE_KEY_NAME
 
-    echo "-----------------"
-    echo "VAULT_REGION=$VAULT_REGION"
-    echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
-    echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
-    echo "VAULT_GUID=$VAULT_GUID"
-    echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
-    echo "-----------------"
+    #echo "-----------------"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "-----------------"
 
     # the current User running this script will used as the owner of the service ID binding...
     TARGET_USER=$(ibmcloud target | grep User | awk '{print $2}')
     check_value "$TARGET_USER"
-    echo "TARGET_USER=$TARGET_USER"
+    #echo "TARGET_USER=$TARGET_USER"
 
     VAULT_IAM_SERVICE_ID_KEY_NAME=$VAULT_SERVICE_NAME-iam-service-id-$VAULT_GUID-$TARGET_USER
     check_value $VAULT_IAM_SERVICE_ID_KEY_NAME
 
     # create a service ID that will be used for an IAM binding of service A and B (the secrets management vault)...
     if check_exists "$(ibmcloud iam service-id $VAULT_IAM_SERVICE_ID_KEY_NAME 2>&1)"; then
-      echo "Reusing Service ID named '$VAULT_IAM_SERVICE_ID_KEY_NAME' as it already exists..."
+      #echo "Reusing Service ID named '$VAULT_IAM_SERVICE_ID_KEY_NAME' as it already exists..."
     else
-      echo "Creating new Service ID named '$VAULT_IAM_SERVICE_ID_KEY_NAME'..."
+      #echo "Creating new Service ID named '$VAULT_IAM_SERVICE_ID_KEY_NAME'..."
       ibmcloud iam service-id-create "$VAULT_IAM_SERVICE_ID_KEY_NAME" -d "serviceID for secrets management vault iam binding"
     fi
     SERVICE_ID=$(ibmcloud iam service-id "$VAULT_IAM_SERVICE_ID_KEY_NAME" --uuid)
-    echo "SERVICE_ID=$SERVICE_ID"
+    #echo "SERVICE_ID=$SERVICE_ID"
     check_value "$SERVICE_ID"
     
     EXISTING_POLICIES=$(ibmcloud iam service-policies $SERVICE_ID --output json)
-    echo "EXISTING_POLICIES=$EXISTING_POLICIES"
+    #echo "EXISTING_POLICIES=$EXISTING_POLICIES"
     check_value "$EXISTING_POLICIES"
 
     # create a policy (if it doesn't already exist) to make serviceID
     # a writer for the secrets management vault instance...
     if echo "$EXISTING_POLICIES" | \
       jq -e -r 'select(.[].resources[].attributes[].name=="serviceInstance" and .[].resources[].attributes[].value=="'$VAULT_GUID'" and .[].roles[].display_name=="Writer")' > /dev/null; then
-        echo "Writer policy on '$VAULT_SERVICE_NAME' already exist for the Service ID"
+        #echo "Writer policy on '$VAULT_SERVICE_NAME' already exist for the Service ID"
     else
-        echo "Creating new Writer policy on '$VAULT_SERVICE_NAME' for the Service ID"
+        #echo "Creating new Writer policy on '$VAULT_SERVICE_NAME' for the Service ID"
         ibmcloud iam service-policy-create $SERVICE_ID --roles Writer --service-name kms --service-instance $VAULT_GUID --force
     fi
 
@@ -613,10 +901,10 @@ function iam_writer_access {
     VAULT_ACCESS_TOKEN=$(get_access_token $VAULT_IAM_APIKEY)
     check_value $VAULT_ACCESS_TOKEN
 
-    echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
-    echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
-    echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
-    echo "-----------------"
+    #echo "VAULT_CREDENTIALS=$VAULT_CREDENTIALS"
+    #echo "VAULT_IAM_APIKEY=$VAULT_IAM_APIKEY"
+    #echo "VAULT_ACCESS_TOKEN=$VAULT_ACCESS_TOKEN"
+    #echo "-----------------"
 
     # create the cross authorization between service A and B (the secrets management vault instance)...
     if ibmcloud iam authorization-policies | \
@@ -624,9 +912,9 @@ function iam_writer_access {
       grep -A 3 "All instances" | \
       grep -A 2 "Target service name:       $VAULT_SERVICE_NAME" | \
       grep -q "Reader"; then
-      echo "Authorization policy exists"
+      #echo "Authorization policy exists"
     else
-      echo "Authorization policy does not exist"
+      #echo "Authorization policy does not exist"
       ibmcloud iam authorization-policy-create \
         $SOURCE_SERVICE_NAME \
         $VAULT_SERVICE_NAME \
@@ -635,13 +923,13 @@ function iam_writer_access {
 
     # grant Writer role for the source service to the secrets management vault serviceID...
     if ibmcloud iam service-policies $SERVICE_ID | grep -B 4 $SOURCE_SERVICE_GUID | grep Writer; then
-      echo "Writer policy on '$SOURCE_SERVICE_NAME' already exist for the secrets management vault service ID"
+      #echo "Writer policy on '$SOURCE_SERVICE_NAME' already exist for the secrets management vault service ID"
     else
-      echo "Assigning Writer policy on '$SOURCE_SERVICE_NAME' to the secrets management vault service ID..."
+      #echo "Assigning Writer policy on '$SOURCE_SERVICE_NAME' to the secrets management vault service ID..."
       ibmcloud iam service-policy-create $SERVICE_ID --roles Writer --service-name $SOURCE_SERVICE_NAME --service-instance $SOURCE_SERVICE_GUID -f
     fi
 
-    section "End: iam_writer_access: $VAULT_SERVICE_NAME"
+    #section "End: iam_writer_access: $VAULT_SERVICE_NAME"
 }
 
 ## ----------------------------------------------------------------------------
@@ -669,19 +957,19 @@ function get_vault_instance {
     check_value $VAULT_REGION
     check_value $RESOURCE_GROUP
 
-    echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
-    echo "VAULT_REGION=$VAULT_REGION"
-    echo "RESOURCE_GROUP=$RESOURCE_GROUP"
-    echo "-----------------"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "RESOURCE_GROUP=$RESOURCE_GROUP"
+    #echo "-----------------"
 
-    section "Begin: get_vault_instance: $VAULT_SERVICE_NAME"
+    #section "Begin: get_vault_instance: $VAULT_SERVICE_NAME"
 
     ibmcloud target -g $RESOURCE_GROUP
 
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
-        echo "Service named '$VAULT_SERVICE_NAME' already exists."
+        #echo "Service named '$VAULT_SERVICE_NAME' already exists."
     else
-        echo "Creating new instance of service named '$VAULT_SERVICE_NAME'..."
+        #echo "Creating new instance of service named '$VAULT_SERVICE_NAME'..."
         ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
     fi
 
@@ -693,20 +981,20 @@ function get_vault_instance {
     check_value $VAULT_GUID
     check_value $VAULT_SERVICE_SERVICE_KEY_NAME
 
-    echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
-    echo "VAULT_GUID=$VAULT_GUID"
-    echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
-    echo "-----------------"
+    #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+    #echo "VAULT_GUID=$VAULT_GUID"
+    #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+    #echo "-----------------"
 
     if check_exists "$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME 2>&1)"; then
-        echo "Service key named '$VAULT_SERVICE_SERVICE_KEY_NAME' already exists."
+        #echo "Service key named '$VAULT_SERVICE_SERVICE_KEY_NAME' already exists."
     else
-        echo "Creating new service key named '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
+        #echo "Creating new service key named '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
         ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
             --instance-id "$VAULT_INSTANCE_ID" || exit 1
     fi
     
-    section "End: get_vault_instance: $VAULT_SERVICE_NAME"
+    #section "End: get_vault_instance: $VAULT_SERVICE_NAME"
 }
 
 ## ----------------------------------------------------------------------------
@@ -733,17 +1021,17 @@ function delete_vault_instance {
     check_value $VAULT_REGION
     check_value $RESOURCE_GROUP
 
-    echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
-    echo "VAULT_REGION=$VAULT_REGION"
-    echo "RESOURCE_GROUP=$RESOURCE_GROUP"
-    echo "-----------------"
+    #echo "VAULT_SERVICE_NAME=$VAULT_SERVICE_NAME"
+    #echo "VAULT_REGION=$VAULT_REGION"
+    #echo "RESOURCE_GROUP=$RESOURCE_GROUP"
+    #echo "-----------------"
 
-    section "Begin: delete_vault_instance: $VAULT_SERVICE_NAME"
+    #section "Begin: delete_vault_instance: $VAULT_SERVICE_NAME"
 
     ibmcloud target -g $RESOURCE_GROUP
 
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
-      echo "Service named '$VAULT_SERVICE_NAME' exists - proceeding to delete this instance..."
+      #echo "Service named '$VAULT_SERVICE_NAME' exists - proceeding to delete this instance..."
 
       VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
       VAULT_GUID=$(get_guid $VAULT_SERVICE_NAME)
@@ -753,19 +1041,19 @@ function delete_vault_instance {
       check_value $VAULT_GUID
       check_value $VAULT_SERVICE_SERVICE_KEY_NAME
 
-      echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
-      echo "VAULT_GUID=$VAULT_GUID"
-      echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
-      echo "-----------------"
+      #echo "VAULT_INSTANCE_ID=$VAULT_INSTANCE_ID"
+      #echo "VAULT_GUID=$VAULT_GUID"
+      #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
+      #echo "-----------------"
 
       # now nuke the service instance and associated service id...
       ibmcloud resource service-instance-delete -f --recursive $VAULT_SERVICE_NAME
       ibmcloud iam service-id-delete -f $VAULT_SERVICE_SERVICE_KEY_NAME
     else
-      echo "Service named '$VAULT_SERVICE_NAME' doesn't exist in the '$VAULT_REGION' region so cannot delete it."
+      #echo "Service named '$VAULT_SERVICE_NAME' doesn't exist in the '$VAULT_REGION' region so cannot delete it."
     fi
 
-    section "End: delete_vault_instance: $VAULT_SERVICE_NAME"
+    #section "End: delete_vault_instance: $VAULT_SERVICE_NAME"
 }
 
 ## ----------------------------------------------------------------------------
