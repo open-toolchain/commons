@@ -127,15 +127,26 @@ echo "DEPLOYING using manifest"
 set -x
 kubectl apply --namespace ${CLUSTER_NAMESPACE} -f ${DEPLOYMENT_FILE} 
 set +x
-# Record deploy information
-ibmcloud doi publishdeployrecord --env ${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE} \
---buildnumber ${SOURCE_BUILD_NUMBER} --logicalappname ${IMAGE_NAME} --status pass
 # Extract name from actual Kube deployment resource owning the deployed container image 
 DEPLOYMENT_NAME=$(kubectl get deploy --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[] | select(.spec.template.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.name' )
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
-kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --namespace ${CLUSTER_NAMESPACE}
-
+kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=150s --namespace ${CLUSTER_NAMESPACE}
+if [ $? -ne 0 ]; then STATUS=fail; else STATUS=pass; fi
+# Record deploy information
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+    DEPLOYMENT_ENVIRONMENT="${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}"
+  else 
+    DEPLOYMENT_ENVIRONMENT="${KUBERNETES_MASTER_ADDRESS}:${CLUSTER_NAMESPACE}"
+  fi
+  ibmcloud doi publishdeployrecord --env $DEPLOYMENT_ENVIRONMENT \
+    --buildnumber ${SOURCE_BUILD_NUMBER} --logicalappname ${IMAGE_NAME} --status ${STATUS}
+fi
+if [ "$STATUS" -eq "fail" ]; then
+  echo "DEPLOYMENT FAILED"
+  exit 1
+fi
 # Extract app name from actual Kube pod 
 echo "=========================================================="
 APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.labels.app] [1]')
