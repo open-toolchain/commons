@@ -132,7 +132,7 @@ DEPLOYMENT_NAME=$(kubectl get deploy --namespace ${CLUSTER_NAMESPACE} -o json | 
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
 kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=150s --namespace ${CLUSTER_NAMESPACE}
-if [ $? -ne 0 ]; then STATUS=fail; else STATUS=pass; fi
+if [ $? -ne 0 ]; then STATUS="fail"; else STATUS="pass"; fi
 # Record deploy information
 if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
