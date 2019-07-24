@@ -116,7 +116,6 @@ fi
 echo "=========================================================="
 echo "UPDATING manifest with image information"
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
-IMAGE_TAG="xxx"
 echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
 NEW_DEPLOYMENT_FILE=tmp.${DEPLOYMENT_FILE}
 cat $DEPLOYMENT_FILE | yq r - -j | jq --arg i ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} '.spec.template.spec.containers[0].image = $i ' | yq r - > ${NEW_DEPLOYMENT_FILE}
@@ -133,8 +132,11 @@ DEPLOYMENT_NAME=$(kubectl get deploy --namespace ${CLUSTER_NAMESPACE} -o json | 
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
 set -x
-kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=15s --namespace ${CLUSTER_NAMESPACE}
-if [ $? -ne 0 ]; then STATUS="fail"; else STATUS="pass"; fi
+if kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=150s --namespace ${CLUSTER_NAMESPACE}; then
+  STATUS="pass"
+else
+  STATUS="fail"
+fi
 set +x
 # Record deploy information
 if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
