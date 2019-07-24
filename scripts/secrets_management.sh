@@ -69,7 +69,7 @@ function save_byok_secret {
 
     #section "Begin: save_byok_secret: $VAULT_SERVICE_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     PROCEED=0
 
@@ -223,7 +223,7 @@ function generate_auto_secret {
 
     #section "Begin: generate_auto_secret: $VAULT_SERVICE_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     PROCEED=0
 
@@ -373,7 +373,7 @@ function retrieve_secret {
 
     #section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
     VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
@@ -469,7 +469,7 @@ function retrieve_secret_byname {
 
     #section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
     VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
@@ -565,7 +565,7 @@ function retrieve_secret_byid {
 
     #section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
     VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
@@ -661,7 +661,7 @@ function retrieve_secret_bydesc {
 
     #section "Begin: retrieve_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
     VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
@@ -757,7 +757,7 @@ function delete_secret {
 
     #section "Begin: delete_secret: $VAULT_SERVICE_NAME :: $SECRET_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
     VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
@@ -852,7 +852,7 @@ function iam_writer_access {
 
     #section "Begin: iam_writer_access: $VAULT_SERVICE_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
     VAULT_GUID=$(get_guid $VAULT_SERVICE_NAME)
@@ -980,7 +980,7 @@ function get_vault_instance {
 
     #section "Begin: get_vault_instance: $VAULT_SERVICE_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
       #echo "Service named '$VAULT_SERVICE_NAME' already exists."
@@ -1046,7 +1046,7 @@ function delete_vault_instance {
 
     #section "Begin: delete_vault_instance: $VAULT_SERVICE_NAME"
 
-    ibmcloud target -g $RESOURCE_GROUP
+    ibmcloud target -g $RESOURCE_GROUP > /dev/null
 
     PROCEED=0
 
