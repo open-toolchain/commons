@@ -132,8 +132,10 @@ set +x
 DEPLOYMENT_NAME=$(kubectl get deploy --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[] | select(.spec.template.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.name' )
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
-kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=150s --namespace ${CLUSTER_NAMESPACE}
+set -x
+kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=15s --namespace ${CLUSTER_NAMESPACE}
 if [ $? -ne 0 ]; then STATUS="fail"; else STATUS="pass"; fi
+set +x
 # Record deploy information
 if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
