@@ -71,14 +71,17 @@ function save_byok_secret {
 
     ibmcloud target -g $RESOURCE_GROUP
 
+    PROCEED=0
+
     ##
     # create an instance of the secrets management vault if it's not already there...
     ##
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
-        #echo "Reusing secrets management vault service named '$VAULT_SERVICE_NAME' as it already exists..."
+      #echo "Reusing secrets management vault service named '$VAULT_SERVICE_NAME' as it already exists..."
+      $PROCEED=1
     else
-        #echo "Creating new secrets management vault service instance named '$VAULT_SERVICE_NAME'..."
-        ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
+      #echo "Creating new secrets management vault service instance named '$VAULT_SERVICE_NAME'..."
+      ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
     fi
 
     VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
@@ -96,11 +99,12 @@ function save_byok_secret {
     # need this in order to work with iam to get credentials...
     ##
     if check_exists "$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME 2>&1)"; then
-        #echo "Reusing secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME' as it already exists..."
+      #echo "Reusing secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME' as it already exists..."
+      $PROCEED=1
     else
-        #echo "Creating new secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
-        ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
-            --instance-id "$VAULT_INSTANCE_ID" || exit 1
+      #echo "Creating new secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
+      ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
+        --instance-id "$VAULT_INSTANCE_ID" || exit 1
     fi
 
     VAULT_CREDENTIALS=$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME --output JSON)
@@ -139,6 +143,7 @@ function save_byok_secret {
     # now check if the we're trying to save a secret that already preexists...
     if echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'")' > /dev/null; then
       #echo "Reusing saved vault BYOK secret named '${SECRET_NAME}' as it already exists..."
+      $PROCEED=1
     else
       #echo "Creating new vault BYOK secret named '$SECRET_NAME' with specified secret material..."
       NEW_VAULT_SECRET=$(curl -s -X POST $VAULT_MANAGEMENT_URL \
@@ -220,14 +225,17 @@ function generate_auto_secret {
 
     ibmcloud target -g $RESOURCE_GROUP
 
+    PROCEED=0
+
     ##
     # create an instance of the secrets management vault if it's not already there...
     ##
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
-        #echo "Reusing secrets management vault service named '$VAULT_SERVICE_NAME' as it already exists..."
+      #echo "Reusing secrets management vault service named '$VAULT_SERVICE_NAME' as it already exists..."
+      $PROCEED=1
     else
-        #echo "Creating new secrets management vault service instance named '$VAULT_SERVICE_NAME'..."
-        ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
+      #echo "Creating new secrets management vault service instance named '$VAULT_SERVICE_NAME'..."
+      ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
     fi
 
     VAULT_MANAGEMENT_URL=https://$VAULT_REGION.kms.cloud.ibm.com/api/v2/keys
@@ -245,11 +253,12 @@ function generate_auto_secret {
     # need this in order to work with iam to get credentials...
     ##
     if check_exists "$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME 2>&1)"; then
-        #echo "Reusing secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME' as it already exists..."
+      #echo "Reusing secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME' as it already exists..."
+      $PROCEED=1
     else
-        #echo "Creating new secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
-        ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
-            --instance-id "$VAULT_INSTANCE_ID" || exit 1
+      #echo "Creating new secrets management vault service-key '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
+      ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
+        --instance-id "$VAULT_INSTANCE_ID" || exit 1
     fi
 
     VAULT_CREDENTIALS=$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME --output JSON)
@@ -288,6 +297,7 @@ function generate_auto_secret {
     # now check if the we're trying to save a key that already preexists...
     if echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'")' > /dev/null; then
       #echo "Reusing saved vault auto secret named '${SECRET_NAME}' as it already exists..."
+      $PROCEED=1
     else
       #echo "Creating new vault auto secret named '$SECRET_NAME' with specified secret material..."
       NEW_VAULT_SECRET=$(curl -s -X POST $VAULT_MANAGEMENT_URL \
@@ -861,6 +871,8 @@ function iam_writer_access {
     #echo "VAULT_SERVICE_SERVICE_KEY_NAME=$VAULT_SERVICE_SERVICE_KEY_NAME"
     #echo "-----------------"
 
+    PROCEED=0
+
     # the current User running this script will used as the owner of the service ID binding...
     TARGET_USER=$(ibmcloud target | grep User | awk '{print $2}')
     check_value "$TARGET_USER"
@@ -872,6 +884,7 @@ function iam_writer_access {
     # create a service ID that will be used for an IAM binding of service A and B (the secrets management vault)...
     if check_exists "$(ibmcloud iam service-id $VAULT_IAM_SERVICE_ID_KEY_NAME 2>&1)"; then
       #echo "Reusing Service ID named '$VAULT_IAM_SERVICE_ID_KEY_NAME' as it already exists..."
+      $PROCEED=1
     else
       #echo "Creating new Service ID named '$VAULT_IAM_SERVICE_ID_KEY_NAME'..."
       ibmcloud iam service-id-create "$VAULT_IAM_SERVICE_ID_KEY_NAME" -d "serviceID for secrets management vault iam binding"
@@ -889,6 +902,7 @@ function iam_writer_access {
     if echo "$EXISTING_POLICIES" | \
       jq -e -r 'select(.[].resources[].attributes[].name=="serviceInstance" and .[].resources[].attributes[].value=="'$VAULT_GUID'" and .[].roles[].display_name=="Writer")' > /dev/null; then
         #echo "Writer policy on '$VAULT_SERVICE_NAME' already exist for the Service ID"
+        $PROCEED=1
     else
         #echo "Creating new Writer policy on '$VAULT_SERVICE_NAME' for the Service ID"
         ibmcloud iam service-policy-create $SERVICE_ID --roles Writer --service-name kms --service-instance $VAULT_GUID --force
@@ -924,6 +938,7 @@ function iam_writer_access {
     # grant Writer role for the source service to the secrets management vault serviceID...
     if ibmcloud iam service-policies $SERVICE_ID | grep -B 4 $SOURCE_SERVICE_GUID | grep Writer; then
       #echo "Writer policy on '$SOURCE_SERVICE_NAME' already exist for the secrets management vault service ID"
+      $PROCEED=1
     else
       #echo "Assigning Writer policy on '$SOURCE_SERVICE_NAME' to the secrets management vault service ID..."
       ibmcloud iam service-policy-create $SERVICE_ID --roles Writer --service-name $SOURCE_SERVICE_NAME --service-instance $SOURCE_SERVICE_GUID -f
@@ -967,10 +982,11 @@ function get_vault_instance {
     ibmcloud target -g $RESOURCE_GROUP
 
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
-        #echo "Service named '$VAULT_SERVICE_NAME' already exists."
+      #echo "Service named '$VAULT_SERVICE_NAME' already exists."
+      $PROCEED=1
     else
-        #echo "Creating new instance of service named '$VAULT_SERVICE_NAME'..."
-        ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
+      #echo "Creating new instance of service named '$VAULT_SERVICE_NAME'..."
+      ibmcloud resource service-instance-create $VAULT_SERVICE_NAME kms tiered-pricing $VAULT_REGION || exit 1
     fi
 
     VAULT_INSTANCE_ID=$(get_instance_id $VAULT_SERVICE_NAME)
@@ -987,11 +1003,12 @@ function get_vault_instance {
     #echo "-----------------"
 
     if check_exists "$(ibmcloud resource service-key $VAULT_SERVICE_SERVICE_KEY_NAME 2>&1)"; then
-        #echo "Service key named '$VAULT_SERVICE_SERVICE_KEY_NAME' already exists."
+      #echo "Service key named '$VAULT_SERVICE_SERVICE_KEY_NAME' already exists."
+      $PROCEED=1
     else
-        #echo "Creating new service key named '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
-        ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
-            --instance-id "$VAULT_INSTANCE_ID" || exit 1
+      #echo "Creating new service key named '$VAULT_SERVICE_SERVICE_KEY_NAME'..."
+      ibmcloud resource service-key-create $VAULT_SERVICE_SERVICE_KEY_NAME Manager \
+        --instance-id "$VAULT_INSTANCE_ID" || exit 1
     fi
     
     #section "End: get_vault_instance: $VAULT_SERVICE_NAME"
@@ -1030,6 +1047,8 @@ function delete_vault_instance {
 
     ibmcloud target -g $RESOURCE_GROUP
 
+    PROCEED=0
+
     if check_exists "$(ibmcloud resource service-instance $VAULT_SERVICE_NAME 2>&1)"; then
       #echo "Service named '$VAULT_SERVICE_NAME' exists - proceeding to delete this instance..."
 
@@ -1051,6 +1070,7 @@ function delete_vault_instance {
       ibmcloud iam service-id-delete -f $VAULT_SERVICE_SERVICE_KEY_NAME
     else
       #echo "Service named '$VAULT_SERVICE_NAME' doesn't exist in the '$VAULT_REGION' region so cannot delete it."
+      $PROCEED=1
     fi
 
     #section "End: delete_vault_instance: $VAULT_SERVICE_NAME"
