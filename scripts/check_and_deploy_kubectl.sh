@@ -57,7 +57,7 @@ fi
 echo "=========================================================="
 echo "CHECKING CLUSTER readiness and namespace existence"
 if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-  IP_ADDR=$( bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
+  IP_ADDR=$( ibmcloud cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
   if [ -z "${IP_ADDR}" ]; then
     echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
     exit 1
@@ -74,7 +74,7 @@ else
 fi
 
 # Grant access to private image registry from namespace $CLUSTER_NAMESPACE
-# reference https://cloud.ibm.com/docs/containers/cs_cluster.html#bx_registry_other
+# reference https://cloud.ibm.com/docs/containers?topic=containers-images#other_registry_accounts
 echo "=========================================================="
 echo -e "CONFIGURING ACCESS to private image registry from namespace ${CLUSTER_NAMESPACE}"
 IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_URL}"
@@ -178,7 +178,7 @@ if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   echo ""
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-    IP_ADDR=$( bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
+    IP_ADDR=$( ibmcloud cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
     if [ -z "${IP_ADDR}" ]; then
       echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
       exit 1
