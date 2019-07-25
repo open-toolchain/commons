@@ -11,10 +11,6 @@
 # This script lints Dockerfile.
 
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "REGISTRY_URL=${REGISTRY_URL}"
-echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
-echo "IMAGE_NAME=${IMAGE_NAME}"
-echo "ARCHIVE_DIR=${ARCHIVE_DIR}"
 echo "DOCKER_ROOT=${DOCKER_ROOT}"
 echo "DOCKER_FILE=${DOCKER_FILE}"
 
