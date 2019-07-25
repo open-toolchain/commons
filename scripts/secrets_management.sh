@@ -122,7 +122,7 @@ function save_secret {
     --header "Bluemix-Instance: $VAULT_GUID")
     check_value $VAULT_SECRETS
 
-    SECRET_MATERIAL=$(base64 <<< $SECRET_MATERIAL)
+    SECRET_MATERIAL=$(base64 <<< "${SECRET_MATERIAL}")
 
     # now check if the we're trying to save a secret that already preexists...
     if echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'")' > /dev/null; then
@@ -352,9 +352,9 @@ function retrieve_secret {
     RETRIEVED_SECRET_MATERIAL=$(echo "$VAULT_SECRET" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .payload')
     check_value $RETRIEVED_SECRET_MATERIAL
 
-    RETRIEVED_SECRET_MATERIAL=$(base64 -i -d <<< $RETRIEVED_SECRET_MATERIAL)
+    RETRIEVED_SECRET_MATERIAL=$(base64 -i -d <<< "${RETRIEVED_SECRET_MATERIAL}")
 
-    echo $RETRIEVED_SECRET_MATERIAL
+    echo "${RETRIEVED_SECRET_MATERIAL}"
 }
 
 ## ----------------------------------------------------------------------------
