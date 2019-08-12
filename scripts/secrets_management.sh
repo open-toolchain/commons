@@ -10,7 +10,7 @@
 
 ## ----------------------------------------------------------------------------
 #
-# Secrets Management Script Library API:
+# Secrets Management Script Library API (Primary support for IBM Key Protect)
 #
 ###
 # @author: tony.mcguckin@ie.ibm.com
@@ -33,8 +33,10 @@
 # secret management:
 #
 #   save_secret             :: $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_NAME $SECRET_MATERIAL
+#   save_secret_hv          :: $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_NAME $SECRET_MATERIAL $VAULT_ADDR $VAULT_TOKEN_ID
 #   generate_secret         :: $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_NAME $IS_ROOT_KEY
 #   retrieve_secret         :: $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_NAME
+#   retrieve_secret_hv      ::  $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_NAME $VAULT_ADDR $VAULT_TOKEN_ID
 #   delete_secret           :: $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_NAME
 #
 #   ##rotate_secret           :: $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP $SECRET_NAME $POLICY
@@ -162,6 +164,39 @@ function save_secret {
     # extract the id of our newly saved (or refetched) secret...
     VAULT_SECRET_ID=$(echo "$VAULT_SECRETS" | jq -e -r '.resources[] | select(.name=="'${SECRET_NAME}'") | .id')
     check_value $VAULT_SECRET_ID
+
+    echo $VAULT_SECRET_ID
+}
+
+## ----------------------------------------------------------------------------
+
+function save_secret_hv {
+    ##
+    # save_secret_hv $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP \
+    #                $SECRET_NAME $SECRET_MATERIAL $VAULT_ADDR $VAULT_TOKEN_ID
+    #
+    #SECRET_ID=$(
+    #    save_secret_hv \
+    #        "vault kv" \
+    #        null \
+    #        null \
+    #        "secret/hello" \
+    #        "foo=bar" \
+    #        "http://127.0.0.1:8200" \
+    #        "s.EwQGhClLJKtEolWPpfz5XT1V" \
+    #)
+
+    VAULT_SERVICE_NAME=$1
+    VAULT_REGION=$2 #reserved
+    RESOURCE_GROUP=$3 #reserved
+    SECRET_NAME=$4
+    SECRET_MATERIAL=$5
+
+    if echo "$1" | grep -q "vault kv"; then
+      export VAULT_ADDR=$6
+      export VAULT_TOKEN_ID=$7
+      VAULT_SECRET_ID=$(vault kv put ${SECRET_NAME} ${SECRET_MATERIAL})
+    fi
 
     echo $VAULT_SECRET_ID
 }
@@ -353,6 +388,37 @@ function retrieve_secret {
     check_value $RETRIEVED_SECRET_MATERIAL
 
     RETRIEVED_SECRET_MATERIAL=$(base64 -i -d <<< $RETRIEVED_SECRET_MATERIAL)
+
+    echo $RETRIEVED_SECRET_MATERIAL
+}
+
+## ----------------------------------------------------------------------------
+
+function retrieve_secret_hv {
+    ##
+    # retrieve_secret_hv $VAULT_SERVICE_NAME $VAULT_REGION $RESOURCE_GROUP \
+    #                       $SECRET_NAME $VAULT_ADDR $VAULT_TOKEN_ID
+    #
+    #SECRET_VALUE=$(
+    #    retrieve_secret_hv \
+    #        "vault kv" \
+    #        null \
+    #        null \
+    #        "secret/hello" \
+    #        "http://127.0.0.1:8200" \
+    #        "s.EwQGhClLJKtEolWPpfz5XT1V" \
+    #)
+
+    VAULT_SERVICE_NAME=$1
+    VAULT_REGION=$2 #reserved
+    RESOURCE_GROUP=$3 #reserved
+    SECRET_NAME=$4
+
+    if echo "$1" | grep -q "vault kv"; then
+      export VAULT_ADDR=$5
+      export VAULT_TOKEN_ID=$6
+      RETRIEVED_SECRET_MATERIAL=$(vault kv get ${SECRET_NAME})
+    fi
 
     echo $RETRIEVED_SECRET_MATERIAL
 }
