@@ -36,7 +36,7 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 # Create service (if needed)
 SERVICE=$(bx resource service-instances | grep ${INSTANCE_NAME} ||:)
 if [ -z "$SERVICE" ]; then
-  bx resource service-instance-create ${INSTANCE_NAME} ${SERVICE_NAME} ${SERVICE_PLAN} ${SERVICE_LOCATION}
+  bx resource service-instance-create --parameters '{"legacyCredentials": false}' ${INSTANCE_NAME} ${SERVICE_NAME} ${SERVICE_PLAN} ${SERVICE_LOCATION}
 else
   echo -e "Keeping existing service: ${INSTANCE_NAME}"
 fi
