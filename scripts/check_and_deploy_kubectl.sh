@@ -128,7 +128,12 @@ set -x
 kubectl apply --namespace ${CLUSTER_NAMESPACE} -f ${DEPLOYMENT_FILE} 
 set +x
 # Extract name from actual Kube deployment resource owning the deployed container image 
-DEPLOYMENT_NAME=$(kubectl get deploy --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[] | select(.spec.template.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.name' )
+# Ensure that the image match the repository, image name and tag without the @ sha id part to handle
+# case when image is sha-suffixed or not - ie:
+# us.icr.io/sample/hello-containers-20190823092122682:1-master-a15bd262-20190823100927
+# or
+# us.icr.io/sample/hello-containers-20190823092122682:1-master-a15bd262-20190823100927@sha256:9b56a4cee384fa0e9939eee5c6c0d9912e52d63f44fa74d1f93f3496db773b2e
+DEPLOYMENT_NAME=$(kubectl get deploy --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[] | select(.spec.template.spec.containers[]?.image | test("'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'(@.+|$)")) | .metadata.name' )
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
 set -x
