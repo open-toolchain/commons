@@ -164,7 +164,7 @@ fi
 # or
 # us.icr.io/sample/hello-containers-20190823092122682:1-master-a15bd262-20190823100927@sha256:9b56a4cee384fa0e9939eee5c6c0d9912e52d63f44fa74d1f93f3496db773b2e
 echo "=========================================================="
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.template.spec.containers[]?.image | test("'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'(@.+|$)")) | .metadata.labels.app] [1]')
+APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image | test("'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'(@.+|$)")) | .metadata.labels.app] [0]')
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
