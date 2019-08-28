@@ -11,26 +11,33 @@
 # This script uploads a given file into a COS bucket
 
 # Input env variables (can be received via a pipeline environment properties.file.
-echo "COS_SERVICE_INSTANCE=${COS_SERVICE_INSTANCE}"
-echo "COS_BUCKET=${COS_BUCKET}"
-echo "FILE_LOCATION=${FILE_LOCATION}"
-echo "FILE_CONTENT_TYPE=${FILE_CONTENT_TYPE}"
 
-ibmcloud login --apikey ${IBM_CLOUD_API_KEY} --no-region
-if ! ibmcloud plugin list | grep cloud-object-storage ; then ibmcloud plugin install cloud-object-storage ; fi
+cos_put_file() {
+  local cos_service_instance=$1
+  local cos_bucket=$2
+  local file_location=$3
+  local file_content_type=$4
 
-# Store file in bucket
-ibmcloud cos config list
-ibmcloud target -g '' # find service instance across all groups
-COS_SERVICE_INSTANCE_CRN=$(ibmcloud resource service-instance ${COS_SERVICE_INSTANCE} --output json | jq -r '.[0].id')
-ibmcloud cos config crn --crn ${COS_SERVICE_INSTANCE_CRN} --force
-COS_BUCKET_REGION=$( ibmcloud cos get-bucket-location --bucket ${COS_BUCKET} | grep Region: | awk '{print $2}' )
-ibmcloud cos config region --region ${COS_BUCKET_REGION} # bucket location required to later create more keys
-ibmcloud cos config list
+  echo "cos_service_instance=${cos_service_instance}"
+  echo "cos_bucket=${cos_bucket}"
+  echo "file_location=${file_location}"
+  echo "file_content_type=${file_content_type}"
+  
+  if ! ibmcloud plugin list | grep cloud-object-storage ; then ibmcloud plugin install cloud-object-storage ; fi
 
-# List all files in bucket
-ibmcloud cos put-object \
-  --bucket ${COS_BUCKET} --key ${FILE_LOCATION} \
-  --body ./${FILE_LOCATION} --content-type ${FILE_CONTENT_TYPE}
+  # Store file in bucket
+  ibmcloud cos config list
+  ibmcloud target -g '' # find service instance across all groups
+  local cos_service_crn=$(ibmcloud resource service-instance ${cos_service_instance} --output json | jq -r '.[0].id')
+  ibmcloud cos config crn --crn ${cos_service_crn} --force
+  local cos_bucket_region=$( ibmcloud cos get-bucket-location --bucket ${cos_bucket} | grep Region: | awk '{print $2}' )
+  ibmcloud cos config region --region ${cos_bucket_region} # bucket location required to later create more keys
+  ibmcloud cos config list
 
-ibmcloud cos list-objects --bucket ${COS_BUCKET}
+  # List all files in bucket
+  ibmcloud cos put-object \
+    --bucket ${cos_bucket} --key ${file_location} \
+    --body ./${file_location} --content-type ${file_content_type}
+
+  ibmcloud cos list-objects --bucket ${cos_bucket}
+}
