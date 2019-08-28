@@ -16,13 +16,16 @@ echo "COS_BUCKET=${COS_BUCKET}"
 echo "FILE_LOCATION=${FILE_LOCATION}"
 echo "FILE_CONTENT_TYPE=${FILE_CONTENT_TYPE}"
 
-ibmcloud login --apikey ${IBM_CLOUD_API_KEY}
+ibmcloud login --apikey ${IBM_CLOUD_API_KEY} --no-region
 if ! ibmcloud plugin list | grep cloud-object-storage ; then ibmcloud plugin install cloud-object-storage ; fi
 
 # Store file in bucket
 ibmcloud cos config list
+ibmcloud target -g '' # find service instance across all groups
 COS_SERVICE_INSTANCE_CRN=$(ibmcloud resource service-instance ${COS_SERVICE_INSTANCE} --output json | jq -r '.[0].id')
 ibmcloud cos config crn --crn ${COS_SERVICE_INSTANCE_CRN} --force
+COS_BUCKET_REGION=$( ibmcloud cos get-bucket-location --bucket ${COS_BUCKET} | grep Region: | awk '{print $2}' )
+ibmcloud cos config region --region ${COS_BUCKET_REGION} # bucket location required to later create more keys
 ibmcloud cos config list
 
 # List all files in bucket
