@@ -8,9 +8,7 @@
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/cos_put_file.sh
 
-# This script uploads a given file into a COS bucket
-
-# Input env variables (can be received via a pipeline environment properties.file.
+# This script stores a given file into a COS bucket
 
 cos_put_file() {
   local cos_service_instance=$1
@@ -25,7 +23,7 @@ cos_put_file() {
   
   if ! ibmcloud plugin list | grep cloud-object-storage ; then ibmcloud plugin install cloud-object-storage ; fi
 
-  # Store file in bucket
+  # Set cos service config
   ibmcloud cos config list
   ibmcloud target -g '' # find service instance across all groups
   local cos_service_crn=$(ibmcloud resource service-instance ${cos_service_instance} --output json | jq -r '.[0].id')
@@ -34,10 +32,11 @@ cos_put_file() {
   ibmcloud cos config region --region ${cos_bucket_region} # bucket location required to later create more keys
   ibmcloud cos config list
 
-  # List all files in bucket
+  # Store file in bucket
   ibmcloud cos put-object \
     --bucket ${cos_bucket} --key ${file_location} \
     --body ./${file_location} --content-type ${file_content_type}
 
+  # List all files in bucket
   ibmcloud cos list-objects --bucket ${cos_bucket}
 }
