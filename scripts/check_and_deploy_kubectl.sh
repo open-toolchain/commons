@@ -16,6 +16,7 @@ echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
+echo "DEPLOYMENT_SUBDIRECTORY=${DEPLOYMENT_SUBDIRECTORY}"
 echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
 echo "KUBERNETES_SERVICE_ACCOUNT_NAME=${KUBERNETES_SERVICE_ACCOUNT_NAME}"
@@ -107,18 +108,29 @@ echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry 
 #Update deployment.yml with image name
 echo "=========================================================="
 echo "CHECKING DEPLOYMENT.YML manifest"
-if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
-if [ ! -f ${DEPLOYMENT_FILE} ]; then
-    echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
+if [ -z "${DEPLOYMENT_FILE}" ]; then 
+    DEPLOYMENT_FILE=deployment.yml ; 
+fi
+echo "CHECKING DEPLOYMENT_SUBDIRECTORY"
+if [ -z "${DEPLOYMENT_SUBDIRECTORY}" ]; then
+    DEPLOYMENT_SUBDIRECTORY=./
+else
+    if [[ $DEPLOYMENT_SUBDIRECTORY =~ //$/ ]]; then
+    else
+        DEPLOYMENT_SUBDIRECTORY="${DEPLOYMENT_SUBDIRECTORY}/"
+    fi
+fi
+if [ ! -f ${DEPLOYMENT_SUBDIRECTORY}${DEPLOYMENT_FILE} ]; then
+    echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_SUBDIRECTORY}${DEPLOYMENT_FILE}' not found${no_color}"
     exit 1
 fi
 
 echo "=========================================================="
 echo "UPDATING manifest with image information"
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
-echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
-NEW_DEPLOYMENT_FILE=tmp.${DEPLOYMENT_FILE}
-cat $DEPLOYMENT_FILE | yq write --doc 0 - "spec.template.spec.containers[0].image" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" > ${NEW_DEPLOYMENT_FILE}
+echo -e "Updating ${DEPLOYMENT_SUBDIRECTORY}${DEPLOYMENT_FILE} with image name: ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+NEW_DEPLOYMENT_FILE=${DEPLOYMENT_SUBDIRECTORY}tmp.${DEPLOYMENT_FILE}
+cat ${DEPLOYMENT_SUBDIRECTORY}$DEPLOYMENT_FILE | yq write --doc 0 - "spec.template.spec.containers[0].image" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" > ${NEW_DEPLOYMENT_FILE}
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
 
