@@ -107,8 +107,10 @@ echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry 
 #Update deployment.yml with image name
 echo "=========================================================="
 echo "CHECKING DEPLOYMENT.YML manifest"
-if [ -z "${DEPLOYMENT_FILE}" ]; then 
-    DEPLOYMENT_FILE=deployment.yml ; 
+if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
+if [ ! -f ${DEPLOYMENT_FILE} ]; then
+    echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
+    exit 1
 fi
 
 echo "=========================================================="
