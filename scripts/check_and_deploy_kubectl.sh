@@ -154,6 +154,8 @@ if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json
     --buildnumber ${SOURCE_BUILD_NUMBER} --logicalappname ${IMAGE_NAME} --status ${STATUS}
 fi
 if [ "$STATUS" == "fail" ]; then
+  echo "Showing registry pull quota"
+  ibmcloud cr quota
   echo "DEPLOYMENT FAILED"
   exit 1
 fi
