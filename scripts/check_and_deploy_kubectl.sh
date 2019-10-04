@@ -227,6 +227,7 @@ EOF
         kubectl apply -f ${APP_SERVICE}-test-route.yaml --validate=false --namespace ${CLUSTER_NAMESPACE}
         kubectl get routes --namespace ${CLUSTER_NAMESPACE}
       fi
+      echo "LOOKING for host in route exposing service $APP_SERVICE"
       IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
       PORT=80
     else
