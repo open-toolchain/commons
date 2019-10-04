@@ -210,19 +210,24 @@ if [ ! -z "${APP_SERVICE}" ]; then
         echo "Existing route to expose service $APP_SERVICE"
       else
         # create OpenShift route
-cat > test-route.yaml << EOF
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: test-route
-spec:
-  to:
-    kind: Service
-    name: ${APP_SERVICE}
+cat > test-route.json << EOF
+{
+  "apiVersion": "route.openshift.io/v1",
+  "kind": "Route",
+  "metadata": {
+    "name": "${APP_SERVICE}"
+  },
+  "spec": {
+    "to": {
+      "kind": "Service"
+      "name": "${APP_SERVICE}"
+    }
+  }
+}
 EOF
         echo ""
-        cat test-route.yaml
-        kubectl apply -f test-route.yaml --validate=false --namespace ${CLUSTER_NAMESPACE}
+        cat test-route.json
+        kubectl apply -f test-route.json --validate=false --namespace ${CLUSTER_NAMESPACE}
         kubectl get routes --namespace ${CLUSTER_NAMESPACE}
       fi
       echo "LOOKING for host in route exposing service $APP_SERVICE"
