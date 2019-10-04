@@ -221,6 +221,7 @@ spec:
     kind: Service
     name: ${APP_SERVICE}
 EOF
+        echo ""
         cat ${APP_SERVICE}-test-route.yaml
         kubectl apply -f ${APP_SERVICE}-test-route.yaml --validate=false --namespace ${CLUSTER_NAMESPACE}
         kubectl get routes --namespace ${CLUSTER_NAMESPACE}
