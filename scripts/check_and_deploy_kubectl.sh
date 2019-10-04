@@ -214,17 +214,16 @@ if [ ! -z "${APP_SERVICE}" ]; then
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  labels:
-    app: ${APP_SERVICE}
-  name: ${APP_SERVICE}-test-route
+  name: ${APP_SERVICE}
 spec:
   to:
     kind: Service
     name: ${APP_SERVICE}
+
 EOF
         echo ""
         cat ${APP_SERVICE}-test-route.yaml
-        kubectl apply -f ${APP_SERVICE}-test-route.yaml --validate=false --namespace ${CLUSTER_NAMESPACE}
+        kubectl apply -f "${APP_SERVICE}-test-route.yaml" --validate=false --namespace ${CLUSTER_NAMESPACE}
         kubectl get routes --namespace ${CLUSTER_NAMESPACE}
       fi
       echo "LOOKING for host in route exposing service $APP_SERVICE"
