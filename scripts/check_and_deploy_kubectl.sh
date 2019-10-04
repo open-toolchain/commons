@@ -143,6 +143,10 @@ else
   STATUS="fail"
 fi
 set +x
+
+# Dump events that occured during the rollout
+kubectl get events --sort-by=.metadata.creationTimestamp -n ${CLUSTER_NAMESPACE}
+
 # Record deploy information
 if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
@@ -209,6 +213,8 @@ if [ ! -z "${APP_SERVICE}" ]; then
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
+  labels:
+    app: ${APP_SERVICE}
   name: ${APP_SERVICE}-test-route
 spec:
   to:
