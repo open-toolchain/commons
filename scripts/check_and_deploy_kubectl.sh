@@ -215,7 +215,9 @@ spec:
     kind: Service
     name: ${APP_SERVICE}
 EOF
+        cat ${APP_SERVICE}-test-route.yaml
         kubectl apply -f ${APP_SERVICE}-test-route.yaml --validate=false --namespace ${CLUSTER_NAMESPACE}
+        kubectl get routes --namespace ${CLUSTER_NAMESPACE}
       fi
       IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
       PORT=80
