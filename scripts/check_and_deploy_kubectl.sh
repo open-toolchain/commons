@@ -211,19 +211,7 @@ if [ ! -z "${APP_SERVICE}" ]; then
       else
         # create OpenShift route
 cat > test-route.json << EOF
-{
-  "apiVersion": "route.openshift.io/v1",
-  "kind": "Route",
-  "metadata": {
-    "name": "${APP_SERVICE}"
-  },
-  "spec": {
-    "to": {
-      "kind": "Service"
-      "name": "${APP_SERVICE}"
-    }
-  }
-}
+{"apiVersion":"route.openshift.io/v1","kind":"Route","metadata":{"name":"${APP_SERVICE}"},"spec":{"to":{"kind":"Service","name":"${APP_SERVICE}"}}}
 EOF
         echo ""
         cat test-route.json
