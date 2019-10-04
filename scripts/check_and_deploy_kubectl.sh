@@ -214,14 +214,14 @@ cat > test-route.yaml << EOF
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: ${APP_SERVICE}
+  name: test-route
 spec:
   to:
     kind: Service
     name: ${APP_SERVICE}
 EOF
         echo ""
-        cat ${APP_SERVICE}-test-route.yaml
+        cat test-route.yaml
         kubectl apply -f test-route.yaml --validate=false --namespace ${CLUSTER_NAMESPACE}
         kubectl get routes --namespace ${CLUSTER_NAMESPACE}
       fi
