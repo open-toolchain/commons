@@ -1,3 +1,5 @@
+# This script checks the IBM Container Service cluster is ready, has a namespace configured with access to the private
+# image registry (using an IBM Cloud API Key), perform a kubectl deploy of container image and check on outcome.
 #!/bin/bash
 # uncomment to debug the script
 # set -x
@@ -21,6 +23,7 @@ echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
 echo "KUBERNETES_SERVICE_ACCOUNT_NAME=${KUBERNETES_SERVICE_ACCOUNT_NAME}"
 
 echo "Use for custom Kubernetes cluster target:"
+echo "KUBERNETES_TARGET_TYPE=${KUBERNETES_TARGET_TYPE}"
 echo "KUBERNETES_MASTER_ADDRESS=${KUBERNETES_MASTER_ADDRESS}"
 echo "KUBERNETES_MASTER_PORT=${KUBERNETES_MASTER_PORT}"
 echo "KUBERNETES_SERVICE_ACCOUNT_TOKEN=${KUBERNETES_SERVICE_ACCOUNT_TOKEN}"
@@ -42,16 +45,19 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 # If custom cluster credentials available, connect to this cluster instead
 if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-  kubectl config set-cluster custom-cluster --server=https://${KUBERNETES_MASTER_ADDRESS}:${KUBERNETES_MASTER_PORT} --insecure-skip-tls-verify=true
-  kubectl config set-credentials sa-user --token="${KUBERNETES_SERVICE_ACCOUNT_TOKEN}"
-  kubectl config set-context custom-context --cluster=custom-cluster --user=sa-user --namespace="${CLUSTER_NAMESPACE}"
-  kubectl config use-context custom-context
+  if [ "${KUBERNETES_TARGET_TYPE}" = "openshift" ]; then
+    oc login --token="${KUBERNETES_SERVICE_ACCOUNT_TOKEN}" \
+      --server=https://${KUBERNETES_MASTER_ADDRESS}:${KUBERNETES_MASTER_PORT} \
+      --insecure-skip-tls-verify=true
+    # set the project context corresponding to the cluster namespace target ?
+  else
+    kubectl config set-cluster custom-cluster --server=https://${KUBERNETES_MASTER_ADDRESS}:${KUBERNETES_MASTER_PORT} --insecure-skip-tls-verify=true
+    kubectl config set-credentials sa-user --token="${KUBERNETES_SERVICE_ACCOUNT_TOKEN}"
+    kubectl config set-context custom-context --cluster=custom-cluster --user=sa-user --namespace="${CLUSTER_NAMESPACE}"
+    kubectl config use-context custom-context
+  fi
 fi
 kubectl cluster-info
-if [ "$?" != "0" ]; then
-  echo -e "${red}Kubernetes cluster seems not reachable${no_color}"
-  exit 1
-fi
 
 #Check cluster availability
 echo "=========================================================="
@@ -100,9 +106,9 @@ else
     kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/${KUBERNETES_SERVICE_ACCOUNT_NAME} --type='json' -p='[{"op":"add","path":"/imagePullSecrets/-","value":{"name": "'"${IMAGE_PULL_SECRET_NAME}"'"}}]'
   fi
 fi
-echo "default serviceAccount:"
+echo "${KUBERNETES_SERVICE_ACCOUNT_NAME} serviceAccount:"
 kubectl get serviceaccount ${KUBERNETES_SERVICE_ACCOUNT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
-echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry using patched default serviceAccount"
+echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry using patched ${KUBERNETES_SERVICE_ACCOUNT_NAME} serviceAccount"
 
 #Update deployment.yml with image name
 echo "=========================================================="
@@ -154,9 +160,9 @@ if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json
     --buildnumber ${SOURCE_BUILD_NUMBER} --logicalappname ${IMAGE_NAME} --status ${STATUS}
 fi
 if [ "$STATUS" == "fail" ]; then
+  echo "DEPLOYMENT FAILED"
   echo "Showing registry pull quota"
   ibmcloud cr quota
-  echo "DEPLOYMENT FAILED"
   exit 1
 fi
 # Extract app name from actual Kube pod 
@@ -183,27 +189,45 @@ if [ ! -z "${APP_SERVICE}" ]; then
   kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
 fi
 
+# create OCP route (since OCP online doesn't expose nodeport IP address)
+cat > test-route.yaml << EOF
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: test
+spec:
+  to:
+    kind: Service
+    name: ${APP_SERVICE}
+EOF
+#cat test-route.yaml
+#kubectl apply -f test-route.yaml --validate=false --namespace ${CLUSTER_NAMESPACE}
+
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   echo ""
-  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-    IP_ADDR=$( ibmcloud cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
-    if [ -z "${IP_ADDR}" ]; then
-      echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
-      exit 1
+  if [ "${KUBERNETES_TARGET_TYPE}" = "openshift" ]; then
+    export APP_URL=http://$(kubectlget routes --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[].status.ingress[].host')
+  else
+    if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+      IP_ADDR=$( ibmcloud cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
+      if [ -z "${IP_ADDR}" ]; then
+        echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
+        exit 1
+      fi
+    else
+      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
+    fi  
+    if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+      PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
+      echo -e "*** istio gateway enabled ***"
+    else
+      PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
     fi
-  else
-    IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
-  fi  
-  if [ "${USE_ISTIO_GATEWAY}" = true ]; then
-    PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
-    echo -e "*** istio gateway enabled ***"
-  else
-    PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+    export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
   fi
-  export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
   echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
 fi
