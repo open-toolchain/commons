@@ -210,7 +210,7 @@ if [ ! -z "${APP_SERVICE}" ]; then
         echo "Existing route to expose service $APP_SERVICE"
       else
         # create OpenShift route
-        cat > ${APP_SERVICE}-test-route.yaml <<'EOT'
+cat > ${APP_SERVICE}-test-route.yaml <<EOF
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -219,8 +219,7 @@ spec:
   to:
     kind: Service
     name: ${APP_SERVICE}
-
-EOT
+EOF
         echo ""
         cat ${APP_SERVICE}-test-route.yaml
         kubectl apply -f "${APP_SERVICE}-test-route.yaml" --validate=false --namespace ${CLUSTER_NAMESPACE}
