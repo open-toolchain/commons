@@ -145,6 +145,7 @@ fi
 set +x
 
 # Dump events that occured during the rollout
+echo "SHOWING last events"
 kubectl get events --sort-by=.metadata.creationTimestamp -n ${CLUSTER_NAMESPACE}
 
 # Record deploy information
