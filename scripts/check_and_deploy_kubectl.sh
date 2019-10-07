@@ -160,7 +160,7 @@ fi
 if [ "$STATUS" == "fail" ]; then
   echo "DEPLOYMENT FAILED"
   echo "Showing registry pull quota"
-  ibmcloud cr quota
+  ibmcloud cr quota || true
   exit 1
 fi
 # Extract app name from actual Kube pod 
