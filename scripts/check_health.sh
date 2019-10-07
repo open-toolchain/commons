@@ -23,7 +23,10 @@ if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   kubectl config set-context custom-context --cluster=custom-cluster --user=sa-user --namespace="${CLUSTER_NAMESPACE}"
   kubectl config use-context custom-context
 fi
-kubectl cluster-info
+# Use kubectl auth to check if the kubectl client configuration is appropriate
+# check if the current configuration can create a deployment in the target namespace
+echo "Check ability to get a kubernetes deployment in ${CLUSTER_NAMESPACE} using kubectl CLI"
+kubectl auth can-i get deployment --namespace ${CLUSTER_NAMESPACE}
 
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 # Ensure that the image match the repository, image name and tag without the @ sha id part to handle

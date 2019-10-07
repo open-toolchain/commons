@@ -1,3 +1,5 @@
+# This script checks the IBM Container Service cluster is ready, has a namespace configured with access to the private
+# image registry (using an IBM Cloud API Key), perform a kubectl deploy of container image and check on outcome.
 #!/bin/bash
 # uncomment to debug the script
 # set -x
@@ -47,11 +49,10 @@ if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   kubectl config set-context custom-context --cluster=custom-cluster --user=sa-user --namespace="${CLUSTER_NAMESPACE}"
   kubectl config use-context custom-context
 fi
-kubectl cluster-info
-if [ "$?" != "0" ]; then
-  echo -e "${red}Kubernetes cluster seems not reachable${no_color}"
-  exit 1
-fi
+# Use kubectl auth to check if the kubectl client configuration is appropriate
+# check if the current configuration can create a deployment in the target namespace
+echo "Check ability to create a kubernetes deployment in ${CLUSTER_NAMESPACE} using kubectl CLI"
+kubectl auth can-i create deployment --namespace ${CLUSTER_NAMESPACE}
 
 #Check cluster availability
 echo "=========================================================="
@@ -62,8 +63,6 @@ if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
     echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
     exit 1
   fi
-else
-  IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
 fi
 echo "Configuring cluster namespace"
 if kubectl get namespace ${CLUSTER_NAMESPACE}; then
@@ -100,9 +99,9 @@ else
     kubectl patch --namespace ${CLUSTER_NAMESPACE} serviceaccount/${KUBERNETES_SERVICE_ACCOUNT_NAME} --type='json' -p='[{"op":"add","path":"/imagePullSecrets/-","value":{"name": "'"${IMAGE_PULL_SECRET_NAME}"'"}}]'
   fi
 fi
-echo "default serviceAccount:"
+echo "${KUBERNETES_SERVICE_ACCOUNT_NAME} serviceAccount:"
 kubectl get serviceaccount ${KUBERNETES_SERVICE_ACCOUNT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
-echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry using patched default serviceAccount"
+echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry using patched ${KUBERNETES_SERVICE_ACCOUNT_NAME} serviceAccount"
 
 #Update deployment.yml with image name
 echo "=========================================================="
@@ -143,6 +142,11 @@ else
   STATUS="fail"
 fi
 set +x
+
+# Dump events that occured during the rollout
+echo "SHOWING last events"
+kubectl get events --sort-by=.metadata.creationTimestamp -n ${CLUSTER_NAMESPACE}
+
 # Record deploy information
 if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
@@ -154,9 +158,9 @@ if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json
     --buildnumber ${SOURCE_BUILD_NUMBER} --logicalappname ${IMAGE_NAME} --status ${STATUS}
 fi
 if [ "$STATUS" == "fail" ]; then
-  echo "Showing registry pull quota"
-  ibmcloud cr quota
   echo "DEPLOYMENT FAILED"
+  echo "Showing registry pull quota"
+  ibmcloud cr quota || true
   exit 1
 fi
 # Extract app name from actual Kube pod 
@@ -188,22 +192,39 @@ echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
-  echo ""
-  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-    IP_ADDR=$( ibmcloud cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
-    if [ -z "${IP_ADDR}" ]; then
-      echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
-      exit 1
-    fi
-  else
-    IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
-  fi  
   if [ "${USE_ISTIO_GATEWAY}" = true ]; then
     PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
     echo -e "*** istio gateway enabled ***"
   else
     PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
   fi
+  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+    echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
+  else 
+    # check if a route resource exists in the this kubernetes cluster
+    if kubectl explain route; then
+      # Assuming the kubernetes target cluster is an openshift cluster
+      # Check if a route exists for exposing the service ${APP_SERVICE}
+      if  kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -e '.items[] | select(.spec.to.name==$service)'; then
+        echo "Existing route to expose service $APP_SERVICE"
+      else
+        # create OpenShift route
+cat > test-route.json << EOF
+{"apiVersion":"route.openshift.io/v1","kind":"Route","metadata":{"name":"${APP_SERVICE}"},"spec":{"to":{"kind":"Service","name":"${APP_SERVICE}"}}}
+EOF
+        echo ""
+        cat test-route.json
+        kubectl apply -f test-route.json --validate=false --namespace ${CLUSTER_NAMESPACE}
+        kubectl get routes --namespace ${CLUSTER_NAMESPACE}
+      fi
+      echo "LOOKING for host in route exposing service $APP_SERVICE"
+      IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
+      PORT=80
+    else
+      # Use the KUBERNETES_MASTER_ADRESS
+      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
+    fi
+  fi  
   export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
   echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
 fi
