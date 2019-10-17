@@ -14,6 +14,7 @@
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "CHART_ROOT=${CHART_ROOT}"
+echo "CHART_NAME=${CHART_NAME}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
@@ -40,8 +41,8 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "=========================================================="
 echo "CHECKING HELM CHART"
 if [ -z "${CHART_ROOT}" ]; then CHART_ROOT="chart" ; fi
-echo -e "Looking for chart under /${CHART_ROOT}/<CHART_NAME>"
 if [ -d ${CHART_ROOT} ]; then
+  echo -e "Looking for chart under /${CHART_ROOT}/<CHART_NAME>"
   CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
   CHART_PATH=${CHART_ROOT}/${CHART_NAME}
 fi
@@ -95,10 +96,10 @@ IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_U
 
 # Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
 echo -e "Dry run into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
@@ -138,6 +139,10 @@ if [[ ! -z "$NOT_READY" ]]; then
   echo "Deployed Pods:"
   kubectl describe pods --namespace ${CLUSTER_NAMESPACE}
   echo ""
+  # Record failing deploy information
+  if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+    ibmcloud doi publishdeployrecord --env "${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}" --logicalappname="${APPLICATION_NAME:-$IMAGE_NAME}" --buildnumber="$GIT_BRANCH:$SOURCE_BUILD_NUMBER" --status=fail
+  fi
   #echo "Application Logs"
   #kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
   echo "=========================================================="
@@ -187,6 +192,10 @@ fi
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
+# Record passing deploy information
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+  ibmcloud doi publishdeployrecord --env "${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}" --logicalappname="${APPLICATION_NAME:-$IMAGE_NAME}" --buildnumber="$GIT_BRANCH:$SOURCE_BUILD_NUMBER" --status=pass
+fi
 if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   echo ""
@@ -195,8 +204,8 @@ if [ ! -z "${APP_SERVICE}" ]; then
     PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
     echo -e "*** istio gateway enabled ***"
   else
-    PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+    PORT=$( kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].nodePort' )
   fi
-  export APP_URL=http://${IP_ADDR}:${PORT}
+  export APP_URL=${APP_URL_SCHEME:-'http'}://${IP_ADDR}:${PORT}${APP_URL_PATH}
   echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
 fi
