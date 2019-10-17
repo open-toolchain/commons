@@ -38,14 +38,10 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "=========================================================="
 echo "CHECKING HELM CHART"
 if [ -z "${CHART_ROOT}" ]; then CHART_ROOT="chart" ; fi
-if [ -z "${CHART_NAME}" ]; then
+if [ -d ${CHART_ROOT} ]; then
   echo -e "Looking for chart under /${CHART_ROOT}/<CHART_NAME>"
-  if [ -d ${CHART_ROOT} ]; then
-    CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
-    CHART_PATH=${CHART_ROOT}/${CHART_NAME}
-  fi
-else
-    CHART_PATH=${CHART_ROOT}/${CHART_NAME}
+  CHART_NAME=$(find ${CHART_ROOT}/. -maxdepth 2 -type d -name '[^.]?*' -printf %f -quit)
+  CHART_PATH=${CHART_ROOT}/${CHART_NAME}
 fi
 if [ -z "${CHART_PATH}" ]; then
     echo -e "No Helm chart found for Kubernetes deployment under ${CHART_ROOT}/<CHART_NAME>."
