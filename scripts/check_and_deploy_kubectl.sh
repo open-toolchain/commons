@@ -143,10 +143,14 @@ EOT
 )
   # Find the port
   PORT=$(ibmcloud cr image-inspect "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" --format '{{ range $key,$value := .ContainerConfig.ExposedPorts }} {{ $key }} {{ "" }} {{end}}' | sed -E 's/^[^0-9]*([0-9]+).*$/\1/')
-  if ! [[ $PORT =~ ^-?[0-9]+$ ]] ; then
-    echo "Found '$PORT' as ExposedPort while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}, so using 5000 as ContainerPort"
+  if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
+    echo "ExposedPort $PORT found while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+  else 
+    echo "Found '$PORT' as ExposedPort while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}, non numeric value so using 5000 as containerPort"
     PORT=5000
   fi
+  # Generate deployment file  
+  echo "GENERATED ${DEPLOYMENT_FILE}:"
   printf "$deployment_content" \
    "${IDS_PROJECT_NAME}" "${IDS_PROJECT_NAME}" "${IDS_PROJECT_NAME}" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" "${PORT}" \
    "${IDS_PROJECT_NAME}" "${IDS_PROJECT_NAME}" "${PORT}" "${IDS_PROJECT_NAME}" | tee ${DEPLOYMENT_FILE}
