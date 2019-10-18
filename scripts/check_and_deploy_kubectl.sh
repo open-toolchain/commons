@@ -103,13 +103,53 @@ echo "${KUBERNETES_SERVICE_ACCOUNT_NAME} serviceAccount:"
 kubectl get serviceaccount ${KUBERNETES_SERVICE_ACCOUNT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry using patched ${KUBERNETES_SERVICE_ACCOUNT_NAME} serviceAccount"
 
-#Update deployment.yml with image name
 echo "=========================================================="
 echo "CHECKING DEPLOYMENT.YML manifest"
 if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
 if [ ! -f ${DEPLOYMENT_FILE} ]; then
-    echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
-    exit 1
+  echo "No ${DEPLOYMENT_FILE} found. Initializing it."
+  deployment_content=$(cat <<'EOT'
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: %s
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: %s
+    spec:
+      containers:
+      - name: %s
+        image: %s
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: %s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: %s
+  labels:
+    app: %s
+spec:
+  type: NodePort
+  ports:
+    - port: %s
+  selector:
+    app: %s
+EOT
+)
+  # Find the port
+  PORT=$(ibmcloud cr image-inspect "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" --format '{{ range $key,$value := .ContainerConfig.ExposedPorts }} {{ $key }} {{ "" }} {{end}}' | sed -E 's/^[^0-9]*([0-9]+).*$/\1/')
+  if ! [[ $PORT =~ ^-?[0-9]+$ ]] ; then
+    echo "Found '$PORT' as ExposedPort while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}, so using 5000 as ContainerPort"
+    PORT=5000
+  fi
+  printf "$deployment_content" \
+   "${IDS_PROJECT_NAME}" "${IDS_PROJECT_NAME}" "${IDS_PROJECT_NAME}" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" "${PORT}" \
+   "${IDS_PROJECT_NAME}" "${IDS_PROJECT_NAME}" "${PORT}" "${IDS_PROJECT_NAME}" | tee ${DEPLOYMENT_FILE}
 fi
 
 echo "=========================================================="
@@ -123,6 +163,7 @@ if [ -z "$DEPLOYMENT_DOC_INDEX" ]; then
   echo "No Kubernetes Deployment definition found in $DEPLOYMENT_FILE. Updating YAML document with index 0"
   DEPLOYMENT_DOC_INDEX=0
 fi
+# Update deployment with image name
 yq write $DEPLOYMENT_FILE --doc $DEPLOYMENT_DOC_INDEX "spec.template.spec.containers[0].image" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" > ${NEW_DEPLOYMENT_FILE}
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
