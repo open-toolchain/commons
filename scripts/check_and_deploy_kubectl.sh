@@ -1,6 +1,6 @@
+#!/bin/bash
 # This script checks the IBM Container Service cluster is ready, has a namespace configured with access to the private
 # image registry (using an IBM Cloud API Key), perform a kubectl deploy of container image and check on outcome.
-#!/bin/bash
 # uncomment to debug the script
 # set -x
 # copy the script below into your app code repo (e.g. ./scripts/check_and_deploy_kubectl.sh) and 'source' it from your pipeline job
