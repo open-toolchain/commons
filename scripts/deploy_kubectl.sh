@@ -53,8 +53,55 @@ if [ -f ${DEPLOYMENT_FILE} ]; then
     sed -i "s~^\([[:blank:]]*\)image:.*$~\1image: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}~" ${DEPLOYMENT_FILE}
     cat ${DEPLOYMENT_FILE}
 else 
-    echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
-    exit 1
+  echo "No ${DEPLOYMENT_FILE} found. Initializing it."
+  deployment_content=$(cat <<'EOT'
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: %s
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: %s
+    spec:
+      containers:
+      - name: %s
+        image: %s
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: %s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: %s
+  labels:
+    app: %s
+spec:
+  type: NodePort
+  ports:
+    - port: %s
+  selector:
+    app: %s
+EOT
+)
+  # Find the port
+  PORT=$(ibmcloud cr image-inspect "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" --format '{{ range $key,$value := .ContainerConfig.ExposedPorts }} {{ $key }} {{ "" }} {{end}}' | sed -E 's/^[^0-9]*([0-9]+).*$/\1/') || true
+  if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
+    echo "ExposedPort $PORT found while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+  else 
+    echo "Found '$PORT' as ExposedPort while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}, non numeric value so using 5000 as containerPort"
+    PORT=5000
+  fi
+  # Generate deployment file  
+  echo "GENERATED ${DEPLOYMENT_FILE}:"
+  # Derive an application name from toolchain name ensuring it is conform to DNS-1123 subdomain
+  application_name=$(echo ${IDS_PROJECT_NAME} | tr -cd '[:alnum:].-')
+  printf "$deployment_content" \
+   "${application_name}" "${application_name}" "${application_name}" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" "${PORT}" \
+   "${application_name}" "${application_name}" "${PORT}" "${application_name}" | tee ${DEPLOYMENT_FILE}
 fi    
 set -x
 # if [ "${USE_ISTIO_GATEWAY}" = true ]; then

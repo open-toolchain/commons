@@ -1,6 +1,6 @@
+#!/bin/bash
 # This script checks the IBM Container Service cluster is ready, has a namespace configured with access to the private
 # image registry (using an IBM Cloud API Key), perform a kubectl deploy of container image and check on outcome.
-#!/bin/bash
 # uncomment to debug the script
 # set -x
 # copy the script below into your app code repo (e.g. ./scripts/check_and_deploy_kubectl.sh) and 'source' it from your pipeline job
@@ -103,13 +103,59 @@ echo "${KUBERNETES_SERVICE_ACCOUNT_NAME} serviceAccount:"
 kubectl get serviceaccount ${KUBERNETES_SERVICE_ACCOUNT_NAME} --namespace ${CLUSTER_NAMESPACE} -o yaml
 echo -e "Namespace ${CLUSTER_NAMESPACE} authorizing with private image registry using patched ${KUBERNETES_SERVICE_ACCOUNT_NAME} serviceAccount"
 
-#Update deployment.yml with image name
 echo "=========================================================="
 echo "CHECKING DEPLOYMENT.YML manifest"
 if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
 if [ ! -f ${DEPLOYMENT_FILE} ]; then
-    echo -e "${red}Kubernetes deployment file '${DEPLOYMENT_FILE}' not found${no_color}"
-    exit 1
+  echo "No ${DEPLOYMENT_FILE} found. Initializing it."
+  deployment_content=$(cat <<'EOT'
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: %s
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: %s
+    spec:
+      containers:
+      - name: %s
+        image: %s
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: %s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: %s
+  labels:
+    app: %s
+spec:
+  type: NodePort
+  ports:
+    - port: %s
+  selector:
+    app: %s
+EOT
+)
+  # Find the port
+  PORT=$(ibmcloud cr image-inspect "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" --format '{{ range $key,$value := .ContainerConfig.ExposedPorts }} {{ $key }} {{ "" }} {{end}}' | sed -E 's/^[^0-9]*([0-9]+).*$/\1/') || true
+  if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
+    echo "ExposedPort $PORT found while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+  else 
+    echo "Found '$PORT' as ExposedPort while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}, non numeric value so using 5000 as containerPort"
+    PORT=5000
+  fi
+  # Generate deployment file  
+  echo "GENERATED ${DEPLOYMENT_FILE}:"
+  # Derive an application name from toolchain name ensuring it is conform to DNS-1123 subdomain
+  application_name=$(echo ${IDS_PROJECT_NAME} | tr -cd '[:alnum:].-')
+  printf "$deployment_content" \
+   "${application_name}" "${application_name}" "${application_name}" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" "${PORT}" \
+   "${application_name}" "${application_name}" "${PORT}" "${application_name}" | tee ${DEPLOYMENT_FILE}
 fi
 
 echo "=========================================================="
@@ -123,6 +169,7 @@ if [ -z "$DEPLOYMENT_DOC_INDEX" ]; then
   echo "No Kubernetes Deployment definition found in $DEPLOYMENT_FILE. Updating YAML document with index 0"
   DEPLOYMENT_DOC_INDEX=0
 fi
+# Update deployment with image name
 yq write $DEPLOYMENT_FILE --doc $DEPLOYMENT_DOC_INDEX "spec.template.spec.containers[0].image" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" > ${NEW_DEPLOYMENT_FILE}
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
