@@ -65,8 +65,8 @@ echo -e "Release name: ${RELEASE_NAME}"
 echo "=========================================================="
 echo "CHECKING HELM CLIENT VERSION: matching Helm Tiller (server) if detected. "
 set +e
-LOCAL_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
-TILLER_VERSION=$( helm version --server | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+LOCAL_VERSION=$( helm version --client ${HELM_TLS_OPTION} | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+TILLER_VERSION=$( helm version --server ${HELM_TLS_OPTION} | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
 set -e
 if [ -z "${TILLER_VERSION}" ]; then
   if [ -z "${HELM_VERSION}" ]; then
@@ -96,10 +96,10 @@ IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_U
 
 # Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
 echo -e "Dry run into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --debug --dry-run --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
@@ -146,7 +146,7 @@ if [[ ! -z "$NOT_READY" ]]; then
   #echo "Application Logs"
   #kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
   echo "=========================================================="
-  PREVIOUS_RELEASE=$( helm history ${RELEASE_NAME} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
+  PREVIOUS_RELEASE=$( helm history ${RELEASE_NAME} ${HELM_TLS_OPTION} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
   echo -e "Could rollback to previous release: ${PREVIOUS_RELEASE} using command:"
   echo -e "helm rollback ${RELEASE_NAME} ${PREVIOUS_RELEASE}"
   # helm rollback ${RELEASE_NAME} ${PREVIOUS_RELEASE}
@@ -165,11 +165,11 @@ echo "=========================================================="
 echo "DEPLOYMENTS:"
 echo ""
 echo -e "Status for release:${RELEASE_NAME}"
-helm status ${RELEASE_NAME}
+helm status ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 echo ""
 echo -e "History for release:${RELEASE_NAME}"
-helm history ${RELEASE_NAME}
+helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 echo "=========================================================="
 APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.labels.app] [1]')
@@ -199,7 +199,11 @@ fi
 if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   echo ""
-  IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then  
+    IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+  else
+    IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
+  fi
   if [ "${USE_ISTIO_GATEWAY}" = true ]; then
     PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
     echo -e "*** istio gateway enabled ***"
