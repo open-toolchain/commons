@@ -54,11 +54,13 @@ else
 fi
 
 echo "=========================================================="
-echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
-if [[ "${CLUSTER_NAMESPACE}" != "default" ]]; then
-  RELEASE_NAME="${CLUSTER_NAMESPACE}-${IMAGE_NAME}"
-else
-  RELEASE_NAME=${IMAGE_NAME}
+if [ -z "$RELEASE_NAME" ]; then
+  echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
+  if [[ "${CLUSTER_NAMESPACE}" != "default" ]]; then
+    RELEASE_NAME="${CLUSTER_NAMESPACE}-${IMAGE_NAME}"
+  else
+    RELEASE_NAME=${IMAGE_NAME}
+  fi
 fi
 echo -e "Release name: ${RELEASE_NAME}"
 
