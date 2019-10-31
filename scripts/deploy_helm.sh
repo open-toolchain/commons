@@ -142,7 +142,7 @@ if [[ ! -z "$NOT_READY" ]]; then
   kubectl describe pods --namespace ${CLUSTER_NAMESPACE}
   echo ""
   # Record failing deploy information
-  if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+  if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
     ibmcloud doi publishdeployrecord --env "${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}" --logicalappname="${APPLICATION_NAME:-$IMAGE_NAME}" --buildnumber="$GIT_BRANCH:$SOURCE_BUILD_NUMBER" --status=fail
   fi
   #echo "Application Logs"
@@ -195,7 +195,7 @@ echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 # Record passing deploy information
-if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
   ibmcloud doi publishdeployrecord --env "${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}" --logicalappname="${APPLICATION_NAME:-$IMAGE_NAME}" --buildnumber="$GIT_BRANCH:$SOURCE_BUILD_NUMBER" --status=pass
 fi
 if [ ! -z "${APP_SERVICE}" ]; then

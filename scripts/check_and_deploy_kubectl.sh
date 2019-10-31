@@ -201,7 +201,7 @@ echo "SHOWING last events"
 kubectl get events --sort-by=.metadata.creationTimestamp -n ${CLUSTER_NAMESPACE}
 
 # Record deploy information
-if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
     DEPLOYMENT_ENVIRONMENT="${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}"
   else 
