@@ -105,33 +105,19 @@ helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --set im
 
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
+# Extract name from actual Kube deployment resource owning the deployed container image 
+DEPLOYMENT_NAME=$( helm get ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
+echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
-for ITERATION in {1..30}
-do
-  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
-  NOT_READY=$( echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
-  if [[ -z "$NOT_READY" ]]; then
-    echo -e "All pods are ready:"
-    echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==true) '
-    break # deployment succeeded
-  fi
-  REASON=$(echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .state.waiting.reason')
-  echo -e "${ITERATION} : Deployment still pending..."
-  echo -e "NOT_READY:${NOT_READY}"
-  echo -e "REASON: ${REASON}"
-  if [[ ${REASON} == *ErrImagePull* ]] || [[ ${REASON} == *ImagePullBackOff* ]]; then
-    echo "Detected ErrImagePull or ImagePullBackOff failure. "
-    echo "Please check image still exists in registry, and proper permissions from cluster to image registry (e.g. image pull secret)"
-    break; # no need to wait longer, error is fatal
-  elif [[ ${REASON} == *CrashLoopBackOff* ]]; then
-    echo "Detected CrashLoopBackOff failure. "
-    echo "Application is unable to start, check the application startup logs"
-    break; # no need to wait longer, error is fatal
-  fi
-  sleep 5
-done
+set -x
+if kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=150s --namespace ${CLUSTER_NAMESPACE}; then
+  STATUS="pass"
+else
+  STATUS="fail"
+fi
+set +x
 
-if [[ ! -z "$NOT_READY" ]]; then
+if [[ "$STATUS" == "fail" ]]; then
   echo ""
   echo "=========================================================="
   echo "DEPLOYMENT FAILED"
@@ -174,7 +160,7 @@ echo -e "History for release:${RELEASE_NAME}"
 helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 echo "=========================================================="
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.labels.app] [1]')
+APP_NAME=$( helm get ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
