@@ -50,7 +50,7 @@ UMBRELLA_REPO_URL=$( cat _toolchain.json | jq -r '.services[] | select (.paramet
 UMBRELLA_REPO_URL=${UMBRELLA_REPO_URL%".git"} #remove trailing .git if present
 # Augment URL with git user & password
 UMBRELLA_ACCESS_REPO_URL=${UMBRELLA_REPO_URL:0:8}${GIT_USER}:${GIT_PASSWORD}@${UMBRELLA_REPO_URL:8}
-echo -e "Located umbrella repo: ${UMBRELLA_REPO_URL}, with access token: ${UMBRELLA_ACCESS_REPO_URL}"
+echo -e "Located umbrella repo: ${UMBRELLA_REPO_URL}, with access token: ${UMBRELLA_REPO_URL:0:8}${GIT_USER}:***@${UMBRELLA_REPO_URL:8}"
 git config --global user.email "autobuild@not-an-email.com"
 git config --global user.name "Automatic Build: ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}"
 git config --global push.default simple

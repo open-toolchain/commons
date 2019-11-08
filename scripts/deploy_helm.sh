@@ -54,19 +54,21 @@ else
 fi
 
 echo "=========================================================="
-echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
-if [[ "${CLUSTER_NAMESPACE}" != "default" ]]; then
-  RELEASE_NAME="${CLUSTER_NAMESPACE}-${IMAGE_NAME}"
-else
-  RELEASE_NAME=${IMAGE_NAME}
+if [ -z "$RELEASE_NAME" ]; then
+  echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
+  if [[ "${CLUSTER_NAMESPACE}" != "default" ]]; then
+    RELEASE_NAME="${CLUSTER_NAMESPACE}-${IMAGE_NAME}"
+  else
+    RELEASE_NAME=${IMAGE_NAME}
+  fi
 fi
 echo -e "Release name: ${RELEASE_NAME}"
 
 echo "=========================================================="
 echo "CHECKING HELM CLIENT VERSION: matching Helm Tiller (server) if detected. "
 set +e
-LOCAL_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
-TILLER_VERSION=$( helm version --server | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+LOCAL_VERSION=$( helm version --client ${HELM_TLS_OPTION} | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
+TILLER_VERSION=$( helm version --server ${HELM_TLS_OPTION} | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
 set -e
 if [ -z "${TILLER_VERSION}" ]; then
   if [ -z "${HELM_VERSION}" ]; then
@@ -96,40 +98,26 @@ IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_U
 
 # Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
 echo -e "Dry run into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade --install --debug --dry-run ${RELEASE_NAME} ${CHART_PATH} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --debug --dry-run --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade  --install ${RELEASE_NAME} ${CHART_PATH} --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
+# Extract name from actual Kube deployment resource owning the deployed container image 
+DEPLOYMENT_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
+echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
-for ITERATION in {1..30}
-do
-  DATA=$( kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json )
-  NOT_READY=$( echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==false) ' )
-  if [[ -z "$NOT_READY" ]]; then
-    echo -e "All pods are ready:"
-    echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | select(.ready==true) '
-    break # deployment succeeded
-  fi
-  REASON=$(echo $DATA | jq '.items[].status | select(.containerStatuses!=null) | .containerStatuses[] | select(.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .state.waiting.reason')
-  echo -e "${ITERATION} : Deployment still pending..."
-  echo -e "NOT_READY:${NOT_READY}"
-  echo -e "REASON: ${REASON}"
-  if [[ ${REASON} == *ErrImagePull* ]] || [[ ${REASON} == *ImagePullBackOff* ]]; then
-    echo "Detected ErrImagePull or ImagePullBackOff failure. "
-    echo "Please check image still exists in registry, and proper permissions from cluster to image registry (e.g. image pull secret)"
-    break; # no need to wait longer, error is fatal
-  elif [[ ${REASON} == *CrashLoopBackOff* ]]; then
-    echo "Detected CrashLoopBackOff failure. "
-    echo "Application is unable to start, check the application startup logs"
-    break; # no need to wait longer, error is fatal
-  fi
-  sleep 5
-done
+set -x
+if kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=150s --namespace ${CLUSTER_NAMESPACE}; then
+  STATUS="pass"
+else
+  STATUS="fail"
+fi
+set +x
 
-if [[ ! -z "$NOT_READY" ]]; then
+if [[ "$STATUS" == "fail" ]]; then
   echo ""
   echo "=========================================================="
   echo "DEPLOYMENT FAILED"
@@ -140,13 +128,13 @@ if [[ ! -z "$NOT_READY" ]]; then
   kubectl describe pods --namespace ${CLUSTER_NAMESPACE}
   echo ""
   # Record failing deploy information
-  if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+  if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
     ibmcloud doi publishdeployrecord --env "${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}" --logicalappname="${APPLICATION_NAME:-$IMAGE_NAME}" --buildnumber="$GIT_BRANCH:$SOURCE_BUILD_NUMBER" --status=fail
   fi
   #echo "Application Logs"
   #kubectl logs --selector app=${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
   echo "=========================================================="
-  PREVIOUS_RELEASE=$( helm history ${RELEASE_NAME} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
+  PREVIOUS_RELEASE=$( helm history ${HELM_TLS_OPTION} ${RELEASE_NAME} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
   echo -e "Could rollback to previous release: ${PREVIOUS_RELEASE} using command:"
   echo -e "helm rollback ${RELEASE_NAME} ${PREVIOUS_RELEASE}"
   # helm rollback ${RELEASE_NAME} ${PREVIOUS_RELEASE}
@@ -165,14 +153,14 @@ echo "=========================================================="
 echo "DEPLOYMENTS:"
 echo ""
 echo -e "Status for release:${RELEASE_NAME}"
-helm status ${RELEASE_NAME}
+helm status ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 echo ""
 echo -e "History for release:${RELEASE_NAME}"
-helm history ${RELEASE_NAME}
+helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 echo "=========================================================="
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image=="'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'") | .metadata.labels.app] [1]')
+APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
@@ -193,13 +181,17 @@ echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 # Record passing deploy information
-if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
   ibmcloud doi publishdeployrecord --env "${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}" --logicalappname="${APPLICATION_NAME:-$IMAGE_NAME}" --buildnumber="$GIT_BRANCH:$SOURCE_BUILD_NUMBER" --status=pass
 fi
 if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   echo ""
-  IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then  
+    IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+  else
+    IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
+  fi
   if [ "${USE_ISTIO_GATEWAY}" = true ]; then
     PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
     echo -e "*** istio gateway enabled ***"

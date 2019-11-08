@@ -201,7 +201,7 @@ echo "SHOWING last events"
 kubectl get events --sort-by=.metadata.creationTimestamp -n ${CLUSTER_NAMESPACE}
 
 # Record deploy information
-if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
     DEPLOYMENT_ENVIRONMENT="${PIPELINE_KUBERNETES_CLUSTER_NAME}:${CLUSTER_NAMESPACE}"
   else 
@@ -255,7 +255,7 @@ if [ ! -z "${APP_SERVICE}" ]; then
     echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
   else 
     # check if a route resource exists in the this kubernetes cluster
-    if kubectl explain route; then
+    if kubectl explain route > /dev/null 2>&1; then
       # Assuming the kubernetes target cluster is an openshift cluster
       # Check if a route exists for exposing the service ${APP_SERVICE}
       if  kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -e '.items[] | select(.spec.to.name==$service)'; then
