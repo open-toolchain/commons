@@ -124,9 +124,9 @@ TILLER_VERSION=$( helm version --server ${HELM_TLS_OPTION} | grep SemVer: | sed 
 set -e
 if [ -z "${TILLER_VERSION}" ]; then
   if [ -z "${HELM_VERSION}" ]; then
-    CLIENT_VERSION=${HELM_VERSION}
-  else
     CLIENT_VERSION=${LOCAL_VERSION}
+  else
+    CLIENT_VERSION=${HELM_VERSION}
   fi
 else
   echo -e "Helm Tiller ${TILLER_VERSION} already installed in cluster. Keeping it, and aligning client."
