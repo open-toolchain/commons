@@ -109,7 +109,7 @@ if [ -z "${DEPLOYMENT_FILE}" ]; then DEPLOYMENT_FILE=deployment.yml ; fi
 if [ ! -f ${DEPLOYMENT_FILE} ]; then
   echo "No ${DEPLOYMENT_FILE} found. Initializing it."
   deployment_content=$(cat <<'EOT'
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: %s
