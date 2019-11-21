@@ -123,8 +123,7 @@ echo "iDRA based version of this script is located at: https://github.com/open-t
 
   # If APP_NAME is defined then create a deployment record the umbrella chart deployment
   if [ "$APP_NAME" ]; then
-    ibmcloud doi publishdeployrecord --logicalappname="{$APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
-       
+    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
   fi
 
   # Keep the current APP_NAME and SOURCE_BUILD_NUMBER to restore it after sub-component DOI deployment record
