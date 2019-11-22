@@ -71,7 +71,7 @@ ibmcloud cr va -e ${PIPELINE_IMAGE_URL}
 set -e
 ibmcloud cr va -e -o json ${PIPELINE_IMAGE_URL} > "va_status_$IMAGE_NAME.json"
 # Record vulnerability information
-if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json; then
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
   ibmcloud doi publishtestrecord --logicalappname="${APP_NAME:-$IMAGE_NAME}" --buildnumber=$SOURCE_BUILD_NUMBER --filelocation "./va_status_$IMAGE_NAME.json" --type vulnerabilityadvisor
 fi
 STATUS=$( cat "va_status_$IMAGE_NAME.json" | jq -r '.[0].status' )
