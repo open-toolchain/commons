@@ -45,35 +45,35 @@ dockerlint -f ${DOCKER_ROOT}/${DOCKER_FILE}
 
 echo "=========================================================="
 echo "Checking registry current plan and quota"
-bx cr plan
-bx cr quota
-echo "If needed, discard older images using: bx cr image-rm"
+ibmcloud cr plan
+ibmcloud cr quota
+echo "If needed, discard older images using: ibmcloud cr image-rm"
 echo "Checking registry namespace: ${REGISTRY_NAMESPACE}"
-NS=$( bx cr namespaces | grep ${REGISTRY_NAMESPACE} ||: )
+NS=$( ibmcloud cr namespaces | grep ${REGISTRY_NAMESPACE} ||: )
 if [ -z "${NS}" ]; then
     echo "Registry namespace ${REGISTRY_NAMESPACE} not found, creating it."
-    bx cr namespace-add ${REGISTRY_NAMESPACE}
+    ibmcloud cr namespace-add ${REGISTRY_NAMESPACE}
     echo "Registry namespace ${REGISTRY_NAMESPACE} created."
 else 
     echo "Registry namespace ${REGISTRY_NAMESPACE} found."
 fi
 echo -e "Existing images in registry"
-bx cr images --restrict ${REGISTRY_NAMESPACE}
+ibmcloud cr images --restrict ${REGISTRY_NAMESPACE}
 
 # echo "=========================================================="
 # KEEP=1
 # echo -e "PURGING REGISTRY, only keeping last ${KEEP} image(s) based on image digests"
 # COUNT=0
-# LIST=$( bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME} --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | sort -r -u | awk '{print $2}' | sed '$ d' )
+# LIST=$( ibmcloud cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME} --no-trunc --format '{{ .Created }} {{ .Repository }}@{{ .Digest }}' | sort -r -u | awk '{print $2}' | sed '$ d' )
 # while read -r IMAGE_URL ; do
 #   if [[ "$COUNT" -lt "$KEEP" ]]; then
 #     echo "Keeping image digest: ${IMAGE_URL}"
 #   else
-#     bx cr image-rm "${IMAGE_URL}"
+#     ibmcloud cr image-rm "${IMAGE_URL}"
 #   fi
 #   COUNT=$((COUNT+1)) 
 # done <<< "$LIST"
 # if [[ "$COUNT" -gt 1 ]]; then
-#   echo "Content of image registry"
-#   bx cr images
+#  echo "Contents of build image registry:"
+#  ibmcloud cr image-list --restrict ${REGISTRY_NAMESPACE}
 # fi

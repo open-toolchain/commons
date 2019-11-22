@@ -188,7 +188,7 @@ if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   echo ""
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then  
-    IP_ADDR=$(bx cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+    IP_ADDR=$(ibmcloud cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
   else
     IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
   fi

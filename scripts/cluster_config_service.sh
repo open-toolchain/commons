@@ -34,17 +34,17 @@ echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
 # Create service (if needed)
-SERVICE=$(bx resource service-instances | grep ${INSTANCE_NAME} ||:)
+SERVICE=$(ibmcloud resource service-instances | grep ${INSTANCE_NAME} ||:)
 if [ -z "$SERVICE" ]; then
-  bx resource service-instance-create --parameters '{"legacyCredentials": true}' ${INSTANCE_NAME} ${SERVICE_NAME} ${SERVICE_PLAN} ${SERVICE_LOCATION}
+  ibmcloud resource service-instance-create --parameters '{"legacyCredentials": true}' ${INSTANCE_NAME} ${SERVICE_NAME} ${SERVICE_PLAN} ${SERVICE_LOCATION}
 else
   echo -e "Keeping existing service: ${INSTANCE_NAME}"
 fi
 # Bind service to cluster
-SERVICE_ID=$(bx resource service-instance ${INSTANCE_NAME} --output json | jq -r '.[0].guid')
-BINDING=$( bx cs cluster-services -n $CLUSTER_NAMESPACE $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
+SERVICE_ID=$(ibmcloud resource service-instance ${INSTANCE_NAME} --output json | jq -r '.[0].guid')
+BINDING=$( ibmcloud cs cluster-services -n $CLUSTER_NAMESPACE $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
 if [ -z "$BINDING" ]; then
-  bx cs cluster-service-bind --cluster $PIPELINE_KUBERNETES_CLUSTER_NAME \
+  ibmcloud cs cluster-service-bind --cluster $PIPELINE_KUBERNETES_CLUSTER_NAME \
     --namespace $CLUSTER_NAMESPACE --service $SERVICE_ID --role $SERVICE_IAM_ROLE
 else
   echo -e "Service already bound in cluster namespace: ${CLUSTER_NAMESPACE}"
