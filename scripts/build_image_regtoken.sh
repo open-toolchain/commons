@@ -29,10 +29,10 @@ fi
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
 
 # To review or change build options use:
-# bx cr build --help
+# ibmcloud cr build --help
 
 echo -e "Existing images in registry"
-bx cr images --restrict ${REGISTRY_NAMESPACE}
+ibmcloud cr images --restrict ${REGISTRY_NAMESPACE}
 
 TIMESTAMP=$( date -u "+%Y%m%d%H%M%SUTC")
 IMAGE_TAG=${BUILD_NUMBER}-${TIMESTAMP}
@@ -43,29 +43,29 @@ fi
 echo "=========================================================="
 echo -e "Building container image: ${IMAGE_NAME}:${IMAGE_TAG}"
 set -x
-bx cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} .
+ibmcloud cr build -t ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} .
 set +x
-bx cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
+ibmcloud cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
 # Set PIPELINE_IMAGE_URL for subsequent jobs in stage (e.g. Vulnerability Advisor)
 export PIPELINE_IMAGE_URL="$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$IMAGE_TAG"
 
-bx cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
+ibmcloud cr images --restrict ${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 
 # Provision a registry token for this toolchain to later pull image. Token will be passed into build.properties
 echo "=========================================================="
 TOKEN_DESCR="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}"
 echo "CHECKING REGISTRY token existence for toolchain: ${TOKEN_DESCR}"
-EXISTING_TOKEN=$(bx cr tokens | grep ${TOKEN_DESCR} ||: )
+EXISTING_TOKEN=$(ibmcloud cr tokens | grep ${TOKEN_DESCR} ||: )
 if [ -z "${EXISTING_TOKEN}" ]; then
     echo -e "Creating new registry token: ${TOKEN_DESCR}"
-    bx cr token-add --non-expiring --description ${TOKEN_DESCR}
-    REGISTRY_TOKEN_ID=$(bx cr tokens | grep ${TOKEN_DESCR} | awk '{ print $1 }')
+    ibmcloud cr token-add --non-expiring --description ${TOKEN_DESCR}
+    REGISTRY_TOKEN_ID=$(ibmcloud cr tokens | grep ${TOKEN_DESCR} | awk '{ print $1 }')
 else    
     echo -e "Reusing existing registry token: ${TOKEN_DESCR}"
     REGISTRY_TOKEN_ID=$(echo $EXISTING_TOKEN | awk '{ print $1 }')
 fi
-REGISTRY_TOKEN=$(bx cr token-get ${REGISTRY_TOKEN_ID} --quiet)
+REGISTRY_TOKEN=$(ibmcloud cr token-get ${REGISTRY_TOKEN_ID} --quiet)
 echo -e "REGISTRY_TOKEN=${REGISTRY_TOKEN}"
 
 echo "=========================================================="
