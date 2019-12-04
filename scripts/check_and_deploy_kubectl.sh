@@ -211,7 +211,7 @@ if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json
     DEPLOYMENT_ENVIRONMENT="${KUBERNETES_MASTER_ADDRESS}:${CLUSTER_NAMESPACE}"
   fi
   ibmcloud doi publishdeployrecord --env $DEPLOYMENT_ENVIRONMENT \
-    --buildnumber ${SOURCE_BUILD_NUMBER} --logicalappname ${IMAGE_NAME} --status ${STATUS}
+    --buildnumber ${SOURCE_BUILD_NUMBER} --logicalappname="${APP_NAME:-$IMAGE_NAME}" --status ${STATUS}
 fi
 if [ "$STATUS" == "fail" ]; then
   echo "DEPLOYMENT FAILED"
