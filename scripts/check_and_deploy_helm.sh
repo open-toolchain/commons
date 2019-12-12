@@ -257,21 +257,25 @@ helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 # Extract app name from helm release
 echo "=========================================================="
-APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
-echo -e "APP: ${APP_NAME}"
-echo "DEPLOYED PODS:"
-kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
-
-# lookup service for current release
-APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
-if [ -z "${APP_SERVICE}" ]; then
-  # lookup service for current app
-  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
+RELEASE_CONTENT=$(helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r)
+APP_SELECTOR=$( echo $RELEASE_CONTENT | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.spec.selector.matchLabels | to_entries? | map([.key, .value]|join("="))|join(",")' )
+if [ -z "${APP_SELECTOR}" ]; then
+  # backward compatibility
+  APP_SELECTOR=$( echo $RELEASE_CONTENT | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels | to_entries? | map([.key, .value]|join("="))|join(",")' )
 fi
+echo -e "APP_SELECTOR: ${APP_SELECTOR}"
+
+echo "DEPLOYED PODS:"
+kubectl describe pods --selector ${APP_SELECTOR} --namespace ${CLUSTER_NAMESPACE}
+
+# lookup service matching selector
+APP_SERVICE=$(kubectl get services --selector ${APP_SELECTOR} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[].metadata.name ')
 if [ ! -z "${APP_SERVICE}" ]; then
   echo -e "SERVICE: ${APP_SERVICE}"
   echo "DEPLOYED SERVICES:"
   kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
+else
+  echo "NO MATCHING SERVICE FOUND for selector: ${APP_SELECTOR}. Won't be able to infer APP_URL."
 fi
 
 echo ""
