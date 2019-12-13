@@ -257,14 +257,13 @@ helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 # Extract app name from helm release
 echo "=========================================================="
-RELEASE_CONTENT=$(helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r)
-APP_SELECTOR=$( echo $RELEASE_CONTENT | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.spec.selector.matchLabels | to_entries? | map([.key, .value]|join("="))|join(",")' )
+DEPLOYMENT_CONTENT=$(helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | .spec?.template?.spec?.containers[]? | select (.image==$image))')
+APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.[] | .spec.selector.matchLabels | to_entries? | map([.key, .value]|join("="))|join(",")' )
 if [ -z "${APP_SELECTOR}" ]; then
   # backward compatibility
-  APP_SELECTOR=$( echo $RELEASE_CONTENT | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels | to_entries? | map([.key, .value]|join("="))|join(",")' )
+  APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.[] | .metadata.labels | to_entries? | map([.key, .value]|join("="))|join(",")' )
 fi
 echo -e "APP_SELECTOR: ${APP_SELECTOR}"
-
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector ${APP_SELECTOR} --namespace ${CLUSTER_NAMESPACE}
 

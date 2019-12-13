@@ -226,17 +226,28 @@ fi
 # or
 # us.icr.io/sample/hello-containers-20190823092122682:1-master-a15bd262-20190823100927@sha256:9b56a4cee384fa0e9939eee5c6c0d9912e52d63f44fa74d1f93f3496db773b2e
 echo "=========================================================="
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image | test("'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'(@.+|$)")) | .metadata.labels.app] [0]')
-echo -e "APP: ${APP_NAME}"
-echo "DEPLOYED PODS:"
-kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
 
-# lookup service for current release
-APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
-if [ -z "${APP_SERVICE}" ]; then
-  # lookup service for current app
-  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
+DEPLOYMENT_CONTENT=$(kubectl get deploy ${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o json)
+APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.[] | .spec.selector.matchLabels | to_entries? | map([.key, .value]|join("="))|join(",")' )
+if [ -z "${APP_SELECTOR}" ]; then
+  # backward compatibility
+  APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.[] | .metadata.labels | to_entries? | map([.key, .value]|join("="))|join(",")' )
 fi
+echo -e "APP_SELECTOR: ${APP_SELECTOR}"
+
+echo "DEPLOYED PODS:"
+kubectl describe pods --selector ${APP_SELECTOR} --namespace ${CLUSTER_NAMESPACE}
+
+# lookup service matching selector
+APP_SERVICE=$(kubectl get services --selector ${APP_SELECTOR} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[].metadata.name ')
+if [ ! -z "${APP_SERVICE}" ]; then
+  echo -e "SERVICE: ${APP_SERVICE}"
+  echo "DEPLOYED SERVICES:"
+  kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
+else
+  echo "NO MATCHING SERVICE FOUND for selector: ${APP_SELECTOR}. Won't be able to infer APP_URL."
+fi
+
 if [ ! -z "${APP_SERVICE}" ]; then
   echo -e "SERVICE: ${APP_SERVICE}"
   echo "DEPLOYED SERVICES:"
