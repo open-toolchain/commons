@@ -228,24 +228,21 @@ fi
 echo "=========================================================="
 
 DEPLOYMENT_CONTENT=$(kubectl get deploy ${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o json)
-APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.spec.selector.matchLabels | to_entries? | map([.key, .value]|join("="))|join(",")' )
-if [ -z "${APP_SELECTOR}" ]; then
-  # backward compatibility
-  APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.[] | .metadata.labels | to_entries? | map([.key, .value]|join("="))|join(",")' )
-fi
-echo -e "APP_SELECTOR: ${APP_SELECTOR}"
+DEPLOYMENT_LABELS=$( echo ${DEPLOYMENT_CONTENT} | jq -r 'if .spec.selector.matchLabels!=null then .spec.selector.matchLabels else .metadata.labels end | tostring') # backward compatibility
+DEPLOYMENT_SELECTOR=$( echo ${DEPLOYMENT_LABELS} | jq -r 'to_entries? | map([.key, .value]|join("="))|join(",")' )
+echo -e "DEPLOYMENT_SELECTOR: ${DEPLOYMENT_SELECTOR}"
 
 echo "DEPLOYED PODS:"
-kubectl describe pods --selector ${APP_SELECTOR} --namespace ${CLUSTER_NAMESPACE}
+kubectl describe pods --selector ${DEPLOYMENT_SELECTOR} --namespace ${CLUSTER_NAMESPACE}
 
 # lookup service matching selector
-APP_SERVICE=$(kubectl get services --selector ${APP_SELECTOR} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[].metadata.name ')
+APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r --arg labels ${DEPLOYMENT_LABELS} '.items[] | select(.spec.selector|tostring==$labels) | .metadata.name')
 if [ ! -z "${APP_SERVICE}" ]; then
   echo -e "SERVICE: ${APP_SERVICE}"
   echo "DEPLOYED SERVICES:"
   kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
 else
-  echo "NO MATCHING SERVICE FOUND for selector: ${APP_SELECTOR}. Won't be able to infer APP_URL."
+  echo "NO MATCHING SERVICE FOUND for selector: ${DEPLOYMENT_SELECTOR}. Won't be able to infer APP_URL."
 fi
 
 if [ ! -z "${APP_SERVICE}" ]; then
