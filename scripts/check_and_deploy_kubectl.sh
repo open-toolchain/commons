@@ -228,7 +228,7 @@ fi
 echo "=========================================================="
 
 DEPLOYMENT_CONTENT=$(kubectl get deploy ${DEPLOYMENT_NAME} --namespace ${CLUSTER_NAMESPACE} -o json)
-APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.[] | .spec.selector.matchLabels | to_entries? | map([.key, .value]|join("="))|join(",")' )
+APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.spec.selector.matchLabels | to_entries? | map([.key, .value]|join("="))|join(",")' )
 if [ -z "${APP_SELECTOR}" ]; then
   # backward compatibility
   APP_SELECTOR=$( echo ${DEPLOYMENT_CONTENT} | jq -r '.[] | .metadata.labels | to_entries? | map([.key, .value]|join("="))|join(",")' )
