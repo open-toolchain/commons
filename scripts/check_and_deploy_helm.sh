@@ -257,7 +257,7 @@ helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 # Extract app name from helm release
 echo "=========================================================="
-DEPLOYMENT_CONTENT=$(helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | .spec?.template?.spec?.containers[]? | select (.image==$image))')
+DEPLOYMENT_CONTENT=$(helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment')
 DEPLOYMENT_LABELS=$( echo ${DEPLOYMENT_CONTENT} | jq -r 'if .spec.selector.matchLabels!=null then .spec.selector.matchLabels else .metadata.labels end | tostring') # backward compatibility
 DEPLOYMENT_SELECTOR=$( echo ${DEPLOYMENT_LABELS} | jq -r 'to_entries? | map([.key, .value]|join("="))|join(",")' )
 echo -e "DEPLOYMENT_SELECTOR: ${DEPLOYMENT_SELECTOR}"
