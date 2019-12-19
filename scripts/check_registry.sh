@@ -31,8 +31,8 @@ fi
 
 echo "=========================================================="
 echo "Checking registry current plan and quota"
-ibmcloud cr plan
-ibmcloud cr quota
+ibmcloud cr plan || true
+ibmcloud cr quota || true
 echo "If needed, discard older images using: ibmcloud cr image-rm"
 echo "Checking registry namespace: ${REGISTRY_NAMESPACE}"
 NS=$( ibmcloud cr namespaces | grep ${REGISTRY_NAMESPACE} ||: )
