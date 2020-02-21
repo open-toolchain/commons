@@ -27,8 +27,8 @@ fi
 echo "Cluster list:"
 ibmcloud ks clusters
 
-echo "Running ibmcloud ks cluster-config -cluster "$BUILD_CLUSTER" --export"
-CLUSTER_CONFIG_COMMAND=$(ibmcloud ks cluster-config -cluster "$BUILD_CLUSTER" --export)
+echo "Running ibmcloud ks cluster config --cluster "$BUILD_CLUSTER" --export"
+CLUSTER_CONFIG_COMMAND=$(ibmcloud ks cluster config --cluster "$BUILD_CLUSTER" --export)
 echo "$CLUSTER_CONFIG_COMMAND"
 eval $CLUSTER_CONFIG_COMMAND
 

@@ -28,9 +28,9 @@ echo "SERVICE_ID=${SERVICE_ID}"
 echo "PIPELINE_KUBERNETES_CLUSTER_NAME=${PIPELINE_KUBERNETES_CLUSTER_NAME}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 
-BINDING=$( ibmcloud cs cluster-services -n $CLUSTER_NAMESPACE $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
+BINDING=$( ibmcloud ks cluster services -n $CLUSTER_NAMESPACE --cluster  $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
 if [ -z "$BINDING" ]; then
-  ibmcloud cs cluster-service-bind $PIPELINE_KUBERNETES_CLUSTER_NAME $CLUSTER_NAMESPACE $SERVICE_ID
+  ibmcloud ks cluster service bind --cluster $PIPELINE_KUBERNETES_CLUSTER_NAME --namespace $CLUSTER_NAMESPACE --service $SERVICE_ID
 else
   echo "Service already bound in cluster namespace"
 fi
