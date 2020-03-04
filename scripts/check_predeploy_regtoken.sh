@@ -39,7 +39,7 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 #Check cluster availability
 echo "=========================================================="
 echo "CHECKING CLUSTER readiness and namespace existence"
-IP_ADDR=$( ibmcloud cs workers ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | awk '{ print $2 }' )
+IP_ADDR=$( ibmcloud ks workers --cluster ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | awk '{ print $2 }' )
 if [ -z "${IP_ADDR}" ]; then
   echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
   exit 1

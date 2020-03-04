@@ -20,7 +20,7 @@ if kubectl get namespace ${ISTIO_NAMESPACE}; then
   echo -e "Namespace ${ISTIO_NAMESPACE} found."
 else
   echo "Istio not found, installing the Managed Istio add-on in the Kubernetes Cluster ! "
-  ibmcloud ks cluster-addon-enable istio --cluster ${PIPELINE_KUBERNETES_CLUSTER_NAME}
+  ibmcloud ks cluster addon enable istio --cluster ${PIPELINE_KUBERNETES_CLUSTER_NAME}
 
   # Alternative commands for installing a custom Istio version (DEFAULT_ISTIO_VERSION)
   # Reminder: Istio 1.0 is deprecated (https://istio.io/blog/2019/announcing-1.0-eol/), be aware you'll need a STANDARD cluster to run recent versions of Istio >1.1 ."
