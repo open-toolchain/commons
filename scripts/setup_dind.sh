@@ -28,13 +28,13 @@ echo "Cluster list:"
 ibmcloud ks clusters
 
 echo "Running ibmcloud ks cluster config for "$BUILD_CLUSTER""
-ksversion=$(ibmcloud plugin list | grep kubernetes | awk '{print $2}' | head -c1)
-if [ "$ksversion" -eq "0"  ]; then
+csVersion=$(ibmcloud plugin list | grep container-service | awk '{print $2;}')
+if [[ ! "$csVersion" < "1.0.0" ]]; then
+    ibmcloud ks cluster config --cluster ${BUILD_CLUSTER}
+else
     CLUSTER_CONFIG_COMMAND=$(ibmcloud ks cluster config --cluster "$BUILD_CLUSTER" --export)
     echo "$CLUSTER_CONFIG_COMMAND"
     eval $CLUSTER_CONFIG_COMMAND
-else
-    ibmcloud ks cluster config --cluster ${BUILD_CLUSTER}
 fi
 
 echo "Checking cluster namespace $BUILD_CLUSTER_NAMESPACE"
