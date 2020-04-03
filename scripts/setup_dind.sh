@@ -62,3 +62,5 @@ export DOCKER_HOST='tcp://localhost:2375'
 
 echo "Logging in to docker registry..."
 ibmcloud cr login
+
+set +e
