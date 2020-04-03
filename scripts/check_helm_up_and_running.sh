@@ -12,7 +12,7 @@ LOCAL_VERSION=$( helm version --client | grep SemVer: | sed "s/^.*SemVer:\"v\([0
 TILLER_VERSION=$( helm version --server | grep SemVer: | sed "s/^.*SemVer:\"v\([0-9.]*\).*/\1/" )
 set -e
 if [ -z "${TILLER_VERSION}" ]; then
-  if [ -z "${DEFAULT_DEFAULT_HELM_VERSION}" ]; then
+  if [ -z "${DEFAULT_HELM_VERSION}" ]; then
     CLIENT_VERSION=${DEFAULT_HELM_VERSION}
   else
     CLIENT_VERSION=${LOCAL_VERSION}
