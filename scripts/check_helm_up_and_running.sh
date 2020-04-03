@@ -30,6 +30,7 @@ if [ "${CLIENT_VERSION}" != "${LOCAL_VERSION}" ]; then
   export PATH=$(pwd):$PATH
   cd $WORKING_DIR
 fi
+set +e
 if [ -z "${TILLER_VERSION}" ]; then
     echo -e "Installing Helm Tiller ${CLIENT_VERSION} with cluster admin privileges (RBAC)"
     kubectl -n kube-system create serviceaccount tiller
