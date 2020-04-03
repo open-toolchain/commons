@@ -1,7 +1,7 @@
 #!/bin/bash
 # uncomment to debug the script
 # set -x
-
+set -e
 export BUILD_CLUSTER=${BUILD_CLUSTER:-"jumpstart"}
 export BUILD_CLUSTER_NAMESPACE=${BUILD_CLUSTER_NAMESPACE:-"build"}
 export IBMCLOUD_TARGET_REGION=${IBMCLOUD_TARGET_REGION:-"eu-gb"}
@@ -62,3 +62,5 @@ export DOCKER_HOST='tcp://localhost:2375'
 
 echo "Logging in to docker registry..."
 ibmcloud cr login
+
+set +e
