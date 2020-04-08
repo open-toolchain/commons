@@ -169,12 +169,13 @@ helm list ${HELM_TLS_OPTION} --namespace ${CLUSTER_NAMESPACE}
 
 echo "=========================================================="
 if [ -z "$RELEASE_NAME" ]; then
-  echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default' as Helm needs unique release names across namespaces"
-  if [[ "${CLUSTER_NAMESPACE}" != "default" ]]; then
-    RELEASE_NAME="${CLUSTER_NAMESPACE}-${IMAGE_NAME}"
-  else
-    RELEASE_NAME=${IMAGE_NAME}
-  fi
+  # Helm3 releases are now scoped to namespaces. No need to make them unique across
+  echo "DEFINE RELEASE by prefixing image (app) name with namespace if not 'default'"
+  # if [[ "${CLUSTER_NAMESPACE}" != "default" ]]; then
+  #   RELEASE_NAME="${CLUSTER_NAMESPACE}-${IMAGE_NAME}"
+  # else
+  RELEASE_NAME=${IMAGE_NAME}
+  # fi
 fi
 echo -e "Release name: ${RELEASE_NAME}"
 
@@ -183,7 +184,7 @@ echo "DEPLOYING HELM chart"
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
 IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_URL}"
 
-# Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
+# Using 'upgrade --install" for rolling updates.".
 echo -e "Dry run into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
 helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --debug --dry-run --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
@@ -193,7 +194,7 @@ helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --set im
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
 # Extract name from actual Kube deployment resource owning the deployed container image 
-DEPLOYMENT_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
+DEPLOYMENT_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
 set -x
@@ -223,12 +224,12 @@ if [ "$STATUS" == "fail" ]; then
   echo "Showing registry pull quota"
   ibmcloud cr quota || true
   echo "=========================================================="
-  PREVIOUS_RELEASE=$( helm history ${HELM_TLS_OPTION} ${RELEASE_NAME} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
+  PREVIOUS_RELEASE=$( helm history ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE} | grep SUPERSEDED | sort -r -n | awk '{print $1}' | head -n 1 )
   echo -e "Could rollback to previous release: ${PREVIOUS_RELEASE} using command:"
   echo -e "helm rollback ${RELEASE_NAME} ${PREVIOUS_RELEASE}"
-  # helm rollback ${RELEASE_NAME} ${PREVIOUS_RELEASE}
+  # helm rollback ${RELEASE_NAME} ${PREVIOUS_RELEASE} --namespace ${CLUSTER_NAMESPACE}
   # echo -e "History for release:${RELEASE_NAME}"
-  # helm history ${RELEASE_NAME}
+  # helm history ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE}
   # echo "Deployed Services:"
   # kubectl describe services ${RELEASE_NAME}-${CHART_NAME} --namespace ${CLUSTER_NAMESPACE}
   # echo ""
@@ -242,15 +243,15 @@ echo "=========================================================="
 echo "DEPLOYMENTS:"
 echo ""
 echo -e "Status for release:${RELEASE_NAME}"
-helm status ${HELM_TLS_OPTION} ${RELEASE_NAME}
+helm status ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE}
 
 echo ""
 echo -e "History for release:${RELEASE_NAME}"
-helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
+helm history ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE}
 
 # Extract app name from helm release
 echo "=========================================================="
-APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
+APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
