@@ -159,6 +159,7 @@ if [ "${CLIENT_VERSION}" != "${LOCAL_VERSION}" ]; then
   export PATH=$(pwd):$PATH
   cd $WORKING_DIR
 fi
+set +e
 if [ -z "${TILLER_VERSION}" ]; then
     echo -e "Installing Helm Tiller ${CLIENT_VERSION} with cluster admin privileges (RBAC)"
     kubectl -n kube-system create serviceaccount tiller
@@ -168,6 +169,7 @@ if [ -z "${TILLER_VERSION}" ]; then
     kubectl --namespace=kube-system rollout status deploy/tiller-deploy
     # kubectl rollout status -w deployment/tiller-deploy --namespace=kube-system
 fi
+set -e
 helm version ${HELM_TLS_OPTION}
 
 echo "=========================================================="

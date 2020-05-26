@@ -143,7 +143,7 @@ if [ -z "${HELM_VERSION}" ]; then
 else
   CLIENT_VERSION=${HELM_VERSION}
 fi
-
+set +e
 if [ -z "${CLIENT_VERSION}" ]; then # Helm 3 not present yet and no explicit required version, install latest
   echo "Installing latest Helm 3 client"
   WORKING_DIR=$(pwd)
@@ -161,6 +161,7 @@ elif [ "${CLIENT_VERSION}" != "${LOCAL_VERSION}" ]; then
   export PATH=$(pwd):$PATH
   cd $WORKING_DIR
 fi
+set -e
 helm version ${HELM_TLS_OPTION}
 
 echo "=========================================================="
