@@ -81,7 +81,7 @@ echo "=========================================================="
 echo "CHECKING CLUSTER readiness and namespace existence"
 if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   CLUSTER_ID=$( kubectl config current-context | cut -d/ -f2 ) # use cluster id instead of cluster name to handle case where there are multiple clusters with same name
-  if [ -z "$CLUSTER_ID"]; then
+  if [ -z "$CLUSTER_ID" ]; then
     echo -e "kubectl config current-context returned:"
     kubectl config current-context
     echo - e "No cluster id found"
