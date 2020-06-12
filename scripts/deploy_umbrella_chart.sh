@@ -158,7 +158,8 @@ export APP_NAME=$PREVIOUS_APP_NAME
 export SOURCE_BUILD_NUMBER=$PREVIOUS_SOURCE_BUILD_NUMBER
 
 echo "=========================================================="
-IP_ADDR=$(ibmcloud ks workers --cluster ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }')
+CLUSTER_ID=${PIPELINE_KUBERNETES_CLUSTER_ID:-${PIPELINE_KUBERNETES_CLUSTER_NAME}} # use cluster id instead of cluster name to handle case where there are multiple clusters with same name
+IP_ADDR=$( ibmcloud ks workers --cluster ${CLUSTER_ID} | grep normal | head -n 1 | awk '{ print $2 }' )
 
 echo -e "Deployed services:"
 kubectl get services --namespace ${CLUSTER_NAMESPACE} --selector release=${RELEASE_NAME} -o json | jq -r '.items[].spec.ports[0] | [.name, .nodePort | tostring] | join(" -> http://"+"'"${IP_ADDR}"':") '
