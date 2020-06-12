@@ -186,7 +186,8 @@ if [ ! -z "${APP_SERVICE}" ]; then
   echo ""
   echo ""
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-    IP_ADDR=$( ibmcloud ks workers --cluster ${PIPELINE_KUBERNETES_CLUSTER_NAME} | grep normal | head -n 1 | awk '{ print $2 }' )
+    CLUSTER_ID=${PIPELINE_KUBERNETES_CLUSTER_ID:-${PIPELINE_KUBERNETES_CLUSTER_NAME}} # use cluster id instead of cluster name to handle case where there are multiple clusters with same name
+    IP_ADDR=$( ibmcloud ks workers --cluster ${CLUSTER_ID} | grep normal | head -n 1 | awk '{ print $2 }' )
     if [ -z "${IP_ADDR}" ]; then
       echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
       exit 1
