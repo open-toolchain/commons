@@ -287,7 +287,7 @@ function createSigner {
     EXISTING_KEY="$(getJSONValue "$DEVOPS_SIGNER" "$JSON_PRIV_DATA")"
     if [[ "$EXISTING_KEY" == "null" || -z "$EXISTING_KEY" ]]; then
         echo "Key for $DEVOPS_SIGNER not found."
-        echo "Create  $DEVOPS_SIGNER singer key"
+        echo "Create  $DEVOPS_SIGNER signer key"
         docker trust key generate "$DEVOPS_SIGNER"
         # add new keys to json
         JSON_PRIV_DATA=$(addTrustFileToJSON "$DEVOPS_SIGNER" "$JSON_PRIV_DATA" "$DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE")
@@ -326,7 +326,7 @@ function deleteSigner {
 
     if [ "$EXISTING_KEY" ]; then
         echo "Key for $DEVOPS_SIGNER  found."
-        echo "Removing  $DEVOPS_SIGNER singer key"
+        echo "Removing  $DEVOPS_SIGNER signer key"
         # add new keys to json
         JSON_PRIV_DATA=$(removeJSONEntry "$JSON_PRIV_DATA" "$DEVOPS_SIGNER")
         JSON_PUB_DATA=$(removeJSONEntry "$JSON_PUB_DATA" "$DEVOPS_SIGNER")
