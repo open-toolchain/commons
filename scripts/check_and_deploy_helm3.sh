@@ -53,10 +53,11 @@ if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   kubectl config use-context custom-context
 fi
 
-INSTALLED_HELM_VERSION=$(helm version ${HELM_TLS_OPTION})
-
-if [[ ${INSTALLED_HELM_VERSION} == *v2* ]]; then
-  echo "Helm 2 installed. Please uninstall tiller before installing Helm 3. Warning: Uninstalling tiller may prevent other applications from deploying."
+TILLER_FOUND=$(kubectl get deployment tiller-deploy -n kube-system)
+echo "TILLER_FOUND ${TILLER_FOUND}"
+if [[ ${TILLER_FOUND} == *tiller-deploy* ]]; then
+  echo "Tiller is installed. Please uninstall Tiller before continuing with Helm 3 deploy."
+  echo "Warning: Uninstalling Tiller may prevent other applications from deploying."
   exit 1
 fi
 
