@@ -52,6 +52,14 @@ if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   kubectl config set-context custom-context --cluster=custom-cluster --user=sa-user --namespace="${CLUSTER_NAMESPACE}"
   kubectl config use-context custom-context
 fi
+
+INSTALLED_HELM_VERSION=$(helm version ${HELM_TLS_OPTION})
+
+if [[ ${INSTALLED_HELM_VERSION} == *v2.16* ]]; then
+  echo "Helm 2 installed. Please uninstall tiller before installing Helm 3. Warning: Uninstalling tiller may prevent other applications from deploying."
+  exit 1
+fi
+
 # Use kubectl auth to check if the kubectl client configuration is appropriate
 # check if the current configuration can create a deployment in the target namespace
 echo "Check ability to create a kubernetes deployment in ${CLUSTER_NAMESPACE} using kubectl CLI"
