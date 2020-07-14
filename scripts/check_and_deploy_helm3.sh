@@ -55,7 +55,7 @@ fi
 
 INSTALLED_HELM_VERSION=$(helm version ${HELM_TLS_OPTION})
 
-if [[ ${INSTALLED_HELM_VERSION} == *v2.16* ]]; then
+if [[ ${INSTALLED_HELM_VERSION} == *v2* ]]; then
   echo "Helm 2 installed. Please uninstall tiller before installing Helm 3. Warning: Uninstalling tiller may prevent other applications from deploying."
   exit 1
 fi
