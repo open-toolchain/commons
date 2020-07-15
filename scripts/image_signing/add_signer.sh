@@ -2,7 +2,7 @@
 # uncomment to debug the script
 # set -x
 
-VAULT_DATA=$(buildVaultAccessDetailsJSON "$VAULT_INSTANCE" "$IBMCLOUD_TARGET_REGION" "$IBMCLOUD_TARGET_RESOURCE_GROUP")
+VAULT_DATA=$(buildVaultAccessDetailsJSON "$VAULT_INSTANCE" "${VAULT_REGION:-$IBMCLOUD_TARGET_REGION}" "${VAULT_RESOURCE_GROUP:-$IBMCLOUD_TARGET_RESOURCE_GROUP}")
 #write repo pem file to trust/private. Only repo key required to add delegate
 export CURRENT_PATH=$(pwd)
 JSON_REPO_DATA="$(readData "$REGISTRY_NAMESPACE.$IMAGE_NAME.repokeys" "$VAULT_DATA")"

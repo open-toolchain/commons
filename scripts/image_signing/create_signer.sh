@@ -8,7 +8,7 @@ fi
 export DOCKER_CONTENT_TRUST=1
 
 #set Vault access
-VAULT_DATA=$(buildVaultAccessDetailsJSON "$VAULT_INSTANCE" "$IBMCLOUD_TARGET_REGION" "$IBMCLOUD_TARGET_RESOURCE_GROUP")
+VAULT_DATA=$(buildVaultAccessDetailsJSON "$VAULT_INSTANCE" "${VAULT_REGION:-$IBMCLOUD_TARGET_REGION}" "${VAULT_RESOURCE_GROUP:-$IBMCLOUD_TARGET_RESOURCE_GROUP}")
 
 #retrieve existing keys from Vault
 echo "Checking Key Protect Vault for keys"
