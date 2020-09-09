@@ -253,7 +253,7 @@ if [ ! -z "${APP_SERVICE}" ]; then
     PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
     echo -e "*** istio gateway enabled ***"
   else
-    PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+    PORT=$( kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].nodePort' )
   fi
   if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
     echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
