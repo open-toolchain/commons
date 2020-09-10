@@ -39,7 +39,7 @@ if [ -z "$SERVICE" ]; then
   if ibmcloud resource service-instance-create --parameters '{"legacyCredentials": true}' ${INSTANCE_NAME} ${SERVICE_NAME} ${SERVICE_PLAN} ${SERVICE_LOCATION}; then
     echo "Service ${INSTANCE_NAME} created"
   else
-    echo "Fail to create ${SERVICE_NAME} ${INSTANCE_NAME} (${SERVICE_PLAN} in ${SERVICE_LOCATION})"
+    echo "Fail to create ${SERVICE_NAME}(${SERVICE_PLAN}) ${INSTANCE_NAME} in ${SERVICE_LOCATION}"
     exit 1
   fi
 else
