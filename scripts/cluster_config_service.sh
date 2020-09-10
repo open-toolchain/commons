@@ -47,7 +47,7 @@ else
 fi
 # Bind service to cluster
 SERVICE_ID=$(ibmcloud resource service-instance ${INSTANCE_NAME} --output json | jq -r '.[0].guid')
-BINDING=$( ibmcloud ks cluster services -n $CLUSTER_NAMESPACE $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
+BINDING=$( ibmcloud ks cluster services -n $CLUSTER_NAMESPACE -c $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
 if [ -z "$BINDING" ]; then
   if ibmcloud ks cluster service bind --cluster $PIPELINE_KUBERNETES_CLUSTER_NAME --namespace $CLUSTER_NAMESPACE --service $SERVICE_ID --role $SERVICE_IAM_ROLE; then
     echo "Service instance ${INSTANCE_NAME} bound to $PIPELINE_KUBERNETES_CLUSTER_NAME"
