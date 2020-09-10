@@ -37,7 +37,7 @@ echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 SERVICE=$(ibmcloud resource service-instances | grep ${INSTANCE_NAME} ||:)
 if [ -z "$SERVICE" ]; then
   if ibmcloud resource service-instance-create --parameters '{"legacyCredentials": true}' ${INSTANCE_NAME} ${SERVICE_NAME} ${SERVICE_PLAN} ${SERVICE_LOCATION}; then
-    echo "Service ${INSTANCE_NAME} created"
+    echo "Service instance ${INSTANCE_NAME} created"
   else
     echo "Fail to create ${SERVICE_NAME}(${SERVICE_PLAN}) ${INSTANCE_NAME} in ${SERVICE_LOCATION}"
     exit 1
@@ -49,8 +49,12 @@ fi
 SERVICE_ID=$(ibmcloud resource service-instance ${INSTANCE_NAME} --output json | jq -r '.[0].guid')
 BINDING=$( ibmcloud ks cluster services -n $CLUSTER_NAMESPACE $PIPELINE_KUBERNETES_CLUSTER_NAME | grep $SERVICE_ID ||:)
 if [ -z "$BINDING" ]; then
-  ibmcloud ks cluster service bind --cluster $PIPELINE_KUBERNETES_CLUSTER_NAME \
-    --namespace $CLUSTER_NAMESPACE --service $SERVICE_ID --role $SERVICE_IAM_ROLE
+  if ibmcloud ks cluster service bind --cluster $PIPELINE_KUBERNETES_CLUSTER_NAME --namespace $CLUSTER_NAMESPACE --service $SERVICE_ID --role $SERVICE_IAM_ROLE; then
+    echo "Service instance ${INSTANCE_NAME} bound to $PIPELINE_KUBERNETES_CLUSTER_NAME"
+  else
+    echo "Fail to bind service instance ${INSTANCE_NAME} to $PIPELINE_KUBERNETES_CLUSTER_NAME"
+    exit 1
+  fi
 else
   echo -e "Service already bound in cluster namespace: ${CLUSTER_NAMESPACE}"
 fi
