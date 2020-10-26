@@ -64,6 +64,8 @@ if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
     echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
     exit 1
   fi
+  CLUSTER_INGRESS_SUBDOMAIN=$( ibmcloud ks cluster --cluster ${CLUSTER_ID} --json | jq -r '.ingressHostname' )
+  CLUSTER_INGRESS_SECRET=$( ibmcloud ks cluster --cluster ${CLUSTER_ID} --json | jq -r '.ingressSecretName' )
 fi
 echo "Configuring cluster namespace"
 if kubectl get namespace ${CLUSTER_NAMESPACE}; then
@@ -177,6 +179,28 @@ fi
 yq write $DEPLOYMENT_FILE --doc $DEPLOYMENT_DOC_INDEX "spec.template.spec.containers[0].image" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" > ${NEW_DEPLOYMENT_FILE}
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
+
+if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
+  echo "=========================================================="
+  echo "UPDATING manifest with ingress information"
+  INGRESS_DOC_INDEX=$(yq read --doc "*" --tojson $DEPLOYMENT_FILE | jq -r 'to_entries | .[] | select(.value.kind | ascii_downcase=="ingress") | .key')
+  if [ -z "$INGRESS_DOC_INDEX" ]; then
+    echo "No Kubernetes Ingress definition found in $DEPLOYMENT_FILE."
+  else
+    # Update ingress with cluster domain/secret information
+    # Look for ingress rule whith host contains the token "cluster-ingress-subdomain"
+    INGRESS_RULES_INDEX=$(yq r --doc $INGRESS_DOC_INDEX --tojson $DEPLOYMENT_FILE | jq '.spec.rules | to_entries | .[] | select( .value.host | contains("cluster-ingress-subdomain")) | .key')
+    if [ ! -z "$INGRESS_RULES_INDEX" ]; then
+      INGRESS_RULE_HOST=$(yq r --doc $INGRESS_DOC_INDEX  spec.rules[${INGRESS_RULES_INDEX}].host)
+      yq w --inplace --doc $INGRESS_DOC_INDEX spec.rules[${INGRESS_RULES_INDEX}].host ${INGRESS_RULE_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}
+    fi
+    # Look for ingress tls whith secret contains the token "cluster-ingress-secret"
+    INGRESS_TLS_INDEX=$(yq r --doc $INGRESS_DOC_INDEX --tojson $DEPLOYMENT_FILE | jq '.spec.tls | to_entries | .[] | select(.secretName="cluster-ingress-secret")) | .key')
+    if [ ! -z "$INGRESS_TLS_INDEX" ]; then
+      yq w --inplace --doc $INGRESS_DOC_INDEX spec.tls[${INGRESS_TLS_INDEX}].secretName $CLUSTER_INGRESS_SECRET
+      #INGRESS_TLS_HOST_INDEX=$(yq r --doc $INGRESS_DOC_INDEX  spec.rules[${INGRESS_RULES_INDEX}].host)
+  fi
+fi
 
 echo "=========================================================="
 echo "DEPLOYING using manifest"
