@@ -191,13 +191,13 @@ if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
     # Look for ingress rule whith host contains the token "cluster-ingress-subdomain"
     INGRESS_RULES_INDEX=$(yq r --doc $INGRESS_DOC_INDEX --tojson $DEPLOYMENT_FILE | jq '.spec.rules | to_entries | .[] | select( .value.host | contains("cluster-ingress-subdomain")) | .key')
     if [ ! -z "$INGRESS_RULES_INDEX" ]; then
-      INGRESS_RULE_HOST=$(yq r --doc $INGRESS_DOC_INDEX  spec.rules[${INGRESS_RULES_INDEX}].host)
-      yq w --inplace --doc $INGRESS_DOC_INDEX spec.rules[${INGRESS_RULES_INDEX}].host ${INGRESS_RULE_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}
+      INGRESS_RULE_HOST=$(yq r --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.rules[${INGRESS_RULES_INDEX}].host)
+      yq w --inplace --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.rules[${INGRESS_RULES_INDEX}].host ${INGRESS_RULE_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}
     fi
     # Look for ingress tls whith secret contains the token "cluster-ingress-secret"
     INGRESS_TLS_INDEX=$(yq r --doc $INGRESS_DOC_INDEX --tojson $DEPLOYMENT_FILE | jq '.spec.tls | to_entries | .[] | select(.secretName="cluster-ingress-secret")) | .key')
     if [ ! -z "$INGRESS_TLS_INDEX" ]; then
-      yq w --inplace --doc $INGRESS_DOC_INDEX spec.tls[${INGRESS_TLS_INDEX}].secretName $CLUSTER_INGRESS_SECRET
+      yq w --inplace --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}].secretName $CLUSTER_INGRESS_SECRET
       #INGRESS_TLS_HOST_INDEX=$(yq r --doc $INGRESS_DOC_INDEX  spec.rules[${INGRESS_RULES_INDEX}].host)
     fi
   fi
