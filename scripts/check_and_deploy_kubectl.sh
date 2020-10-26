@@ -281,7 +281,7 @@ if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${INGRESS_DOC_INDEX}" ]; then
   # Expose app using ingress URL
   APP_HOST=$(yq r --doc ${INGRESS_DOC_INDEX} $DEPLOYMENT_FILE spec.rules[0].host)
   APP_PATH=$(yq r --doc ${INGRESS_DOC_INDEX} $DEPLOYMENT_FILE spec.rules[0].http.paths[0].path)
-  export APP_URL=https://${APP_HOST}/${APP_PATH} # using 'export', the env var gets passed to next job in stage
+  export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
   echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
 else
   # Only NodePort will be available
