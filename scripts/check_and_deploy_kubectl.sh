@@ -199,6 +199,7 @@ if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
     if [ ! -z "$INGRESS_TLS_INDEX" ]; then
       yq w --inplace --doc $INGRESS_DOC_INDEX spec.tls[${INGRESS_TLS_INDEX}].secretName $CLUSTER_INGRESS_SECRET
       #INGRESS_TLS_HOST_INDEX=$(yq r --doc $INGRESS_DOC_INDEX  spec.rules[${INGRESS_RULES_INDEX}].host)
+    fi
   fi
 fi
 
