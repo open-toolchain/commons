@@ -64,6 +64,8 @@ if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
     echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
     exit 1
   fi
+  CLUSTER_INGRESS_SUBDOMAIN=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressHostname' )
+  CLUSTER_INGRESS_SECRET=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressSecretName' )
 fi
 echo "Configuring cluster namespace"
 if kubectl get namespace ${CLUSTER_NAMESPACE}; then
@@ -178,6 +180,34 @@ yq write $DEPLOYMENT_FILE --doc $DEPLOYMENT_DOC_INDEX "spec.template.spec.contai
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
 
+if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
+  echo "=========================================================="
+  echo "UPDATING manifest with ingress information"
+  INGRESS_DOC_INDEX=$(yq read --doc "*" --tojson $DEPLOYMENT_FILE | jq -r 'to_entries | .[] | select(.value.kind | ascii_downcase=="ingress") | .key')
+  if [ -z "$INGRESS_DOC_INDEX" ]; then
+    echo "No Kubernetes Ingress definition found in $DEPLOYMENT_FILE."
+  else
+    # Update ingress with cluster domain/secret information
+    # Look for ingress rule whith host contains the token "cluster-ingress-subdomain"
+    INGRESS_RULES_INDEX=$(yq r --doc $INGRESS_DOC_INDEX --tojson $DEPLOYMENT_FILE | jq '.spec.rules | to_entries | .[] | select( .value.host | contains("cluster-ingress-subdomain")) | .key')
+    if [ ! -z "$INGRESS_RULES_INDEX" ]; then
+      INGRESS_RULE_HOST=$(yq r --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.rules[${INGRESS_RULES_INDEX}].host)
+      yq w --inplace --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.rules[${INGRESS_RULES_INDEX}].host ${INGRESS_RULE_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}
+    fi
+    # Look for ingress tls whith secret contains the token "cluster-ingress-secret"
+    INGRESS_TLS_INDEX=$(yq r --doc $INGRESS_DOC_INDEX --tojson $DEPLOYMENT_FILE | jq '.spec.tls | to_entries | .[] | select(.secretName="cluster-ingress-secret") | .key')
+    if [ ! -z "$INGRESS_TLS_INDEX" ]; then
+      yq w --inplace --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}].secretName $CLUSTER_INGRESS_SECRET
+      INGRESS_TLS_HOST_INDEX=$(yq r --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}] --tojson | jq '.hosts | to_entries | .[] | select( .value | contains("cluster-ingress-subdomain")) | .key')
+      if [ ! -z "$INGRESS_TLS_HOST_INDEX" ]; then
+        INGRESS_TLS_HOST=$(yq r --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}].hosts[$INGRESS_TLS_HOST_INDEX])
+        yq w --inplace --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}].hosts[$INGRESS_TLS_HOST_INDEX] ${INGRESS_TLS_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}
+      fi
+    fi
+    cat $DEPLOYMENT_FILE
+  fi
+fi
+
 echo "=========================================================="
 echo "DEPLOYING using manifest"
 set -x
@@ -235,8 +265,8 @@ kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE
 # lookup service for current release
 APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
 if [ -z "${APP_SERVICE}" ]; then
-  # lookup service for current app
-  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
+  # lookup service for current app with NodePort type
+  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type=="NodePort") | .metadata.name ')
 fi
 if [ ! -z "${APP_SERVICE}" ]; then
   echo -e "SERVICE: ${APP_SERVICE}"
@@ -247,41 +277,50 @@ fi
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
-if [ ! -z "${APP_SERVICE}" ]; then
-  echo ""
-  if [ "${USE_ISTIO_GATEWAY}" = true ]; then
-    PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
-    echo -e "*** istio gateway enabled ***"
-  else
-    PORT=$( kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].nodePort' )
-  fi
-  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-    echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
-  else 
-    # check if a route resource exists in the this kubernetes cluster
-    if kubectl explain route > /dev/null 2>&1; then
-      # Assuming the kubernetes target cluster is an openshift cluster
-      # Check if a route exists for exposing the service ${APP_SERVICE}
-      if  kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -e '.items[] | select(.spec.to.name==$service)'; then
-        echo "Existing route to expose service $APP_SERVICE"
-      else
-        # create OpenShift route
+if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${INGRESS_DOC_INDEX}" ]; then
+  # Expose app using ingress URL
+  APP_HOST=$(yq r --doc ${INGRESS_DOC_INDEX} $DEPLOYMENT_FILE spec.rules[0].host)
+  APP_PATH=$(yq r --doc ${INGRESS_DOC_INDEX} $DEPLOYMENT_FILE spec.rules[0].http.paths[0].path)
+  export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
+  echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+else
+  # Only NodePort will be available
+  if [ ! -z "${APP_SERVICE}" ]; then
+    echo ""
+    if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+      PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
+      echo -e "*** istio gateway enabled ***"
+    else
+      PORT=$( kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].nodePort' )
+    fi
+    if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+      echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
+    else 
+      # check if a route resource exists in the this kubernetes cluster
+      if kubectl explain route > /dev/null 2>&1; then
+        # Assuming the kubernetes target cluster is an openshift cluster
+        # Check if a route exists for exposing the service ${APP_SERVICE}
+        if  kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -e '.items[] | select(.spec.to.name==$service)'; then
+          echo "Existing route to expose service $APP_SERVICE"
+        else
+          # create OpenShift route
 cat > test-route.json << EOF
 {"apiVersion":"route.openshift.io/v1","kind":"Route","metadata":{"name":"${APP_SERVICE}"},"spec":{"to":{"kind":"Service","name":"${APP_SERVICE}"}}}
 EOF
-        echo ""
-        cat test-route.json
-        kubectl apply -f test-route.json --validate=false --namespace ${CLUSTER_NAMESPACE}
-        kubectl get routes --namespace ${CLUSTER_NAMESPACE}
+          echo ""
+          cat test-route.json
+          kubectl apply -f test-route.json --validate=false --namespace ${CLUSTER_NAMESPACE}
+          kubectl get routes --namespace ${CLUSTER_NAMESPACE}
+        fi
+        echo "LOOKING for host in route exposing service $APP_SERVICE"
+        IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
+        PORT=80
+      else
+        # Use the KUBERNETES_MASTER_ADRESS
+        IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
       fi
-      echo "LOOKING for host in route exposing service $APP_SERVICE"
-      IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
-      PORT=80
-    else
-      # Use the KUBERNETES_MASTER_ADRESS
-      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
-    fi
-  fi  
-  export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
-  echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+    fi  
+    export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
+    echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+  fi
 fi
