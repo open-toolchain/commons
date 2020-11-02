@@ -91,7 +91,7 @@ spec:
 EOT
 )
   # Find the port
-  PORT=$(ibmcloud cr image-inspect "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" --format '{{ range $key,$value := .ContainerConfig.ExposedPorts }} {{ $key }} {{ "" }} {{end}}' | sed -E 's/^[^0-9]*([0-9]+).*$/\1/') || true
+  PORT=$(ibmcloud cr image-inspect "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" --format '{{ range $key,$value := .Config.ExposedPorts }} {{ $key }} {{ "" }} {{end}}' | sed -E 's/^[^0-9]*([0-9]+).*$/\1/') || true
   if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
     echo "ExposedPort $PORT found while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
   else 
@@ -101,7 +101,7 @@ EOT
   # Generate deployment file  
   echo "GENERATED ${DEPLOYMENT_FILE}:"
   # Derive an application name from toolchain name ensuring it is conform to DNS-1123 subdomain
-  application_name=$(echo ${IDS_PROJECT_NAME} | tr -cd '[:alnum:].-')
+  application_name=$(echo ${IDS_PROJECT_NAME:-$IMAGE_NAME} | tr -cd '[:alnum:].-')
   printf "$deployment_content" \
    "${application_name}" "${application_name}" "${application_name}" "${application_name}" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" "${PORT}" \
    "${application_name}" "${application_name}" "${PORT}" "${application_name}" | tee ${DEPLOYMENT_FILE}
