@@ -208,7 +208,7 @@ if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
       CHART_VALUES_JSON=$( yq read "${CHART_PATH}/values.yaml" --tojson )
 
       for((i=0; 1 ;i++)) ; do
-          INGRESS_HOST=$(echo "${CHART_VALUES_JSON}" | jq -r --argjson i "$i" '.ingress.hosts[$i]' )
+          INGRESS_HOST=$(echo "${CHART_VALUES_JSON}" | jq -r --argjson i "$i" '.ingress.hosts[$i]?' )
           if [ -z "${INGRESS_HOST}" ] || [ 'null' = "${INGRESS_HOST}" ] ; then
               break;
           fi
@@ -237,7 +237,7 @@ if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
             INGRESS_SET_VALUES="${INGRESS_SET_VALUES},ingress.tls[$i].secretName=${INGRESS_TLS_SECRET_UPDATED}"
           fi
           for((j=0; 1 ;j++)) ; do
-            INGRESS_TLS_HOST=$(echo "${CHART_VALUES_JSON}" | jq -r --argjson i "$i" --argjson j "$j"  '.ingress.tls[$i].hosts[$j]' )
+            INGRESS_TLS_HOST=$(echo "${CHART_VALUES_JSON}" | jq -r --argjson i "$i" --argjson j "$j"  '.ingress.tls[$i].hosts[$j]?' )
             if [ -z "${INGRESS_TLS_HOST}" ] || [ 'null' = "${INGRESS_TLS_HOST}" ] ; then
                 break;
             fi
