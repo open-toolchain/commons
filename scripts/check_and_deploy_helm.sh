@@ -196,11 +196,11 @@ if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
   echo -e "CHECKING cluster ingress configuration"
   echo "Cluster is enabled for ingress."
   if [ -f "${CHART_PATH}/values.yaml" ] && \
-          [[ '"found"' != $( yq read "${CHART_PATH}/values.yaml" --tojson | jq '.ingress | select( .detectClusterIngressEnabled == true) | "found" ' ) ]] ; then
-      echo -e "Did not find chart value ingress.detectClusterIngressEnabled:true, will not detect."
+          [[ '"found"' != $( yq read "${CHART_PATH}/values.yaml" --tojson | jq 'select(.ingress) | "found"' ) ]] ; then
+      echo -e "Did not find chart value 'ingress', will not detect."
   else
       # cluster has ingress subdomain and chart has detect ingress, so enable ingress
-      echo -e "Found helm chart value ingress.detectClusterIngressEnabled:true"
+      echo -e "Found helm chart value 'ingress'"
       echo -e "UPDATING helm values with ingress information"
       echo -e "Setting helm value:    ingress.enabled=true"
       INGRESS_SET_VALUES=",ingress.enabled=true"
