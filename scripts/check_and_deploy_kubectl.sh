@@ -286,6 +286,8 @@ if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
   # Expose app using ingress host and path for the service
   APP_HOST=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[] | select(.http.paths[].backend.serviceName==$service_name) | .host')
   APP_PATH=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[].http.paths[] | select(.backend.serviceName==$service_name) | .path')
+  # Remove the last / from APP_PATH if any
+  APP_PATH=${APP_PATH%/}
   export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
   echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
 else
