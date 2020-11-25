@@ -266,10 +266,13 @@ kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE
 APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
 if [ -z "${APP_SERVICE}" ]; then
   # lookup service for current app with NodePort type
-  # unless there is an ingress subdomin in the cluster - in that the service that is not NodePort would be exposed
+  # unless there is an ingress subdomain in the cluster - in that the service that is not NodePort would be exposed
+  # First if ingress then look for a non NodePort service
   if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then    
     APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type!="NodePort") | .metadata.name ')
-  else
+  fi
+  # If nothing found then fallback to a NodePort service
+  if [ -z "${APP_SERVICE}" ]; then
     APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type=="NodePort") | .metadata.name ')
   fi  
 fi
