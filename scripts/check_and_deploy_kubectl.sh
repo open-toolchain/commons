@@ -278,6 +278,7 @@ echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
+  env | sort
   if [ -z "${APP_SERVICE}" ]; then
     APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type!="NodePort") | .metadata.name ')
   fi
