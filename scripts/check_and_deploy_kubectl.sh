@@ -279,7 +279,9 @@ echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
   env | sort
+  echo $APP_SERVICE
   if [ -z "${APP_SERVICE}" ]; then
+    kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json
     APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type!="NodePort") | .metadata.name ')
   fi
   APP_INGRESS=$(kubectl get ingress --namespace $CLUSTER_NAMESPACE -o json | jq -r --arg service_name ${APP_SERVICE} ' .items[] | select (.spec.rules[].http.paths[].backend.serviceName==$service_name) | .metadata.name')
