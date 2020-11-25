@@ -266,7 +266,12 @@ kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE
 APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
 if [ -z "${APP_SERVICE}" ]; then
   # lookup service for current app with NodePort type
-  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type=="NodePort") | .metadata.name ')
+  # unless there is an ingress subdomin in the cluster - in that the service that is not NodePort would be exposed
+  if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then    
+    APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type!="NodePort") | .metadata.name ')
+  else
+    APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type=="NodePort") | .metadata.name ')
+  fi  
 fi
 if [ ! -z "${APP_SERVICE}" ]; then
   echo -e "SERVICE: ${APP_SERVICE}"
@@ -278,14 +283,8 @@ echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
-  env | sort
-  echo $APP_SERVICE
-  if [ -z "${APP_SERVICE}" ]; then
-    kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json
-    APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type!="NodePort") | .metadata.name ')
-  fi
-  APP_INGRESS=$(kubectl get ingress --namespace $CLUSTER_NAMESPACE -o json | jq -r --arg service_name ${APP_SERVICE} ' .items[] | select (.spec.rules[].http.paths[].backend.serviceName==$service_name) | .metadata.name')
-  INGRESS_JSON=$(kubectl get ingress --namespace $CLUSTER_NAMESPACE ${APP_INGRESS} -o json)
+  APP_INGRESS=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" -o json | jq -r --arg service_name "${APP_SERVICE}" ' .items[] | select (.spec.rules[].http.paths[].backend.serviceName==$service_name) | .metadata.name')
+  INGRESS_JSON=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" "${APP_INGRESS}" -o json)
   # Expose app using ingress host and path for the service
   APP_HOST=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[] | select(.http.paths[].backend.serviceName==$service_name) | .host')
   APP_PATH=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[].http.paths[] | select(.backend.serviceName==$service_name) | .path')
