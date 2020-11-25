@@ -282,7 +282,7 @@ fi
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
-if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
+if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; then
   APP_INGRESS=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" -o json | jq -r --arg service_name "${APP_SERVICE}" ' .items[] | select (.spec.rules[].http.paths[].backend.serviceName==$service_name) | .metadata.name')
   INGRESS_JSON=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" "${APP_INGRESS}" -o json)
   # Expose app using ingress host and path for the service
