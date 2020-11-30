@@ -22,7 +22,6 @@ echo "CHART_ROOT=${CHART_ROOT}"
 echo "CHART_NAME=${CHART_NAME}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
-echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
 echo "HELM_VERSION=${HELM_VERSION}"
 echo "KUBERNETES_SERVICE_ACCOUNT_NAME=${KUBERNETES_SERVICE_ACCOUNT_NAME}"
@@ -86,6 +85,8 @@ if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
     echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
     exit 1
   fi
+  CLUSTER_INGRESS_SUBDOMAIN=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressHostname' | cut -d, -f1 )
+  CLUSTER_INGRESS_SECRET=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressSecretName' | cut -d, -f1 )
 fi
 echo "Configuring cluster namespace"
 if kubectl get namespace ${CLUSTER_NAMESPACE}; then
@@ -188,6 +189,74 @@ if [ -z "$RELEASE_NAME" ]; then
 fi
 echo -e "Release name: ${RELEASE_NAME}"
 
+INGRESS_SET_VALUES=""
+INGRESS_URL=""
+if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
+  echo "=========================================================="
+  echo -e "CHECKING cluster ingress configuration"
+  echo "Cluster is enabled for ingress."
+  if [ -f "${CHART_PATH}/values.yaml" ] && \
+          [[ '"found"' != $( yq read "${CHART_PATH}/values.yaml" --tojson | jq 'select(.ingress) | "found"' ) ]] ; then
+      echo -e "Did not find chart value 'ingress', will not detect."
+  else
+      # cluster has ingress subdomain and chart has detect ingress, so enable ingress
+      echo -e "Found helm chart value 'ingress'"
+      echo -e "UPDATING helm values with ingress information"
+      echo -e "Setting helm value:    ingress.enabled=true"
+      INGRESS_SET_VALUES=",ingress.enabled=true"
+
+      CHART_VALUES_JSON=$( yq read "${CHART_PATH}/values.yaml" --tojson )
+
+      for((i=0; 1 ;i++)) ; do
+          INGRESS_HOST=$(echo "${CHART_VALUES_JSON}" | jq -r --argjson i "$i" '.ingress.hosts[$i]?' )
+          if [ -z "${INGRESS_HOST}" ] || [ 'null' = "${INGRESS_HOST}" ] ; then
+              break;
+          fi
+          if echo "${INGRESS_HOST}" | grep -q "cluster-ingress-subdomain" ; then
+            # ${var/regexp/str} variable replace syntax
+            INGRESS_HOST_UPDATED="${INGRESS_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}"
+            echo "Upating ingress host: ${INGRESS_HOST} ->    ingress.hosts[$i]=${INGRESS_HOST_UPDATED}"
+            INGRESS_SET_VALUES="${INGRESS_SET_VALUES},ingress.hosts[$i]=${INGRESS_HOST_UPDATED}"
+            INGRESS_HOST=$INGRESS_HOST_UPDATED
+          fi
+          if [ "$i" == "0" ] ; then
+            # Note, may be overwritten by https url below
+            INGRESS_URL="http://${INGRESS_HOST}"
+            echo "Found ingress http url:  ${INGRESS_URL}"
+          fi
+      done
+      for((i=0; 1 ;i++)) ; do
+          INGRESS_TLS=$(echo "${CHART_VALUES_JSON}" | jq -r --argjson i "$i" '.ingress.tls[$i]?' )
+          if [ -z "${INGRESS_TLS}" ] || [ 'null' = "${INGRESS_TLS}" ] ; then
+              break;
+          fi
+          INGRESS_TLS_SECRET_NAME=$(echo "${CHART_VALUES_JSON}" | jq -r --argjson i "$i" '.ingress.tls[$i].secretName' )
+          if echo "${INGRESS_TLS_SECRET_NAME}" | grep -q "cluster-ingress-secret" ; then
+            INGRESS_TLS_SECRET_UPDATED="${INGRESS_TLS_SECRET_NAME/cluster-ingress-secret/$CLUSTER_INGRESS_SECRET}"
+            echo "Upating ingress tls secretName: ${INGRESS_TLS_SECRET_NAME} ->    ingress.tls[$i].secretName=${INGRESS_TLS_SECRET_UPDATED}"
+            INGRESS_SET_VALUES="${INGRESS_SET_VALUES},ingress.tls[$i].secretName=${INGRESS_TLS_SECRET_UPDATED}"
+          fi
+          for((j=0; 1 ;j++)) ; do
+            INGRESS_TLS_HOST=$(echo "${CHART_VALUES_JSON}" | jq -r --argjson i "$i" --argjson j "$j"  '.ingress.tls[$i].hosts[$j]?' )
+            if [ -z "${INGRESS_TLS_HOST}" ] || [ 'null' = "${INGRESS_TLS_HOST}" ] ; then
+                break;
+            fi
+            if echo "${INGRESS_TLS_HOST}" | grep -q "cluster-ingress-subdomain" ; then
+              INGRESS_TLS_HOST_UPDATED="${INGRESS_TLS_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}"
+              echo "Upating ingress tls host: ${INGRESS_TLS_HOST} ->    ingress.tls[$i].hosts[$j]=${INGRESS_TLS_HOST_UPDATED}"
+              INGRESS_SET_VALUES="${INGRESS_SET_VALUES},ingress.tls[$i].hosts[$j]=${INGRESS_TLS_HOST_UPDATED}"
+              INGRESS_TLS_HOST=$INGRESS_TLS_HOST_UPDATED
+            fi
+            if [ "$i" == "0" ] && [ "$j" == "0" ] ; then
+              #  prefer the tls/https host rather than http
+              INGRESS_URL="https://${INGRESS_TLS_HOST}"
+              echo "Found ingress https url:  ${INGRESS_URL}"
+            fi
+          done
+      done
+  fi
+fi
+
 echo "=========================================================="
 echo "DEPLOYING HELM chart"
 IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
@@ -195,10 +264,10 @@ IMAGE_PULL_SECRET_NAME="ibmcloud-toolchain-${PIPELINE_TOOLCHAIN_ID}-${REGISTRY_U
 
 # Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
 echo -e "Dry run into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --debug --dry-run --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --debug --dry-run --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME}${INGRESS_SET_VALUES} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
 echo -e "Deploying into: ${PIPELINE_KUBERNETES_CLUSTER_NAME}/${CLUSTER_NAMESPACE}."
-helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
+helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --set image.repository=${IMAGE_REPOSITORY},image.tag=${IMAGE_TAG},image.pullSecret=${IMAGE_PULL_SECRET_NAME}${INGRESS_SET_VALUES} ${HELM_UPGRADE_EXTRA_ARGS} --namespace ${CLUSTER_NAMESPACE}
 
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
@@ -266,10 +335,10 @@ echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
 
 # lookup service for current release
-APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
+APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'" and .spec.type=="NodePort") | .metadata.name ')
 if [ -z "${APP_SERVICE}" ]; then
-  # lookup service for current app
-  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
+  # lookup service for current app with NodePort type
+  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select select (.spec.selector.app=="'"${APP_NAME}"'" and .spec.type=="NodePort") | .metadata.name ')
 fi
 if [ ! -z "${APP_SERVICE}" ]; then
   echo -e "SERVICE: ${APP_SERVICE}"
@@ -280,41 +349,47 @@ fi
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
-if [ ! -z "${APP_SERVICE}" ]; then
-  echo ""
-  if [ "${USE_ISTIO_GATEWAY}" = true ]; then
-    PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
-    echo -e "*** istio gateway enabled ***"
-  else
-    PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
-  fi
-  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-    echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
-  else 
-    # check if a route resource exists in the this kubernetes cluster
-    if kubectl explain route > /dev/null 2>&1; then
-      # Assuming the kubernetes target cluster is an openshift cluster
-      # Check if a route exists for exposing the service ${APP_SERVICE}
-      if  kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -e '.items[] | select(.spec.to.name==$service)'; then
-        echo "Existing route to expose service $APP_SERVICE"
-      else
-        # create OpenShift route
+if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${INGRESS_URL}" ]; then
+  # Expose app using ingress URL
+  export APP_URL="${INGRESS_URL}" # using 'export', the env var gets passed to next job in stage
+  echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+else
+  if [ ! -z "${APP_SERVICE}" ]; then
+    echo ""
+    if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+      PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
+      echo -e "*** istio gateway enabled ***"
+    else
+      PORT=$( kubectl get service "${APP_SERVICE}" --namespace "${CLUSTER_NAMESPACE}" -o json | jq -r '.spec.ports[0].nodePort' )
+    fi
+    if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+      echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
+    else 
+      # check if a route resource exists in the this kubernetes cluster
+      if kubectl explain route > /dev/null 2>&1; then
+        # Assuming the kubernetes target cluster is an openshift cluster
+        # Check if a route exists for exposing the service ${APP_SERVICE}
+        if  kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -e '.items[] | select(.spec.to.name==$service)'; then
+          echo "Existing route to expose service $APP_SERVICE"
+        else
+          # create OpenShift route
 cat > test-route.json << EOF
 {"apiVersion":"route.openshift.io/v1","kind":"Route","metadata":{"name":"${APP_SERVICE}"},"spec":{"to":{"kind":"Service","name":"${APP_SERVICE}"}}}
 EOF
-        echo ""
-        cat test-route.json
-        kubectl apply -f test-route.json --validate=false --namespace ${CLUSTER_NAMESPACE}
-        kubectl get routes --namespace ${CLUSTER_NAMESPACE}
+          echo ""
+          cat test-route.json
+          kubectl apply -f test-route.json --validate=false --namespace ${CLUSTER_NAMESPACE}
+          kubectl get routes --namespace ${CLUSTER_NAMESPACE}
+        fi
+        echo "LOOKING for host in route exposing service $APP_SERVICE"
+        IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
+        PORT=80
+      else
+        # Use the KUBERNETES_MASTER_ADRESS
+        IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
       fi
-      echo "LOOKING for host in route exposing service $APP_SERVICE"
-      IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
-      PORT=80
-    else
-      # Use the KUBERNETES_MASTER_ADRESS
-      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
-    fi
-  fi  
-  export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
-  echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+    fi  
+    export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
+    echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+  fi
 fi
