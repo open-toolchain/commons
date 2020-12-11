@@ -282,6 +282,8 @@ if [ ! -z "${APP_SERVICE}" ]; then
   kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
 fi
 
+set -x 
+
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
