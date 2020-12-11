@@ -302,10 +302,15 @@ if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; the
     # No ingress resource linked the given service
     # Fallback
     if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-      echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
+      CLUSTER_IP=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.clusterIP')
+      if [ -z "$CLUSTER_IP" ]; then
+        IP_ADDR=$CLUSTER_IP
+      fi
+      PORT=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].port')
     else 
       # Use the KUBERNETES_MASTER_ADRESS
-      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}    
+      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
+      PORT=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].port')
     fi
     export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage  fi
     echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
