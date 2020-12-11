@@ -287,17 +287,29 @@ echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; then
   APP_INGRESS=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" -o json | jq -r --arg service_name "${APP_SERVICE}" ' .items[] | first(select(.spec.rules[].http.paths[].backend.serviceName==$service_name)) | .metadata.name')
-  INGRESS_JSON=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" "${APP_INGRESS}" -o json)
-  # Expose app using ingress host and path for the service
-  APP_HOST=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[] | first(select(.http.paths[].backend.serviceName==$service_name)) | .host' | head -n1)
-  APP_PATH=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[].http.paths[] | first(select(.backend.serviceName==$service_name)) | .path' | head -n1)
-  # Remove any group in the path in case of regex in ingress path definition
-  # https://kubernetes.github.io/ingress-nginx/user-guide/ingress-path-matching/
-  APP_PATH=$(echo "$APP_PATH" | sed "s/([^)]*)//g")
-  # Remove the last / from APP_PATH if any
-  APP_PATH=${APP_PATH%/}
-  export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
-  echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+  if [ "$APP_INGRESS" ]; then
+    INGRESS_JSON=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" "${APP_INGRESS}" -o json)
+    # Expose app using ingress host and path for the service
+    APP_HOST=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[] | first(select(.http.paths[].backend.serviceName==$service_name)) | .host' | head -n1)
+    APP_PATH=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[].http.paths[] | first(select(.backend.serviceName==$service_name)) | .path' | head -n1)
+    # Remove any group in the path in case of regex in ingress path definition
+    # https://kubernetes.github.io/ingress-nginx/user-guide/ingress-path-matching/
+    APP_PATH=$(echo "$APP_PATH" | sed "s/([^)]*)//g")
+    # Remove the last / from APP_PATH if any
+    APP_PATH=${APP_PATH%/}
+    export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
+  else 
+    # No ingress resource linked the given service
+    # Fallback
+    if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+      echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
+    else 
+      # Use the KUBERNETES_MASTER_ADRESS
+      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}    
+    fi
+    export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage  fi
+    echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+  fi
 else
   # Only NodePort will be available
   if [ ! -z "${APP_SERVICE}" ]; then
