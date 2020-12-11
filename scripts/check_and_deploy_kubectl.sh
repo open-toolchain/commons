@@ -282,8 +282,6 @@ if [ ! -z "${APP_SERVICE}" ]; then
   kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
 fi
 
-set -x 
-
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
@@ -305,7 +303,7 @@ if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; the
     # Fallback
     if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
       CLUSTER_IP=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.clusterIP')
-      if [ -z "$CLUSTER_IP" ]; then
+      if [ "$CLUSTER_IP" ]; then
         IP_ADDR=$CLUSTER_IP
       fi
       PORT=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].port')
