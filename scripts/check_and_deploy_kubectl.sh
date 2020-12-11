@@ -291,6 +291,9 @@ if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; the
   # Expose app using ingress host and path for the service
   APP_HOST=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[] | first(select(.http.paths[].backend.serviceName==$service_name)) | .host' | head -n1)
   APP_PATH=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[].http.paths[] | first(select(.backend.serviceName==$service_name)) | .path' | head -n1)
+  # Remove any group in the path in case of regex in ingress path definition
+  # https://kubernetes.github.io/ingress-nginx/user-guide/ingress-path-matching/
+  APP_PATH=$(echo "$APP_PATH" | sed "s/([^)]*)//g")
   # Remove the last / from APP_PATH if any
   APP_PATH=${APP_PATH%/}
   export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
