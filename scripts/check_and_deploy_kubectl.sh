@@ -299,6 +299,7 @@ if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; the
     # Remove the last / from APP_PATH if any
     APP_PATH=${APP_PATH%/}
     export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
+    echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
   fi
 fi
 if [ -z "$APP_URL" ] && [ "$APP_SERVICE" ]; then
