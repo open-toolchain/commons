@@ -277,6 +277,7 @@ if [ -z "${APP_SERVICE}" ]; then
   fi  
 fi
 if [ ! -z "${APP_SERVICE}" ]; then
+  APP_SERVICE_TYPE=$(kubectl get service $APP_SERVICE --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.type')
   echo -e "SERVICE: ${APP_SERVICE}"
   echo "DEPLOYED SERVICES:"
   kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
@@ -287,20 +288,25 @@ echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; then
   APP_INGRESS=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" -o json | jq -r --arg service_name "${APP_SERVICE}" ' .items[] | first(select(.spec.rules[].http.paths[].backend.serviceName==$service_name)) | .metadata.name')
-  INGRESS_JSON=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" "${APP_INGRESS}" -o json)
-  # Expose app using ingress host and path for the service
-  APP_HOST=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[] | first(select(.http.paths[].backend.serviceName==$service_name)) | .host' | head -n1)
-  APP_PATH=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[].http.paths[] | first(select(.backend.serviceName==$service_name)) | .path' | head -n1)
-  # Remove any group in the path in case of regex in ingress path definition
-  # https://kubernetes.github.io/ingress-nginx/user-guide/ingress-path-matching/
-  APP_PATH=$(echo "$APP_PATH" | sed "s/([^)]*)//g")
-  # Remove the last / from APP_PATH if any
-  APP_PATH=${APP_PATH%/}
-  export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
-  echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
-else
-  # Only NodePort will be available
-  if [ ! -z "${APP_SERVICE}" ]; then
+  if [ "$APP_INGRESS" ]; then
+    INGRESS_JSON=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" "${APP_INGRESS}" -o json)
+    # Expose app using ingress host and path for the service
+    APP_HOST=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[] | first(select(.http.paths[].backend.serviceName==$service_name)) | .host' | head -n1)
+    APP_PATH=$(echo $INGRESS_JSON | jq -r --arg service_name "$APP_SERVICE" '.spec.rules[].http.paths[] | first(select(.backend.serviceName==$service_name)) | .path' | head -n1)
+    # Remove any group in the path in case of regex in ingress path definition
+    # https://kubernetes.github.io/ingress-nginx/user-guide/ingress-path-matching/
+    APP_PATH=$(echo "$APP_PATH" | sed "s/([^)]*)//g")
+    # Remove the last / from APP_PATH if any
+    APP_PATH=${APP_PATH%/}
+    export APP_URL=https://${APP_HOST}${APP_PATH} # using 'export', the env var gets passed to next job in stage
+    echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+  fi
+fi
+if [ -z "$APP_URL" ] && [ "$APP_SERVICE" ]; then
+  # No ingress resource linked the given service
+  # Fallback according to the service type
+  if [ "$APP_SERVICE_TYPE" = "NodePort" ]; then
+    # Only NodePort will be available
     echo ""
     if [ "${USE_ISTIO_GATEWAY}" = true ]; then
       PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
@@ -335,6 +341,20 @@ EOF
         IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
       fi
     fi  
+    export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
+    echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+  else
+    if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+      CLUSTER_IP=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.clusterIP')
+      if [ "$CLUSTER_IP" ]; then
+        IP_ADDR=$CLUSTER_IP
+      fi
+      PORT=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].port')
+    else 
+      # Use the KUBERNETES_MASTER_ADRESS
+      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
+      PORT=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].port')
+    fi
     export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
     echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
   fi
