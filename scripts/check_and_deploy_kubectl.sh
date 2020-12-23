@@ -64,8 +64,9 @@ if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
     echo -e "${PIPELINE_KUBERNETES_CLUSTER_NAME} not created or workers not ready"
     exit 1
   fi
-  CLUSTER_INGRESS_SUBDOMAIN=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressHostname' | cut -d, -f1 )
-  CLUSTER_INGRESS_SECRET=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressSecretName' | cut -d, -f1 )
+  # Use alternate operator .ingress.XXX for vpc/gen2 / apiv2 cluster
+  CLUSTER_INGRESS_SUBDOMAIN=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressHostname // .ingress.hostname' | cut -d, -f1 )
+  CLUSTER_INGRESS_SECRET=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressSecretName // .ingress.secretName' | cut -d, -f1 )
 fi
 echo "Configuring cluster namespace"
 if kubectl get namespace ${CLUSTER_NAMESPACE}; then
