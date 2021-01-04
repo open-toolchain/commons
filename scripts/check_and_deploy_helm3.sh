@@ -208,15 +208,20 @@ echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
 # Extract name from actual Kube deployment resource owning the deployed container image 
 DEPLOYMENT_NAME=$( helm get manifest ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
-echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
-echo ""
-set -x
-if kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=${ROLLOUT_TIMEOUT:-"150s"} --namespace ${CLUSTER_NAMESPACE}; then
+if [ -z "$DEPLOYMENT_NAME" ]; then
+  echo "NO DEPLOYMENT found in the helm release ${RELEASE_NAME}. Skipping kubectl rollout status"
   STATUS="pass"
 else
-  STATUS="fail"
+  echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
+  echo ""
+  set -x
+  if kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=${ROLLOUT_TIMEOUT:-"150s"} --namespace ${CLUSTER_NAMESPACE}; then
+    STATUS="pass"
+  else
+    STATUS="fail"
+  fi
+  set +x
 fi
-set +x
 
 # Dump events that occured during the rollout
 echo "SHOWING last events"
@@ -262,63 +267,67 @@ echo ""
 echo -e "History for release:${RELEASE_NAME}"
 helm history ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE}
 
-# Extract app name from helm release
-echo "=========================================================="
-APP_NAME=$( helm get manifest ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
-echo -e "APP: ${APP_NAME}"
-echo "DEPLOYED PODS:"
-kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
+if [ -z "$DEPLOYMENT_NAME" ]; then
+  echo "No deployment found in the helm release. No Application URL can be found."
+else
+  # Extract app name from helm release
+  echo "=========================================================="
+  APP_NAME=$( helm get manifest ${HELM_TLS_OPTION} ${RELEASE_NAME} --namespace ${CLUSTER_NAMESPACE} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
+  echo -e "APP: ${APP_NAME}"
+  echo "DEPLOYED PODS:"
+  kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
 
-# lookup service for current release
-APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
-if [ -z "${APP_SERVICE}" ]; then
-  # lookup service for current app
-  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
-fi
-if [ ! -z "${APP_SERVICE}" ]; then
-  echo -e "SERVICE: ${APP_SERVICE}"
-  echo "DEPLOYED SERVICES:"
-  kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
-fi
-
-echo ""
-echo "=========================================================="
-echo "DEPLOYMENT SUCCEEDED"
-if [ ! -z "${APP_SERVICE}" ]; then
-  echo ""
-  if [ "${USE_ISTIO_GATEWAY}" = true ]; then
-    PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
-    echo -e "*** istio gateway enabled ***"
-  else
-    PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+  # lookup service for current release
+  APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.release=="'"${RELEASE_NAME}"'") | .metadata.name ')
+  if [ -z "${APP_SERVICE}" ]; then
+    # lookup service for current app
+    APP_SERVICE=$(kubectl get services --namespace ${CLUSTER_NAMESPACE} -o json | jq -r ' .items[] | select (.spec.selector.app=="'"${APP_NAME}"'") | .metadata.name ')
   fi
-  if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
-    echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
-  else 
-    # check if a route resource exists in the this kubernetes cluster
-    if kubectl explain route > /dev/null 2>&1; then
-      # Assuming the kubernetes target cluster is an openshift cluster
-      # Check if a route exists for exposing the service ${APP_SERVICE}
-      if  kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -e '.items[] | select(.spec.to.name==$service)'; then
-        echo "Existing route to expose service $APP_SERVICE"
-      else
-        # create OpenShift route
+  if [ ! -z "${APP_SERVICE}" ]; then
+    echo -e "SERVICE: ${APP_SERVICE}"
+    echo "DEPLOYED SERVICES:"
+    kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
+  fi
+
+  echo ""
+  echo "=========================================================="
+  echo "DEPLOYMENT SUCCEEDED"
+  if [ ! -z "${APP_SERVICE}" ]; then
+    echo ""
+    if [ "${USE_ISTIO_GATEWAY}" = true ]; then
+      PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
+      echo -e "*** istio gateway enabled ***"
+    else
+      PORT=$( kubectl get services --namespace ${CLUSTER_NAMESPACE} | grep ${APP_SERVICE} | sed 's/.*:\([0-9]*\).*/\1/g' )
+    fi
+    if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
+      echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
+    else 
+      # check if a route resource exists in the this kubernetes cluster
+      if kubectl explain route > /dev/null 2>&1; then
+        # Assuming the kubernetes target cluster is an openshift cluster
+        # Check if a route exists for exposing the service ${APP_SERVICE}
+        if  kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -e '.items[] | select(.spec.to.name==$service)'; then
+          echo "Existing route to expose service $APP_SERVICE"
+        else
+          # create OpenShift route
 cat > test-route.json << EOF
 {"apiVersion":"route.openshift.io/v1","kind":"Route","metadata":{"name":"${APP_SERVICE}"},"spec":{"to":{"kind":"Service","name":"${APP_SERVICE}"}}}
 EOF
-        echo ""
-        cat test-route.json
-        kubectl apply -f test-route.json --validate=false --namespace ${CLUSTER_NAMESPACE}
-        kubectl get routes --namespace ${CLUSTER_NAMESPACE}
+          echo ""
+          cat test-route.json
+          kubectl apply -f test-route.json --validate=false --namespace ${CLUSTER_NAMESPACE}
+          kubectl get routes --namespace ${CLUSTER_NAMESPACE}
+        fi
+        echo "LOOKING for host in route exposing service $APP_SERVICE"
+        IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
+        PORT=80
+      else
+        # Use the KUBERNETES_MASTER_ADRESS
+        IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
       fi
-      echo "LOOKING for host in route exposing service $APP_SERVICE"
-      IP_ADDR=$(kubectl get routes --namespace ${CLUSTER_NAMESPACE} -o json | jq --arg service "$APP_SERVICE" -r '.items[] | select(.spec.to.name==$service) | .status.ingress[0].host')
-      PORT=80
-    else
-      # Use the KUBERNETES_MASTER_ADRESS
-      IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
-    fi
-  fi  
-  export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
-  echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+    fi  
+    export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
+    echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
+  fi
 fi
