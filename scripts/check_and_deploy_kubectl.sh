@@ -20,6 +20,7 @@ echo "REGISTRY_URL=${REGISTRY_URL}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
+echo "KEEP_INGRESS_CUSTOM_DOMAIN=${KEEP_INGRESS_CUSTOM_DOMAIN}"
 echo "KUBERNETES_SERVICE_ACCOUNT_NAME=${KUBERNETES_SERVICE_ACCOUNT_NAME}"
 
 echo "Use for custom Kubernetes cluster target:"
@@ -181,7 +182,7 @@ yq write $DEPLOYMENT_FILE --doc $DEPLOYMENT_DOC_INDEX "spec.template.spec.contai
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
 
-if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ]; then
+if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${KEEP_INGRESS_CUSTOM_DOMAIN}" != true ]; then
   echo "=========================================================="
   echo "UPDATING manifest with ingress information"
   INGRESS_DOC_INDEX=$(yq read --doc "*" --tojson $DEPLOYMENT_FILE | jq -r 'to_entries | .[] | select(.value.kind | ascii_downcase=="ingress") | .key')
