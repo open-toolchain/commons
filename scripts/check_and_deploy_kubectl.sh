@@ -317,11 +317,12 @@ if [ -z "$APP_URL" ] && [ "$APP_SERVICE" ]; then
   # Fallback according to the service type
   if [ "$APP_SERVICE_TYPE" = "NodePort" ]; then
     # Only NodePort will be available
-    echo ""
+    echo "Only NodePort will be available"
     if [ "${USE_ISTIO_GATEWAY}" = true ]; then
       PORT=$( kubectl get svc istio-ingressgateway -n istio-system -o json | jq -r '.spec.ports[] | select (.name=="http2") | .nodePort ' )
       echo -e "*** istio gateway enabled ***"
     else
+      echo "Looking for port using: kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}"
       PORT=$( kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].nodePort' )
     fi
     if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
