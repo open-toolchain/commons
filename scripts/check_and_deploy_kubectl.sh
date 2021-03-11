@@ -233,7 +233,7 @@ if kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=${ROL
 else
   STATUS="fail"
 fi
-#set +x
+set +x
 
 # Dump events that occured during the rollout
 echo "SHOWING last events"
@@ -286,14 +286,14 @@ if [ ! -z "${APP_SERVICE}" ]; then
   echo -e "SERVICE: ${APP_SERVICE}"
   echo "DEPLOYED SERVICES:"
   kubectl describe services ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE}
+else
+  APP_SERVICE_TYPE=""
 fi
 
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
 APP_URL=""
-echo "CLUSTER_INGRESS_SUBDOMAIN=$CLUSTER_INGRESS_SUBDOMAIN"
-echo "USE_ISTIO_GATEWAY=$USE_ISTIO_GATEWAY"
 if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; then
   APP_INGRESS=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" -o json | jq -r --arg service_name "${APP_SERVICE}" ' .items[] | first(select(.spec.rules[].http.paths[].backend.serviceName==$service_name)) | .metadata.name')
   if [ "$APP_INGRESS" ]; then
@@ -310,13 +310,9 @@ if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; the
     echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
   fi
 fi
-echo "APP_URL=$APP_URL"
-echo "APP_SERVICE=$APP_SERVICE"
-echo "APP_SERVICE_TYPE=$APP_SERVICE_TYPE"
 if [ -z "$APP_URL" ] && [ "$APP_SERVICE" ]; then
   # No ingress resource linked the given service
   # Fallback according to the service type
-  echo "No Ingress resource linked"
   if [ "$APP_SERVICE_TYPE" = "NodePort" ]; then
     # Only NodePort will be available
     echo "Only NodePort will be available"
@@ -330,7 +326,6 @@ if [ -z "$APP_URL" ] && [ "$APP_SERVICE" ]; then
     if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
       echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
     else 
-      echo "Check for route concept"
       # check if a route resource exists in the this kubernetes cluster
       if kubectl explain route > /dev/null 2>&1; then
         # Assuming the kubernetes target cluster is an openshift cluster
