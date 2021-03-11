@@ -363,7 +363,7 @@ EOF
       IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
       PORT=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].port')
     fi
-    export APP_URL="http://${IP_ADDR}:${PORT}" # using 'export', the env var gets passed to next job in stage
+    export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
     echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
   fi
 fi
