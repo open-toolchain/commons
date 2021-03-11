@@ -307,6 +307,9 @@ if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; the
     echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
   fi
 fi
+echo "APP_URL=$APP_URL"
+echo "APP_SERVICE=$APP_SERVICE"
+echo "APP_SERVICE_TYPE=$APP_SERVICE_TYPE"
 if [ -z "$APP_URL" ] && [ "$APP_SERVICE" ]; then
   # No ingress resource linked the given service
   # Fallback according to the service type
