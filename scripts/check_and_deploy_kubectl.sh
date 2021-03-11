@@ -230,7 +230,7 @@ if kubectl rollout status deploy/${DEPLOYMENT_NAME} --watch=true --timeout=${ROL
 else
   STATUS="fail"
 fi
-set +x
+#set +x
 
 # Dump events that occured during the rollout
 echo "SHOWING last events"
