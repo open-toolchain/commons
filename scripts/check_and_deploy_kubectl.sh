@@ -291,6 +291,7 @@ fi
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
+APP_URL=""
 echo "CLUSTER_INGRESS_SUBDOMAIN=$CLUSTER_INGRESS_SUBDOMAIN"
 echo "USE_ISTIO_GATEWAY=$USE_ISTIO_GATEWAY"
 if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; then
