@@ -68,6 +68,9 @@ if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   # Use alternate operator .ingress.XXX for vpc/gen2 / apiv2 cluster
   CLUSTER_INGRESS_SUBDOMAIN=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressHostname // .ingress.hostname' | cut -d, -f1 )
   CLUSTER_INGRESS_SECRET=$( ibmcloud ks cluster get --cluster ${CLUSTER_ID} --json | jq -r '.ingressSecretName // .ingress.secretName' | cut -d, -f1 )
+else
+  CLUSTER_INGRESS_SUBDOMAIN=""
+  CLUSTER_INGRESS_SECRET=""
 fi
 echo "Configuring cluster namespace"
 if kubectl get namespace ${CLUSTER_NAMESPACE}; then
