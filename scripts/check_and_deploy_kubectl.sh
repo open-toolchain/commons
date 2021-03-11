@@ -315,6 +315,7 @@ echo "APP_SERVICE_TYPE=$APP_SERVICE_TYPE"
 if [ -z "$APP_URL" ] && [ "$APP_SERVICE" ]; then
   # No ingress resource linked the given service
   # Fallback according to the service type
+  echo "No Ingress resource linked"
   if [ "$APP_SERVICE_TYPE" = "NodePort" ]; then
     # Only NodePort will be available
     echo "Only NodePort will be available"
@@ -328,6 +329,7 @@ if [ -z "$APP_URL" ] && [ "$APP_SERVICE" ]; then
     if [ -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
       echo "Using first worker node ip address as NodeIP: ${IP_ADDR}"
     else 
+      echo "Check for route concept"
       # check if a route resource exists in the this kubernetes cluster
       if kubectl explain route > /dev/null 2>&1; then
         # Assuming the kubernetes target cluster is an openshift cluster
@@ -366,7 +368,7 @@ EOF
       IP_ADDR=${KUBERNETES_MASTER_ADDRESS}
       PORT=$(kubectl get service ${APP_SERVICE} --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.spec.ports[0].port')
     fi
-    export APP_URL=http://${IP_ADDR}:${PORT} # using 'export', the env var gets passed to next job in stage
+    export APP_URL="http://${IP_ADDR}:${PORT}" # using 'export', the env var gets passed to next job in stage
     echo -e "VIEW THE APPLICATION AT: ${APP_URL}"
   fi
 fi
