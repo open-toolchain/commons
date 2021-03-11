@@ -291,6 +291,8 @@ fi
 echo ""
 echo "=========================================================="
 echo "DEPLOYMENT SUCCEEDED"
+echo "CLUSTER_INGRESS_SUBDOMAIN=$CLUSTER_INGRESS_SUBDOMAIN"
+echo "USE_ISTIO_GATEWAY=$USE_ISTIO_GATEWAY"
 if [ "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${USE_ISTIO_GATEWAY}" != true ]; then
   APP_INGRESS=$(kubectl get ingress --namespace "$CLUSTER_NAMESPACE" -o json | jq -r --arg service_name "${APP_SERVICE}" ' .items[] | first(select(.spec.rules[].http.paths[].backend.serviceName==$service_name)) | .metadata.name')
   if [ "$APP_INGRESS" ]; then
