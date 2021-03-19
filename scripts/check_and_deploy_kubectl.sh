@@ -17,6 +17,7 @@
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
+echo "IMAGE_DIGEST=${IMAGE_DIGEST}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "DEPLOYMENT_FILE=${DEPLOYMENT_FILE}"
 echo "USE_ISTIO_GATEWAY=${USE_ISTIO_GATEWAY}"
@@ -27,6 +28,13 @@ echo "Use for custom Kubernetes cluster target:"
 echo "KUBERNETES_MASTER_ADDRESS=${KUBERNETES_MASTER_ADDRESS}"
 echo "KUBERNETES_MASTER_PORT=${KUBERNETES_MASTER_PORT}"
 echo "KUBERNETES_SERVICE_ACCOUNT_TOKEN=${KUBERNETES_SERVICE_ACCOUNT_TOKEN}"
+
+if [ -z "${IMAGE_DIGEST}" ]; then
+  IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+else
+  IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}${IMAGE_DIGEST}"
+fi
+echo "IMAGE $IMAGE"
 
 # View build properties
 if [ -f build.properties ]; then 
@@ -153,11 +161,11 @@ spec:
 EOT
 )
   # Find the port
-  PORT=$(ibmcloud cr image-inspect "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" --format '{{ range $key,$value := .Config.ExposedPorts }} {{ $key }} {{ "" }} {{end}}' | sed -E 's/^[^0-9]*([0-9]+).*$/\1/') || true
+  PORT=$(ibmcloud cr image-inspect "${IMAGE}" --format '{{ range $key,$value := .Config.ExposedPorts }} {{ $key }} {{ "" }} {{end}}' | sed -E 's/^[^0-9]*([0-9]+).*$/\1/') || true
   if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
-    echo "ExposedPort $PORT found while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+    echo "ExposedPort $PORT found while inspecting image ${IMAGE}"
   else 
-    echo "Found '$PORT' as ExposedPort while inspecting image ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}, non numeric value so using 5000 as containerPort"
+    echo "Found '$PORT' as ExposedPort while inspecting image ${IMAGE}, non numeric value so using 5000 as containerPort"
     PORT=5000
   fi
   # Generate deployment file  
@@ -165,14 +173,13 @@ EOT
   # Derive an application name from toolchain name ensuring it is conform to DNS-1123 subdomain
   application_name=$(echo ${IDS_PROJECT_NAME:-$IMAGE_NAME} | tr -cd '[:alnum:].-')
   printf "$deployment_content" \
-   "${application_name}" "${application_name}" "${application_name}" "${application_name}" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" "${PORT}" \
+   "${application_name}" "${application_name}" "${application_name}" "${application_name}" "${IMAGE}" "${PORT}" \
    "${application_name}" "${application_name}" "${PORT}" "${application_name}" | tee ${DEPLOYMENT_FILE}
 fi
 
 echo "=========================================================="
 echo "UPDATING manifest with image information"
-IMAGE_REPOSITORY=${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}
-echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${IMAGE}"
 NEW_DEPLOYMENT_FILE="$(dirname $DEPLOYMENT_FILE)/tmp.$(basename $DEPLOYMENT_FILE)"
 # find the yaml document index for the K8S deployment definition
 DEPLOYMENT_DOC_INDEX=$(yq read --doc "*" --tojson $DEPLOYMENT_FILE | jq -r 'to_entries | .[] | select(.value.kind | ascii_downcase=="deployment") | .key')
@@ -181,7 +188,7 @@ if [ -z "$DEPLOYMENT_DOC_INDEX" ]; then
   DEPLOYMENT_DOC_INDEX=0
 fi
 # Update deployment with image name
-yq write $DEPLOYMENT_FILE --doc $DEPLOYMENT_DOC_INDEX "spec.template.spec.containers[0].image" "${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}" > ${NEW_DEPLOYMENT_FILE}
+yq write $DEPLOYMENT_FILE --doc $DEPLOYMENT_DOC_INDEX "spec.template.spec.containers[0].image" "${IMAGE}" > ${NEW_DEPLOYMENT_FILE}
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
 
@@ -224,7 +231,7 @@ set +x
 # us.icr.io/sample/hello-containers-20190823092122682:1-master-a15bd262-20190823100927
 # or
 # us.icr.io/sample/hello-containers-20190823092122682:1-master-a15bd262-20190823100927@sha256:9b56a4cee384fa0e9939eee5c6c0d9912e52d63f44fa74d1f93f3496db773b2e
-DEPLOYMENT_NAME=$(kubectl get deploy --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[] | select(.spec.template.spec.containers[]?.image | test("'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'(@.+|$)")) | .metadata.name' )
+DEPLOYMENT_NAME=$(kubectl get deploy --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '.items[] | select(.spec.template.spec.containers[]?.image | test("'"${IMAGE}"'(@.+|$)")) | .metadata.name' )
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
 set -x
@@ -262,7 +269,7 @@ fi
 # or
 # us.icr.io/sample/hello-containers-20190823092122682:1-master-a15bd262-20190823100927@sha256:9b56a4cee384fa0e9939eee5c6c0d9912e52d63f44fa74d1f93f3496db773b2e
 echo "=========================================================="
-APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image | test("'"${IMAGE_REPOSITORY}:${IMAGE_TAG}"'(@.+|$)")) | .metadata.labels.app] [0]')
+APP_NAME=$(kubectl get pods --namespace ${CLUSTER_NAMESPACE} -o json | jq -r '[ .items[] | select(.spec.containers[]?.image | test("'"${IMAGE}"'(@.+|$)")) | .metadata.labels.app] [0]')
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
