@@ -95,6 +95,8 @@ set +x
 
 MANIFEST=$(ibmcloud cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG})
 echo "${MANIFEST}"
+echo "*******************"
+echo "${MANIFEST}" | jq -r
 DIGEST=$(echo "${MANIFEST}" | jq -r .Id)
 
 # Set PIPELINE_IMAGE_URL for subsequent jobs in stage (e.g. Vulnerability Advisor)
