@@ -11,17 +11,16 @@
 # Input env variables (can be received via a pipeline environment properties.file.
 echo "IMAGE_NAME=${IMAGE_NAME}"
 echo "IMAGE_TAG=${IMAGE_TAG}"
-echo "IMAGE_DIGEST=${IMAGE_DIGEST}"
+echo "IMAGE_MANIFEST_SHA=${IMAGE_MANIFEST_SHA}"
 echo "REGISTRY_URL=${REGISTRY_URL}"
-echo "IMAGE_DIGEST=${IMAGE_DIGEST}"
 echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "APP_URL=${APP_URL}"
 
-if [ -z "${IMAGE_DIGEST}" ]; then
+if [ -z "${IMAGE_MANIFEST_SHA}" ]; then
   IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
 else
-  IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}${IMAGE_DIGEST}"
+  IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}${IMAGE_MANIFEST_SHA}"
 fi
 if [ -z "${APP_URL}" ]; then
   echo "APP_URL env variable not set. Skipping health check !"
