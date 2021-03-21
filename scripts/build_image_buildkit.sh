@@ -94,8 +94,9 @@ buildctl build \
 set +x
 
 MANIFEST=$(ibmcloud cr image-inspect ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG})
-DIGEST=$(echo ${MANIFEST} | jq -r .Id)
 echo "${MANIFEST}"
+DIGEST=$(echo "${MANIFEST}" | jq -r .Id)
+
 # Set PIPELINE_IMAGE_URL for subsequent jobs in stage (e.g. Vulnerability Advisor)
 export PIPELINE_IMAGE_URL="$REGISTRY_URL/$REGISTRY_NAMESPACE/$IMAGE_NAME:$IMAGE_TAG"
 
