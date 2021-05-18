@@ -25,7 +25,7 @@ if [ -z "${APP_URL}" ]; then
   echo "APP_URL env variable not set. Skipping health check !"
   exit 0
 fi
-
+echo "IMAGE=${IMAGE}"
 # If custom cluster credentials available, connect to this cluster instead
 if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   kubectl config set-cluster custom-cluster --server=https://${KUBERNETES_MASTER_ADDRESS}:${KUBERNETES_MASTER_PORT} --insecure-skip-tls-verify=true
