@@ -17,10 +17,9 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "APP_URL=${APP_URL}"
 
-if [ -z "${IMAGE_MANIFEST_SHA}" ]; then
+# if IMAGE URL not set in enviroment. Fall back to using image tag
+if [ -z "${IMAGE}" ]; then
   IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
-else
-  IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}${IMAGE_MANIFEST_SHA}"
 fi
 if [ -z "${APP_URL}" ]; then
   echo "APP_URL env variable not set. Skipping health check !"
@@ -50,7 +49,9 @@ echo $CONTAINERS_JSON | jq .
 LIVENESS_PROBE_PATH=$(echo $CONTAINERS_JSON | jq -r ".livenessProbe.httpGet.path" | head -n 1)
 echo ".$LIVENESS_PROBE_PATH."
 # LIVENESS_PROBE_PORT=$(echo $CONTAINERS_JSON | jq -r ".livenessProbe.httpGet.port" | head -n 1)
-if [ ${LIVENESS_PROBE_PATH} != null ]; then
+if [ -z "${LIVENESS_PROBE_PATH}" ]; then
+  echo "No liveness probe endpoint defined (should be specified in deployment resource)."
+else
   LIVENESS_PROBE_URL=${APP_URL}${LIVENESS_PROBE_PATH}
   if [ "$(curl -is ${LIVENESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 | head -n 1 | grep 200)" != "" ]; then
     echo "Successfully reached liveness probe endpoint: ${LIVENESS_PROBE_URL}"
@@ -59,14 +60,14 @@ if [ ${LIVENESS_PROBE_PATH} != null ]; then
     echo "Could not reach liveness probe endpoint: ${LIVENESS_PROBE_URL}"
     exit 1;
   fi
-else
-  echo "No liveness probe endpoint defined (should be specified in deployment resource)."
 fi
 
 READINESS_PROBE_PATH=$(echo $CONTAINERS_JSON | jq -r ".readinessProbe.httpGet.path" | head -n 1)
 echo ".$READINESS_PROBE_PATH."
 # READINESS_PROBE_PORT=$(echo $CONTAINERS_JSON | jq -r ".readinessProbe.httpGet.port" | head -n 1)
-if [ ${READINESS_PROBE_PATH} != null ]; then
+if [ -z "${READINESS_PROBE_PATH}" ]; then
+  echo "No readiness probe endpoint defined (should be specified in deployment resource)."
+else
   READINESS_PROBE_URL=${APP_URL}${READINESS_PROBE_PATH}
   if [ "$(curl -is ${READINESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 | head -n 1 | grep 200)" != "" ]; then
     echo "Successfully reached readiness probe endpoint: ${READINESS_PROBE_URL}"
@@ -75,6 +76,4 @@ if [ ${READINESS_PROBE_PATH} != null ]; then
     echo "Could not reach readiness probe endpoint: ${READINESS_PROBE_URL}"
     exit 1;
   fi
-else
-  echo "No readiness probe endpoint defined (should be specified in deployment resource)."
 fi
