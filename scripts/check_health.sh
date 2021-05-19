@@ -17,16 +17,15 @@ echo "REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE}"
 echo "CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE}"
 echo "APP_URL=${APP_URL}"
 
-if [ -z "${IMAGE_MANIFEST_SHA}" ]; then
+# if IMAGE URL not set in enviroment. Fall back to using image tag
+if [ -z "${IMAGE}" ]; then
   IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
-else
-  IMAGE="${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}${IMAGE_MANIFEST_SHA}"
 fi
 if [ -z "${APP_URL}" ]; then
   echo "APP_URL env variable not set. Skipping health check !"
   exit 0
 fi
-
+echo "IMAGE=${IMAGE}"
 # If custom cluster credentials available, connect to this cluster instead
 if [ ! -z "${KUBERNETES_MASTER_ADDRESS}" ]; then
   kubectl config set-cluster custom-cluster --server=https://${KUBERNETES_MASTER_ADDRESS}:${KUBERNETES_MASTER_PORT} --insecure-skip-tls-verify=true
@@ -48,7 +47,7 @@ CONTAINERS_JSON=$(kubectl get deployments --namespace ${CLUSTER_NAMESPACE} -o js
 echo $CONTAINERS_JSON | jq .
 
 LIVENESS_PROBE_PATH=$(echo $CONTAINERS_JSON | jq -r ".livenessProbe.httpGet.path" | head -n 1)
-echo ".$LIVENESS_PROBE_PATH."
+echo "LIVENESS_PROBE_PATH .$LIVENESS_PROBE_PATH."
 # LIVENESS_PROBE_PORT=$(echo $CONTAINERS_JSON | jq -r ".livenessProbe.httpGet.port" | head -n 1)
 if [ ${LIVENESS_PROBE_PATH} != null ]; then
   LIVENESS_PROBE_URL=${APP_URL}${LIVENESS_PROBE_PATH}
@@ -64,7 +63,7 @@ else
 fi
 
 READINESS_PROBE_PATH=$(echo $CONTAINERS_JSON | jq -r ".readinessProbe.httpGet.path" | head -n 1)
-echo ".$READINESS_PROBE_PATH."
+echo "READINESS_PROBE_PATH .$READINESS_PROBE_PATH."
 # READINESS_PROBE_PORT=$(echo $CONTAINERS_JSON | jq -r ".readinessProbe.httpGet.port" | head -n 1)
 if [ ${READINESS_PROBE_PATH} != null ]; then
   READINESS_PROBE_URL=${APP_URL}${READINESS_PROBE_PATH}
