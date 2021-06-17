@@ -31,3 +31,4 @@ You can even combine the two... use local scripts, or defer to remote one...
 ### Recommendations:
 1. Initially try to understand the script behavior, by inserting `set -x` at the top of the script, you'll get better insight into the script command executions.
 2. Prefer `source` over `sh` command to run a script, as it then runs in the parent shell environment. Thus allowing to export environment variables that can be consumed in subsequent jobs in the same stage.
+
