@@ -1,6 +1,10 @@
 #!/bin/bash
-source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/secrets_management.sh")
 
+if [[ "${COMMONS_HOSTED_REGION}" ]]; then
+    source <(curl -sSL "${COMMONS_HOSTED_REGION}/scripts/secrets_management.sh")
+else
+    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/secrets_management.sh")
+fi
 #Assumes default Docker Trust location
 #USE KEY PROTECT VAULT set value to 1
 #USE HASHICORP set value to 0 -> not implemented

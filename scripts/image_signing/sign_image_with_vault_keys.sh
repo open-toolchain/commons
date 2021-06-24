@@ -10,7 +10,11 @@
 # $DEVOPS_SIGNER
 export DOCKER_CONTENT_TRUST=1
 echo "Vault instance $VAULT_INSTANCE used to retrieve signing keys"
-source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/image_signing/signing_utils.sh")
+if [[ "${COMMONS_HOSTED_REGION}" ]]; then
+    source <(curl -sSL "${COMMONS_HOSTED_REGION}/scripts/image_signing/signing_utils.sh")
+else
+    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/image_signing/signing_utils.sh")
+fi
 # Restore signer pem key
 VAULT_DATA=$(buildVaultAccessDetailsJSON "$VAULT_INSTANCE" "${VAULT_REGION:-$IBMCLOUD_TARGET_REGION}" "${VAULT_RESOURCE_GROUP:-$IBMCLOUD_TARGET_RESOURCE_GROUP}")
 JSON_DATA="$(readData "$REGISTRY_NAMESPACE.keys" "$VAULT_DATA")"
