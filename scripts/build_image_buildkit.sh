@@ -37,8 +37,8 @@ fi
 # To review or change build options use:
 # ibmcloud cr build --help
 
-#echo -e "Existing images in registry"
-#ibmcloud cr images
+echo -e "Existing images in ${REGISTRY_NAMESPACE}"
+ibmcloud cr images --restrict ${REGISTRY_NAMESPACE}
 
 # Minting image tag using format: BUILD_NUMBER-BRANCH-COMMIT_ID-TIMESTAMP
 # e.g. 3-master-50da6912-20181123114435
