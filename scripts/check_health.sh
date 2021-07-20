@@ -52,7 +52,7 @@ echo "LIVENESS_PROBE_PATH .$LIVENESS_PROBE_PATH."
 if [ ${LIVENESS_PROBE_PATH} != null ]; then
   LIVENESS_PROBE_URL=${APP_URL}${LIVENESS_PROBE_PATH}
   # command with help from https://superuser.com/a/1176569
-  if [ "$(curl -isL ${LIVENESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 -o /dev/null -w '%{http_code}' -s)" == "200" ]; then
+  if [ "$(curl -isL ${LIVENESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 -o /dev/null -w '%{http_code}')" == "200" ]; then
     echo "Successfully reached liveness probe endpoint: ${LIVENESS_PROBE_URL}"
     echo "====================================================================="
   else
@@ -69,7 +69,7 @@ echo "READINESS_PROBE_PATH .$READINESS_PROBE_PATH."
 if [ ${READINESS_PROBE_PATH} != null ]; then
   READINESS_PROBE_URL=${APP_URL}${READINESS_PROBE_PATH}
   # command with help from https://superuser.com/a/1176569
-  if [ "$(curl -isL ${READINESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 -o /dev/null -w '%{http_code}' -s)" == "200" ]; then
+  if [ "$(curl -isL ${READINESS_PROBE_URL} --connect-timeout 3 --max-time 5 --retry 2 --retry-max-time 30 -o /dev/null -w '%{http_code}')" == "200" ]; then
     echo "Successfully reached readiness probe endpoint: ${READINESS_PROBE_URL}"
     echo "====================================================================="
   else
