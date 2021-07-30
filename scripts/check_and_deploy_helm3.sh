@@ -82,8 +82,6 @@ if [ -z "${CHART_PATH}" ]; then
 else
     echo -e "Helm chart found for Kubernetes deployment : ${CHART_PATH}"
 fi
-echo "Linting Helm Chart"
-helm lint ${CHART_PATH}
 
 #Check cluster availability
 echo "=========================================================="
@@ -175,6 +173,9 @@ elif [ "${CLIENT_VERSION}" != "${LOCAL_VERSION}" ]; then
 fi
 set -e
 helm version ${HELM_TLS_OPTION}
+
+echo "Linting Helm Chart"
+helm lint ${CHART_PATH}
 
 echo "=========================================================="
 echo -e "CHECKING HELM releases in this namespace: ${CLUSTER_NAMESPACE}"
