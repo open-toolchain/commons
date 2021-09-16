@@ -7,6 +7,8 @@
 #    source <(curl -sSL "https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/build_image_buildkit.sh")
 # ------------------
 # source: https://raw.githubusercontent.com/open-toolchain/commons/master/scripts/build_image_buildkit.sh
+# fail the script if a command fails
+set -eo pipefail
 
 # This script does build a Docker image into IBM Container Service private image registry using Buildkit buildctl - https://github.com/moby/buildkit#building-a-dockerfile-with-buildctl
 # Minting image tag using format: BUILD_NUMBER-BRANCH-COMMIT_ID-TIMESTAMP
