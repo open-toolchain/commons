@@ -1,7 +1,6 @@
 #!/bin/bash
 
 ibmcloud plugin install infrastructure-service -v 1.1.0
-REGION=$(echo ${REGION::-2})
 ibmcloud login -a $API -r $REGION --apikey $APIKEY
 
 LOAD_BALANCER_ID=$(ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\") | .id")
@@ -25,4 +24,5 @@ POOL_ID=$(ibmcloud is load-balancer-pools $LOAD_BALANCER_ID -json | jq -r ".[] |
 LOAD_BALANCER_LISTNER_ID=($(ibmcloud is load-balancer-listeners $LOAD_BALANCER_ID -json | jq -r ".[] | select(.default_pool.name==\"$OLD_POOL_NAME\") |.id"))
 for i in "${LOAD_BALANCER_LISTNER_ID[@]}"; do
   ibmcloud is load-balancer-listener-update $LOAD_BALANCER_ID $i --default-pool $POOL_ID
+  sleep 120
 done
