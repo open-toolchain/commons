@@ -20,7 +20,7 @@ else
     exit 1
 fi
 echo "Tasks has failed, Performing Rollback."
-curl -sSL "$(params.commons-hosted-region)/scripts/deployment_strategies/basic/vsi/restore.sh" --output restore.sh
+curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/restore.sh" --output restore.sh
 $SSH_CMD ssh $SSH_ARG -o StrictHostKeyChecking=no $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env RESTOREFILE=$RESTOREFILE HOST_USER_NAME=$HOST_USER_NAME 'bash -s' < ./restore.sh
 
 $SSH_CMD ssh $SSH_ARG -o StrictHostKeyChecking=no \

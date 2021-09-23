@@ -78,14 +78,14 @@ for i in "${Pool_Member_Id[@]}"; do
   ssh $VsiCommand -o ProxyCommand="$ProxyCommand" $BASTION_HOST_USER_NAME@$Pool_Member_IP env BASTION_HOST_USER_NAME=$BASTION_HOST_USER_NAME BUILDDIR=$BUILDDIR " pwd ; cd ${BUILDDIR} ; tar -xf ${OBJECTNAME} ; rm ${OBJECTNAME} "
 
   echo "Take the backup of existing app on the host machine."
-  curl -sSL "$(params.commons-hosted-region)/scripts/deployment_strategies/basic/vsi/backup.sh" --output backup.sh
+  curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/backup.sh" --output backup.sh
   ssh $VsiCommand -o ProxyCommand="$ProxyCommand" $BASTION_HOST_USER_NAME@$Pool_Member_IP env PIPELINERUNID=$PIPELINERUNID BASTION_HOST_USER_NAME=$BASTION_HOST_USER_NAME WORKDIR=$WORKDIR BUILDDIR=$BUILDDIR 'bash -s' < ./backup.sh
   echo "Login to the Virtual Machine and process the deployment."
   ssh $VsiCommand -o ProxyCommand="$ProxyCommand" \
     $BASTION_HOST_USER_NAME@$Pool_Member_IP env USERID=$USERID TOKEN=$TOKEN REPO=$REPO APPNAME=$APPNAME COSENDPOINT=$COSENDPOINT COSBUCKETNAME=$COSBUCKETNAME OBJECTNAME=$OBJECTNAME WORKDIR=$WORKDIR BASTION_HOST_USER_NAME=$BASTION_HOST_USER_NAME "bash /$WORKDIR/deploy.sh"
 
   echo "Cleanup of existing app on the host machine."
-  curl -sSL "$(params.commons-hosted-region)/scripts/deployment_strategies/basic/vsi/cleanup.sh" --output cleanup.sh
+  curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/cleanup.sh" --output cleanup.sh
   ssh $VsiCommand-o ProxyCommand="$ProxyCommand" $BASTION_HOST_USER_NAME@$Pool_Member_IP env PIPELINERUNID=$PIPELINERUNID BASTION_HOST_USER_NAME=$BASTION_HOST_USER_NAME WORKDIR=$WORKDIR BUILDDIR=$BUILDDIR 'bash -s' < ./cleanup.sh
   echo "---------------------------------------"
 done

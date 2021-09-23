@@ -39,7 +39,7 @@ echo "Extract the new artifacts in the host machine."
 $SSH_CMD ssh $SSH_ARG -o StrictHostKeyChecking=no $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env WORKDIR=$WORKDIR BUILDDIR=$BUILDDIR " pwd ; cd ${BUILDDIR} ; tar -xf ${OBJECTNAME} ; rm ${OBJECTNAME} "
 
 echo "Creating the symlink to the build directory.."
-curl -sSL "$(params.commons-hosted-region)/scripts/deployment_strategies/basic/vsi/backup.sh" --output backup.sh
+curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/backup.sh" --output backup.sh
 $SSH_CMD ssh $SSH_ARG -o StrictHostKeyChecking=no $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env PIPELINERUNID=$PIPELINERUNID WORKDIR=$WORKDIR BUILDDIR=$BUILDDIR HOST_USER_NAME=$HOST_USER_NAME 'bash -s' < ./backup.sh
 
 echo "Login to the VSI Instance and process the deployment."

@@ -19,5 +19,5 @@ else
     echo "Please provide either SSH Password or SSH Key provided to log on to Virtual Server Instance."
     exit 1
 fi
-curl -sSL "$(params.commons-hosted-region)/scripts/deployment_strategies/basic/vsi/cleanup.sh" --output cleanup.sh
+curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/cleanup.sh" --output cleanup.sh
 $SSH_CMD ssh $SSH_ARG -o StrictHostKeyChecking=no $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env RESTOREFILE=$RESTOREFILE HOST_USER_NAME=$HOST_USER_NAME 'bash -s' < ./cleanup.sh
