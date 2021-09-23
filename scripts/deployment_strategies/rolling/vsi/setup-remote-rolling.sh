@@ -73,7 +73,7 @@ for i in "${Pool_Member_Id[@]}"; do
   ssh $VsiCommand -o ProxyCommand="$ProxyCommand" $POOL_USER_NAME@$Pool_Member_IP env BASTION_HOST_USER_NAME=$BASTION_HOST_USER_NAME BUILDDIR=$BUILDDIR " pwd ; cd ${BUILDDIR} ; tar -xf ${OBJECTNAME} ; rm ${OBJECTNAME} "
 
   echo "Take the backup of existing app on the host machine."
-  curl -sSL "$(params.commons-hosted-region)/scripts/deployment_strategies/basic/vsi/backup.sh" --output backup.sh
+  curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/backup.sh" --output backup.sh
   ssh $VsiCommand -o ProxyCommand="$ProxyCommand" $POOL_USER_NAME@$Pool_Member_IP env PIPELINERUNID=$PIPELINERUNID BASTION_HOST_USER_NAME=$BASTION_HOST_USER_NAME WORKDIR=$WORKDIR BUILDDIR=$BUILDDIR 'bash -s' < ./backup.sh
 
   echo "Login to the Virtual Machine and process the deployment."
@@ -106,7 +106,7 @@ for i in "${Pool_Member_Id[@]}"; do
     fi
   done
 
-  curl -sSL "$(params.commons-hosted-region)/scripts/deployment_strategies/basic/vsi/restore.sh" --output restore.sh
+  curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/restore.sh" --output restore.sh
   if [[ "$Deployment_Failed" ]]; then
     echo "Do rollback"
     for k in "${deployment_array[@]}"; do
