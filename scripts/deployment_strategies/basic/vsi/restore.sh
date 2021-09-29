@@ -2,6 +2,7 @@
 echo "Begin creating the restore script to be executed on the Virtual Server Instance"
 
 echo "WORKDIR ${WORKDIR}"
+RESTOREFILE=${WORKDIR}/previous_build.info
 echo "RESTOREFILE ${RESTOREFILE}"
 
 if [ -f ${RESTOREFILE} ]; then
