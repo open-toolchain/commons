@@ -10,12 +10,12 @@ if [ -f "${RESTOREFILE}" ]; then
     RESTOREDIR=$(head -n 1 ${RESTOREFILE})
     echo "RESTOREDIR is ${RESTOREDIR} "
     PREVIOUSRESTOREDIRFILE=${RESTOREDIR}/previous_build.info
-    echo "PREVIOUSRESTOREDIRFILE is ${PREVIOUSRESTOREDIRFILE} "
-    if [[ "$BUILDDIR" == "${PREVIOUSRESTOREDIR}" ]]; then
+    echo "PREVIOUSRESTOREDIRFILE is ${PREVIOUSRESTOREDIRFILE}"
+    echo "BUILDDIR is ${BUILDDIR}"
+    PREVIOUSRESTOREDIR=$(head -n 1 ${PREVIOUSRESTOREDIRFILE})
+    if [[ "${BUILDDIR}" == "${PREVIOUSRESTOREDIR}" ]] ; then
        echo "pre-previous build does not exists..."
     elif [ -f "${PREVIOUSRESTOREDIRFILE}" ]; then
-        PREVIOUSRESTOREDIR=$(head -n 1 ${PREVIOUSRESTOREDIRFILE})
-        echo "PREVIOUSRESTOREDIR is ${PREVIOUSRESTOREDIR} "
         echo "Performing Cleanup of pre-previous directory.....${PREVIOUSRESTOREDIR}"
         rm -rf ${PREVIOUSRESTOREDIR}
         echo "Cleanup Completed..."
