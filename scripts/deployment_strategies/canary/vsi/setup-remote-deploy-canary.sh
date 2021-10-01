@@ -10,7 +10,7 @@ set -e -o pipefail
 
 #source the utility functions
 source <(curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/utility.sh")
-
+SLEEP_429=1
 ProxyCommand=$(checkBastionCredentials $BASTION_HOST_USER_NAME $BASTION_HOST_SSH_KEYS $BASTION_HOST)
 if [ $? -eq 1 ]; then
   echo $ProxyCommand
@@ -28,9 +28,21 @@ echo "Load balancer name : $LOAD_BALANCER_NAME"
 ibmcloud plugin install infrastructure-service -v 1.1.0
 ibmcloud login -a $API -r $REGION --apikey $APIKEY
 
-LOAD_BALANCER_ID=$(ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\") | .id")
+ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\")" > lb.json
+LOAD_BALANCER_ID=$(jq -r .id lb.json)
+HOSTNAME=$(jq -r .hostname lb.json)
+LISTNER_ID=$(jq -r .listeners[0].id lb.json)
+  # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
+PORT=$(ibmcloud is lb-l $LOAD_BALANCER_ID $LISTNER_ID -json | jq -r .port )
+  # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
 POOL_ID=$(ibmcloud is load-balancer-pools "$LOAD_BALANCER_ID" -json | jq -r ".[] | select(.name==\"${LB_POOL}\") |  .id")
+  # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
 ibmcloud is instance-groups -json | jq -r ".[] | select(.name==\"$INSTANCE_GROUP_1\")" > ig1.json
+  # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
 ibmcloud is instance-groups -json | jq -r ".[] | select(.name==\"$INSTANCE_GROUP_2\")" > ig2.json
 INSTANCE_GROUP_ID1=$(jq -r .id ig1.json)
 INSTANCE_GROUP_ID2=$(jq -r .id ig2.json)
@@ -38,9 +50,12 @@ Instace_Group_CRN_ID1=$(jq -r .crn ig1.json)
 Instace_Group_CRN_ID2=$(jq -r .crn ig2.json)
 Instace_Group1_Count=$(jq -r .membership_count ig1.json)
 Instace_Group2_Count=$(jq -r .membership_count ig2.json)
-Install_App_IG() {
 
+Install_App_IG() {
+  curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/cleanup.sh" --output cleanup.sh
   Member_Id=($(ibmcloud is igmbrs $1 -json | jq -r '.[].instance.id'))
+    # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
   for i in "${Member_Id[@]}"; do
     WORKDIR=/home/${BASTION_HOST_USER_NAME}/app
     echo "Member Id is : $i"
@@ -49,7 +64,6 @@ Install_App_IG() {
     installApp
     
     echo "Cleanup of existing app on the host machine."
-    curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/cleanup.sh" --output cleanup.sh
     ssh $VsiCommand -o ProxyCommand="$ProxyCommand" $BASTION_HOST_USER_NAME@$Pool_Member_IP env PIPELINERUNID=$PIPELINERUNID BASTION_HOST_USER_NAME=$BASTION_HOST_USER_NAME WORKDIR=$WORKDIR BUILDDIR=$BUILDDIR 'bash -s' <./cleanup.sh
     
     # Do the health check
@@ -66,20 +80,26 @@ attach_to_lb() {
   echo "Attach Instances to the pool"
   declare -A Member
   while IFS= read -r key; do
+    # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
     Member[$key]=1
   done < <(ibmcloud is lb-pms "$LOAD_BALANCER_ID" "$POOL_ID" -json | jq -r '.[]? | .target.address')
   Instance_Id=($(ibmcloud is igmbrs $1 -json | jq -r '.[].instance.id'))
+    # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
   for i in "${Instance_Id[@]}"; do
     echo "Check if Instance is already in the pool"
     Pool_Member_IP=$(ibmcloud is in $i -json | jq -r .primary_network_interface.primary_ipv4_address)
-    echo "${Member[$Pool_Member_IP]}"
-    echo "$Pool_Member_IP"
+      # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
     if [ ! "${Member[$Pool_Member_IP]}" ]; then
-      ibmcloud is load-balancer-pool-member-create "$LOAD_BALANCER_ID" "$POOL_ID" $Health_Port "$Pool_Member_IP" --weight "$2"
+      ibmcloud is load-balancer-pool-member-create "$LOAD_BALANCER_ID" "$POOL_ID" $PORT "$Pool_Member_IP" --weight $2
     else
-      echo "Update the Member weight"
+      echo "Update the Member weight to : $2"
       Pool_Member_ID=$(ibmcloud is lb-pms "$LOAD_BALANCER_ID" "$POOL_ID" -json | jq -r ".[] | select(.target.address==\"$Pool_Member_IP\") | .id ")
-      ibmcloud is load-balancer-pool-member-update "$LOAD_BALANCER_ID" "$POOL_ID" "$Pool_Member_ID" --weight "$2"
+        # Added the sleep to mitigate the rate limiting error.
+  sleep $SLEEP_429
+      ibmcloud is load-balancer-pool-member-update "$LOAD_BALANCER_ID" "$POOL_ID" "$Pool_Member_ID" --weight $2
     fi
     sleep 120
   done

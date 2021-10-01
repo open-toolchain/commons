@@ -3,7 +3,9 @@
 ibmcloud plugin install infrastructure-service -v 1.1.0
 ibmcloud login -a $API -r $REGION --apikey $APIKEY
 
-LOAD_BALANCER_ID=$(ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\") | .id")
+ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\")" > lb.json
+LOAD_BALANCER_ID=$(jq -r .id lb.json)
+HOSTNAME=$(jq -r .hostname lb.json)
 ACTIVE_LISTNER_ID=($(ibmcloud is load-balancer-listeners $LOAD_BALANCER_ID -json | jq -r '.[].default_pool.id' | sort -u))
 count=0
 for i in "${ACTIVE_LISTNER_ID[@]}"; do
@@ -25,4 +27,8 @@ LOAD_BALANCER_LISTNER_ID=($(ibmcloud is load-balancer-listeners $LOAD_BALANCER_I
 for i in "${LOAD_BALANCER_LISTNER_ID[@]}"; do
   ibmcloud is load-balancer-listener-update $LOAD_BALANCER_ID $i --default-pool $POOL_ID
   sleep 120
+  PORT=$(ibmcloud is lb-l $LOAD_BALANCER_ID $i -json | jq -r .port )
+  APP_URL=http://${HOSTNAME}:$PORT
+  echo "Application URL is: $APP_URL"
+  echo "Java Samaple app example url is : $APP_URL/v1/"
 done
