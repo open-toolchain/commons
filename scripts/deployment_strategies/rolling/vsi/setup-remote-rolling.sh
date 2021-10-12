@@ -23,7 +23,8 @@ if [ $? -eq 1 ]; then
 fi
 
 WORKDIR=/home/${BASTION_HOST_USER_NAME}/app
-ibmcloud plugin install infrastructure-service -v 1.1.0
+ibmcloud update -f
+ibmcloud plugin install infrastructure-service -v 1.7.0
 ibmcloud login -a $API -r $REGION --apikey $APIKEY
 SLEEP_429=1
 ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\")" >lb.json

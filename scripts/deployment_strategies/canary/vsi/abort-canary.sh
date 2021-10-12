@@ -1,7 +1,8 @@
 #!/bin/bash
 
 echo "Load balancer name : $LOAD_BALANCER_NAME"
-ibmcloud plugin install infrastructure-service -v 1.1.0
+ibmcloud update -f
+ibmcloud plugin install infrastructure-service -v 1.7.0
 ibmcloud login -a $API -r $REGION --apikey $APIKEY
 
 LOAD_BALANCER_ID=$(ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\") | .id")
@@ -43,9 +44,8 @@ function abortCanary() {
     sleep 120
 }
 
-if [[ "$(ibmcloud resource search $INSTANCE_GROUP_ID1 -json | jq -r '.items[].tags | index( "env:prod" )')" == "null" ]] && [[ "$(ibmcloud resource search $INSTANCE_GROUP_ID2 -json | jq -r '.items[].tags | index( "env:prod" )')" == "null" ]]; then
-  echo "v0 Deployment of the application."
-  echo "App is deployed successfully."
+if [[ "$(ibmcloud resource search $INSTANCE_GROUP_ID1 -json | jq -r '.items[].tags | index( "env:canary" )')" == "null" ]] && [[ "$(ibmcloud resource search $INSTANCE_GROUP_ID2 -json | jq -r '.items[].tags | index( "env:canary" )')" == "null" ]]; then
+  echo "Canary app is not deployed."
   exit 0
 elif [[ "$(ibmcloud resource search $INSTANCE_GROUP_ID1 -json | jq -r '.items[].tags | index( "env:canary" )')" != "null" ]]; then
   canary_ig=$INSTANCE_GROUP_ID1

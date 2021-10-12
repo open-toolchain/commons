@@ -24,11 +24,12 @@ if [ $? -eq 1 ]; then
 fi
 
 WORKDIR=/home/${BASTION_HOST_USER_NAME}/app
-ibmcloud plugin install infrastructure-service -v 1.1.0
+ibmcloud update -f
+ibmcloud plugin install infrastructure-service -v 1.7.0
 ibmcloud login -a $API -r $REGION --apikey $APIKEY
 curl -sSL "$COMMON_HOSTED_REGION/scripts/deployment_strategies/basic/vsi/cleanup.sh" --output cleanup.sh
 if [[ "$BLUE_POOL" == "$GREEN_POOL" ]]; then
-  echo "Both Green and Blue pool is same. Please choose the different pools."
+  echo "Both Green and Blue pool are same. Please choose the different pools for Blue and Green Enviroment."
   exit 1
 fi  
 ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\")" > lb.json
