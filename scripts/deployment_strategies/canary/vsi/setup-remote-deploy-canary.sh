@@ -23,9 +23,15 @@ if [ $? -eq 1 ]; then
   exit 1
 fi
 
+if [[ "$INSTANCE_GROUP_1" == "$INSTANCE_GROUP_2" ]]; then
+  echo "Both Instance group is same. Please choose the different instance group for prod and canary enviroment."
+  exit 1
+fi 
+
 WORKDIR=/home/${BASTION_HOST_USER_NAME}/app
 echo "Load balancer name : $LOAD_BALANCER_NAME"
-ibmcloud plugin install infrastructure-service -v 1.1.0
+ibmcloud update -f
+ibmcloud plugin install infrastructure-service -v 1.7.0
 ibmcloud login -a $API -r $REGION --apikey $APIKEY
 
 ibmcloud is load-balancers -json | jq -r ".[] | select(.name==\"$LOAD_BALANCER_NAME\")" > lb.json

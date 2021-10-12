@@ -1,7 +1,8 @@
 #!/bin/bash
 
 echo "Load balancer name : $LOAD_BALANCER_NAME"
-ibmcloud plugin install infrastructure-service -v 1.1.0
+ibmcloud update -f
+ibmcloud plugin install infrastructure-service -v 1.7.0
 ibmcloud login -a $API -r $REGION --apikey $APIKEY
 
 #source the utility functions
@@ -29,6 +30,9 @@ Instace_Group_CRN_ID2=$(jq -r .crn ig2.json)
 if [[ "$(ibmcloud resource search $INSTANCE_GROUP_ID1 -json | jq -r '.items[].tags | index( "env:canary" )')" == "null" ]] && [[ "$(ibmcloud resource search $INSTANCE_GROUP_ID2 -json | jq -r '.items[].tags | index( "env:canary" )')" == "null" ]]; then
   echo "v0 Deployment of the application."
   echo "App is deployed successfully."
+  APP_URL=http://${HOSTNAME}:$PORT
+  echo "Application URL is: $APP_URL"
+  echo "Java Samaple app example url is : $APP_URL/v1/"
   exit 0
 elif [[ "$(ibmcloud resource search $INSTANCE_GROUP_ID1 -json | jq -r '.items[].tags | index( "env:prod" )')" == "null" ]]; then
   canary_ig=$INSTANCE_GROUP_ID1
@@ -64,33 +68,56 @@ function perform_test() {
     rm -rf member.json
     touch member.json
     count=0
-    for i in "${Member[@]}"; do
-      if [ $count == 0 ] && [ ! "${Instance[$i]}" ]; then
-        WEIGHT=100-$WEIGHT_SIZE
-        ibmcloud is lb-pms $LOAD_BALANCER_ID $POOL_ID -json | jq -r ".[] | select (.target.address==\"$i\").weight=$WEIGHT" | jq -s '.' >member.json
-        # Added the sleep to mitigate the rate limiting error.
-        sleep $SLEEP_429
-        count=$count+1
-      elif [ $count == 0 ]; then
-        ibmcloud is lb-pms $LOAD_BALANCER_ID $POOL_ID -json | jq -r ".[] | select (.target.address==\"$i\").weight=$WEIGHT_SIZE" | jq -s '.' >member.json
-        # Added the sleep to mitigate the rate limiting error.
-        sleep $SLEEP_429
-        count=$count+1
-      elif [ ! "${Instance[$i]}" ]; then
-        WEIGHT=100-$WEIGHT_SIZE
-        jq -r ".[] |select (.target.address==\"$i\").weight=$WEIGHT" member.json | jq -s '.' >member1.json
-        mv member1.json member.json
-      else
-        jq -r ".[]| select (.target.address==\"$i\").weight=$WEIGHT_SIZE" member.json | jq -s '.' >member1.json
-        mv member1.json member.json
-      fi
-    done
-    ibmcloud is load-balancer-pool-members-update $LOAD_BALANCER_ID $POOL_ID --members "@member.json"
-    sleep 120
-    sleep $STEP_INTERVAL
+    if [ $(curl -LI ${APP_URL} -o /dev/null -w '%{http_code}\n' -s) == "200" ]; then
+      for i in "${Member[@]}"; do
+        if [ $count == 0 ] && [ ! "${Instance[$i]}" ]; then
+          WEIGHT=100-$WEIGHT_SIZE
+          ibmcloud is lb-pms $LOAD_BALANCER_ID $POOL_ID -json | jq -r ".[] | select (.target.address==\"$i\").weight=$WEIGHT" | jq -s '.' >member.json
+          # Added the sleep to mitigate the rate limiting error.
+          sleep $SLEEP_429
+          count=$count+1
+        elif [ $count == 0 ]; then
+          ibmcloud is lb-pms $LOAD_BALANCER_ID $POOL_ID -json | jq -r ".[] | select (.target.address==\"$i\").weight=$WEIGHT_SIZE" | jq -s '.' >member.json
+          # Added the sleep to mitigate the rate limiting error.
+          sleep $SLEEP_429
+          count=$count+1
+        elif [ ! "${Instance[$i]}" ]; then
+          WEIGHT=100-$WEIGHT_SIZE
+          jq -r ".[] |select (.target.address==\"$i\").weight=$WEIGHT" member.json | jq -s '.' >member1.json
+          mv member1.json member.json
+        else
+          jq -r ".[]| select (.target.address==\"$i\").weight=$WEIGHT_SIZE" member.json | jq -s '.' >member1.json
+          mv member1.json member.json
+        fi
+      done
+      ibmcloud is load-balancer-pool-members-update $LOAD_BALANCER_ID $POOL_ID --members "@member.json"
+      sleep 120
+      sleep $STEP_INTERVAL
+    else
+      for i in "${Member[@]}"; do
+        if [ $count == 0 ] && [ ! "${Instance[$i]}" ]; then
+          ibmcloud is lb-pms $LOAD_BALANCER_ID $POOL_ID -json | jq -r ".[] | select (.target.address==\"$i\").weight=100" | jq -s '.' >member.json
+          count=$count+1
+        elif [ $count == 0 ]; then
+          ibmcloud is lb-pms $LOAD_BALANCER_ID $POOL_ID -json | jq -r ".[] | select (.target.address==\"$i\").weight=0" | jq -s '.' >member.json
+          count=$count+1
+        elif [ ! "${Instance[$i]}" ]; then
+          jq -r ".[] |select (.target.address==\"$i\").weight=100" member.json | jq -s '.' >member1.json
+          mv member1.json member.json
+        else
+          jq -r ".[]| select (.target.address==\"$i\").weight=0" member.json | jq -s '.' >member1.json
+          mv member1.json member.json
+        fi
+      done
+      ibmcloud is load-balancer-pool-members-update $LOAD_BALANCER_ID $POOL_ID --members "@member.json"
+      sleep 120
+      echo "Canary tests failed."
+      exit 1
+    fi
   fi
 }
 
+APP_URL=http://${HOSTNAME}:$PORT
 for ((c = $STEP_SIZE; c < 100; c = $c + $STEP_SIZE)); do
   echo "Performing canary test $c "
   perform_test $c
@@ -100,7 +127,5 @@ perform_test 100
 tag_ig_prod $canary_ig_crn
 tag_ig_canary $prod_ig_crn
 echo "App is deployed successfully."
-APP_URL=http://${HOSTNAME}:$PORT
 echo "Application URL is: $APP_URL"
-
 echo "Java Samaple app example url is : $APP_URL/v1/"

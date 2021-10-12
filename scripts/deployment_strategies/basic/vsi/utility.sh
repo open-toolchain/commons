@@ -66,7 +66,7 @@ function installApp() {
 function IGhealthCheck() {
   for j in {1..9}; do
     if [ "$(ibmcloud is instance-group $1 -json | jq -r '.status')" == "healthy" ]; then
-      echo "Instance group is scaled up and status is healthy."
+      echo "Instance group status is healthy."
       break
     elif [ $j -lt 9 ]; then
       sleep 10
