@@ -217,6 +217,16 @@ if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${KEEP_INGRESS_CUSTOM_DOMAIN}" 
       fi
     fi
     cat $DEPLOYMENT_FILE
+    if kubectl explain route > /dev/null 2>&1; then 
+      if kubectl get secret ${CLUSTER_INGRESS_SECRET} --namespace=openshift-ingress; then
+        if kubectl get secret ${CLUSTER_INGRESS_SECRET} --namespace ${CLUSTER_NAMESPACE}; then 
+          echo "TLS Secret exists in the ${CLUSTER_NAMESPACE} namespace."
+        else 
+          echo "TLS Secret does not exists in the ${CLUSTER_NAMESPACE} namespace. Copying from openshift-ingress."
+          kubectl get secret ${CLUSTER_INGRESS_SECRET} --namespace=openshift-ingress -oyaml | grep -v '^\s*namespace:\s' | kubectl apply --namespace=${CLUSTER_NAMESPACE} -f -
+        fi
+      fi
+    fi
   fi
 fi
 
