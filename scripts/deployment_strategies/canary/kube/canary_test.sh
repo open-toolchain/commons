@@ -20,7 +20,7 @@ function perform_test() {
         exit 1
     else 
         echo "Testing canary deployment"
-        if [ $(curl -LI  ${ACCEPTANCE_TEST_URL} -o /dev/null -w '%{http_code}\n' -s) == "200" ];
+        if curl --head --silent --fail ${ACCEPTANCE_TEST_URL} 2> /dev/null;
         then
             echo "Canary test passed.";
             echo "Increasing the weight of canary deployment ${WEIGHT_SIZE}.";
