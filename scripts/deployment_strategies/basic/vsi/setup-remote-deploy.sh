@@ -40,7 +40,7 @@ ssh $VsiCommand -o StrictHostKeyChecking=no \
 
 # Do the health check
 sleep 10
-if ssh $VsiCommand $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env VIRTUAL_SERVER_INSTANCE=$VIRTUAL_SERVER_INSTANCE "chmod 777 $WORKDIR/health-check.sh && $WORKDIR/health-check.sh" ; then
+if ssh $VsiCommand $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env VIRTUAL_SERVER_INSTANCE=$VIRTUAL_SERVER_INSTANCE 'bash -s' < $HEALTH_SCRIPT_PATH ; then
     echo "Health Check passed."
 else
     exit 1
