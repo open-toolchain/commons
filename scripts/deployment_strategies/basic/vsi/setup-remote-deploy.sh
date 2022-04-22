@@ -25,7 +25,7 @@ ssh $VsiCommand -o StrictHostKeyChecking=no $HOST_USER_NAME@$VIRTUAL_SERVER_INST
 echo "Copying the artifacts to the host machine."
 scp $VsiCommand -o StrictHostKeyChecking=no ${OBJECTNAME} $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE:${BUILDDIR}
 scp $VsiCommand -o StrictHostKeyChecking=no ${DEPLOY_SCRIPT_PATH} $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE:${BUILDDIR}
-scp $VsiCommand -o ProxyCommand="$ProxyCommand" ${HEALTH_SCRIPT_PATH} $BASTION_HOST_USER_NAME@$Pool_Member_IP:${BUILDDIR}
+scp $VsiCommand -o StrictHostKeyChecking=no ${HEALTH_SCRIPT_PATH} $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE:${BUILDDIR}
 
 echo "Extract the new artifacts in the host machine."
 ssh $VsiCommand -o StrictHostKeyChecking=no $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env WORKDIR=$WORKDIR BUILDDIR=$BUILDDIR " pwd ; cd ${BUILDDIR} ; tar -xf ${OBJECTNAME} ; rm ${OBJECTNAME} "
@@ -40,7 +40,7 @@ ssh $VsiCommand -o StrictHostKeyChecking=no \
 
 # Do the health check
 sleep 10
-if ssh $VsiCommand $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env VIRTUAL_SERVER_INSTANCE=$VIRTUAL_SERVER_INSTANCE "$WORKDIR/health-check.sh" ; then
+if ssh $VsiCommand $HOST_USER_NAME@$VIRTUAL_SERVER_INSTANCE env VIRTUAL_SERVER_INSTANCE=$VIRTUAL_SERVER_INSTANCE "chmod 777 $WORKDIR/health-check.sh && $WORKDIR/health-check.sh" ; then
     echo "Health Check passed."
 else
     exit 1
