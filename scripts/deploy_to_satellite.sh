@@ -1,28 +1,40 @@
 #!/bin/bash
 
 #################################
-## This script can be executed in a Manifest repo which contains only K8's deployment manifest files.
+## This script can be executed in a Source repo which contains only K8's deployment manifest files.
 ## It will create a IBM satellite configuration along with version.
 ## It will apply subscription to a satellite cluster group.
 #################################
 
+RED="\e[31m"
+GREEN="\e[32m"
+ENDCOLOR="\e[0m"
+
+function printLog() {
+  echo -e "\n${GREEN}$1${ENDCOLOR} \n"
+}
+
+function printWarning() {
+  echo -e "\n${RED}$1${ENDCOLOR} \n"
+}
+
 
 function getAPPUrlSatConfig() {
   for filename in $(find /artifacts/${MANIFEST_DIR} -type f -print); do   
-    echo "Creating Satellite Config for resources present in source file ${filename}."
+    printLog "Creating Satellite Config for resources present in source file ${filename}."
     route_name=$(yq -o=json eval ${filename} |   jq -r  'select(.kind=="Route") | .metadata.name')  
      if [ ! -z "${route_name}" ]; then
       if grep -q "razee/watch-resource: lite" ${filename}; then
         break;
       else 
-       echo -e "\n\nDid not find [razee/watch-resource: lite] label in your deployment file.  Unable to fetch the application url. Please visit https://cloud.ibm.com/docs/satellite?topic=satellite-satcon-manage&mhsrc=ibmsearch_a&mhq=razee%2Fwatch-resource%3A+lite#satconfig-enable-watchkeeper-specific \n\n"
+       printWarning  "\n\nDid not find [razee/watch-resource: lite] label in your deployment file.  Unable to fetch the application url. Please visit https://cloud.ibm.com/docs/satellite?topic=satellite-satcon-manage&mhsrc=ibmsearch_a&mhq=razee%2Fwatch-resource%3A+lite#satconfig-enable-watchkeeper-specific \n\n"
        return
       fi
     fi
   done
 
   if [ -z "${route_name}" ]; then
-    echo "Unable to find OpenShift Route resource type in the ${MANIFEST_DIR} directory......"
+    printWarning "\n\n Unable to find OpenShift Route resource type in the ${MANIFEST_DIR} directory......\n\n"
     return
   fi
 
@@ -32,12 +44,12 @@ function getAPPUrlSatConfig() {
         resource_id=$(echo "${resources_ids}" | awk '{print $1}')
         if [ -z "${resource_id}" ]
         then
-          echo "Waiting for application deployment to be on completed....${ITER}"
+          printLog "Waiting for application deployment to be on completed....${ITER}"
         else
           APPURL=$(ibmcloud sat resource get --resource  "${resource_id}" --output json | jq -r '.resource.data' | jq -r '.status.ingress[0].host')
         fi
       if [ -z  "${APPURL}"  ] || [[  "${APPURL}" = "null"  ]]; then 
-        echo "Waiting for APPURL ...."
+        printLog "Waiting for Application URL, Sleping for 20 seconds ...."
         sleep 20
       else
         break
@@ -47,32 +59,32 @@ function getAPPUrlSatConfig() {
 
 function createAndDeploySatelliteConfig() {
 
-echo "=========================================================="
+printLog "=========================================================="
 APP_NAME=$1
 SAT_CONFIG=$2
 SAT_CONFIG_VERSION=$3
 DEPLOY_FILE=$4
-echo "Creating config for ${SAT_CONFIG}...."
+printLog "Creating config for ${SAT_CONFIG}...."
 
 export SATELLITE_SUBSCRIPTION="${APP_NAME}-${SAT_CONFIG}"
 export SAT_CONFIG_VERSION
 if ! ic sat config version get --config "${APP_NAME}" --version "${SAT_CONFIG_VERSION}" &>/dev/null; then
-  echo -e "Satellite Config resource with version  ${SAT_CONFIG_VERSION} not found, creating it now."
+  printLog "Satellite Config resource with version  ${SAT_CONFIG_VERSION} not found, creating it now."
   if ! ibmcloud sat config get --config "${APP_NAME}" &>/dev/null ; then
     ibmcloud sat config create --name "${APP_NAME}"
   fi
-  echo "Creating Satellite Config resource from source file ${DEPLOY_FILE}"
+  printLog "Creating Satellite Config resource from source file ${DEPLOY_FILE}"
   ibmcloud sat config version create --name "${SAT_CONFIG_VERSION}" --config "${APP_NAME}" --file-format yaml --read-config "${DEPLOY_FILE}"
 else
-  echo -e "Satellite Config resource with version ${SAT_CONFIG_VERSION} already found."
+  printLog "Satellite Config resource with version ${SAT_CONFIG_VERSION} already found."
 fi
 
 EXISTING_SUB=$(ibmcloud sat subscription ls -q | grep "${SATELLITE_SUBSCRIPTION}" || true)
   if [ -z "${EXISTING_SUB}" ]; then
-    echo -e "Satellite subscription with subscription name ${SATELLITE_SUBSCRIPTION} not found. Creating it now."
+    printLog "Satellite subscription with subscription name ${SATELLITE_SUBSCRIPTION} not found. Creating it now."
     ibmcloud sat subscription create --name "${SATELLITE_SUBSCRIPTION}" --group "${SATELLITE_CLUSTER_GROUP}" --version "${SAT_CONFIG_VERSION}" --config "${APP_NAME}"
   else
-    echo -e "Satellite subscription with subscription name ${SATELLITE_SUBSCRIPTION} already found. Updating it now."
+    printLog "Satellite subscription with subscription name ${SATELLITE_SUBSCRIPTION} already found. Updating it now."
     ibmcloud sat subscription update --subscription "${SATELLITE_SUBSCRIPTION}" -f --group "${SATELLITE_CLUSTER_GROUP}" --version "${SAT_CONFIG_VERSION}"
 fi
 }
@@ -80,20 +92,22 @@ fi
 ls -laht /artifacts/${MANIFEST_DIR}
 commit=$(git log -1 --pretty=format:%h)
 for filename in $(find /artifacts/${MANIFEST_DIR} -type f -print); do   
-  echo "Searching for OpenShift Route resource type in file ${filename}" 
+  printLog "Searching for OpenShift Route resource type in file ${filename}" 
   config_name=$(basename ${filename} | cut -d. -f1)
   config_name_version=${config_name}_${commit} 
-  #echo "updating the namespaces in the deployment file."
-  #yq e ".metadata.namespace = \"${CLUSTER_NAMESPACE}\"" ${filename} >> test_${filename}
   createAndDeploySatelliteConfig ${APP_NAME} ${config_name} ${config_name_version} ${filename}
 done
 
 getAPPUrlSatConfig
 
 SATELLITE_CONFIG_ID=$( ibmcloud sat config get --config "${APP_NAME}" --output json | jq -r .uuid )
-echo "Please check details at https://cloud.ibm.com/satellite/configuration/${SATELLITE_CONFIG_ID}/overview"
+printLog "Please check details at https://cloud.ibm.com/satellite/configuration/${SATELLITE_CONFIG_ID}/overview"
 
-echo "Deployed Application can be found at the URL  ${APPURL}"
+if [ -z  "${APPURL}"  ] || [[  "${APPURL}" = "null"  ]]; then 
+  printWarning "Unable to get Application URL....."
+else
+  printLog "Deployed Application can be found at the URL  ${APPURL}"
+fi
 
 
 
