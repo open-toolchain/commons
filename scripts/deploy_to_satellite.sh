@@ -27,7 +27,7 @@ function getAPPUrlSatConfig() {
       if grep -q "razee/watch-resource: lite" ${filename}; then
         break;
       else 
-       printWarning  "\n\nDid not find [razee/watch-resource: lite] label in your deployment file.  Unable to fetch the application url. Please visit https://cloud.ibm.com/docs/satellite?topic=satellite-satcon-manage&mhsrc=ibmsearch_a&mhq=razee%2Fwatch-resource%3A+lite#satconfig-enable-watchkeeper-specific \n\n"
+       printWarning  "\n\nDid not find [razee/watch-resource: lite] label in your deployment file.  Unable to fetch the host url. Please visit https://cloud.ibm.com/docs/satellite?topic=satellite-satcon-manage&mhsrc=ibmsearch_a&mhq=razee%2Fwatch-resource%3A+lite#satconfig-enable-watchkeeper-specific \n\n"
        return
       fi
     fi
@@ -41,7 +41,7 @@ function getAPPUrlSatConfig() {
   for ITER in {1..30}
     do
         resources_ids=$(ic sat resource ls -output json |  jq -r ".resources.resources[] | select(.searchableData.name==\"$route_name\") | select(.searchableData.namespace==\"$CLUSTER_NAMESPACE\") | .id ")
-        resource_id=$(echo "${resources_ids}" | awk '{print $1}')
+        resource_id=$(echo "${resources_ids}" | awk '{print $1}' |  head -n 1)
         if [ -z "${resource_id}" ]
         then
           printLog "Waiting for application deployment to be on completed....${ITER}"
@@ -49,7 +49,7 @@ function getAPPUrlSatConfig() {
           APPURL=$(ibmcloud sat resource get --resource  "${resource_id}" --output json | jq -r '.resource.data' | jq -r '.status.ingress[0].host')
         fi
       if [ -z  "${APPURL}"  ] || [[  "${APPURL}" = "null"  ]]; then 
-        printLog "Waiting for Application URL, Sleping for 20 seconds ...."
+        printLog "Waiting for Host URL, Sleping for 20 seconds ...."
         sleep 20
       else
         break
@@ -104,9 +104,9 @@ SATELLITE_CONFIG_ID=$( ibmcloud sat config get --config "${APP_NAME}" --output j
 printLog "Please check details at https://cloud.ibm.com/satellite/configuration/${SATELLITE_CONFIG_ID}/overview"
 
 if [ -z  "${APPURL}"  ] || [[  "${APPURL}" = "null"  ]]; then 
-  printWarning "Unable to get Application URL....."
+  printWarning "Unable to get Host URL....."
 else
-  printLog "Deployed Application can be found at the URL  ${APPURL}"
+  printLog "Route to the host is  ${APPURL}"
 fi
 
 
