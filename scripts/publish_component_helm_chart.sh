@@ -72,11 +72,13 @@ if [ -z "${CHART_PATH}" ]; then
 else
     echo -e "Helm chart found for Kubernetes deployment : ${CHART_PATH}"
 fi
-echo "Linting Helm Chart"
-helm lint ${CHART_PATH}
 
 # Compute chart version number
 CHART_VERSION=$(cat ${CHART_PATH}/Chart.yaml | grep '^version:' | awk '{print $2}')
+
+#remove leading and trailing quotes
+CHART_VERSION="${CHART_VERSION%\"}"
+CHART_VERSION="${CHART_VERSION#\"}"
 MAJOR=`echo ${CHART_VERSION} | cut -d. -f1`
 MINOR=`echo ${CHART_VERSION} | cut -d. -f2`
 REVISION=`echo ${CHART_VERSION} | cut -d. -f3`
@@ -85,14 +87,20 @@ if [ -z ${MINOR} ]; then MINOR=0; fi
 if [ -z ${REVISION} ]; then REVISION=${IMAGE_TAG}; else REVISION=${REVISION}-${IMAGE_TAG}; fi
 VERSION="${MAJOR}.${MINOR}.${REVISION}"
 echo -e "VERSION:${VERSION}"
-#echo -e "Injecting pipeline build values into ${CHART_PATH}/Chart.yaml"
-#sed -i "s~^\([[:blank:]]*\)version:.*$~\version: ${VERSION}~" ${CHART_PATH}/Chart.yaml
 echo -e "Injecting pipeline build values into ${CHART_PATH}/values.yaml"
 sed -i "s~^\([[:blank:]]*\)repository:.*$~\1repository: ${REGISTRY_URL}/${REGISTRY_NAMESPACE}/${IMAGE_NAME}~" ${CHART_PATH}/values.yaml
 sed -i "s~^\([[:blank:]]*\)tag:.*$~\1tag: ${IMAGE_TAG}~" ${CHART_PATH}/values.yaml
 # TODO: revisit above after https://github.com/kubernetes/helm/issues/3141
 echo "Linting injected Helm chart"
-helm init --client-only
+VERSION_OF_HELM=$(helm version)
+echo "${VERSION_OF_HELM}"
+
+if [[ "$VERSION_OF_HELM" != *"v3."* ]]; then
+  helm init --client-only
+else # add quotes around the version entry in the chart for helm3 if not already present
+  UPDATED_CHART_VERSION='"'"${CHART_VERSION}"'"'
+  sed -i "s~^\([[:blank:]]*\)version:.*$~\1version: ${UPDATED_CHART_VERSION}~" ${CHART_PATH}/Chart.yaml
+fi
 helm lint ${CHART_PATH}
 
 echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being deprecated"

@@ -25,8 +25,11 @@ fi
 # also run 'env' command to find all available env variables
 # or learn more about the available environment variables at:
 # https://cloud.ibm.com/docs/services/ContinuousDelivery/pipeline_deploy_var.html#deliverypipeline_environment
-
-helm init --client-only
+VERSION_OF_HELM=$(helm version)
+echo "${VERSION_OF_HELM}"
+if [[ "$VERSION_OF_HELM" != *"v3."* ]]; then
+  helm init --client-only
+fi
 
 #echo "Checking archive dir presence"
 #cp -R -n ./ $ARCHIVE_DIR/ || true
@@ -48,6 +51,8 @@ if [ ! -z ${GIT_COMMIT} ]; then
 fi
 
 CHART_VERSION=$(cat ${CHART_PATH}/Chart.yaml | grep '^version:' | awk '{print $2}')
+CHART_VERSION="${CHART_VERSION%\"}"
+CHART_VERSION="${CHART_VERSION#\"}"
 MAJOR=`echo ${CHART_VERSION} | cut -d. -f1`
 MINOR=`echo ${CHART_VERSION} | cut -d. -f2`
 REVISION=`echo ${CHART_VERSION} | cut -d. -f3`
@@ -66,6 +71,13 @@ echo -e "VERSION:${VERSION}"
 mkdir -p ${CHART_PATH}/charts
 echo "Component charts available:"
 ls ./charts/*.tgz
+
+if [[ "$VERSION_OF_HELM" == *"v3."* ]]; then
+  # add quotes around the version entry in the chart for helm3 if not already present
+  UPDATED_CHART_VERSION='"'"${CHART_VERSION}"'"'
+  sed -i "s~^\([[:blank:]]*\)version:.*$~\1version: ${UPDATED_CHART_VERSION}~" ${CHART_PATH}/Chart.yaml
+fi
+
 for COMPONENT_NAME in $( grep "name:" ${CHART_NAME}/requirements.yaml | awk '{print $3}' ); do
   COMPONENT_CHART=$(find ./charts/${COMPONENT_NAME}* -maxdepth 1 | sort --version-sort --field-separator=- --key=2,2 | tail -n 1 )
   cp ${COMPONENT_CHART} ${CHART_PATH}/charts
