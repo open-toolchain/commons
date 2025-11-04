@@ -106,7 +106,7 @@ helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --set im
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
 # Extract name from actual Kube deployment resource owning the deployed container image 
-DEPLOYMENT_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
+DEPLOYMENT_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq ea -o=json '[.]' -  | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
 set -x
@@ -160,7 +160,7 @@ echo -e "History for release:${RELEASE_NAME}"
 helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 echo "=========================================================="
-APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
+APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq ea -o=json '[.]' -  | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
