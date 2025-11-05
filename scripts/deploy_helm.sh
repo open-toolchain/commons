@@ -106,7 +106,19 @@ helm upgrade ${RELEASE_NAME} ${CHART_PATH} ${HELM_TLS_OPTION} --install --set im
 echo "=========================================================="
 echo -e "CHECKING deployment status of release ${RELEASE_NAME} with image tag: ${IMAGE_TAG}"
 # Extract name from actual Kube deployment resource owning the deployed container image 
-DEPLOYMENT_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq ea -o=json '[.]' -  | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
+
+yqversion=$(yq --version)
+substring=${yqversion#*version} #extract everything after "version" substring
+substring=$(echo "${substring}" | tr -d "v" | tr -d ' ' | cut -f1 -d "." ) #remove "v" and spaces. Then extract the major number component
+export YQ_MAJOR_VERION="${substring}"
+export YQ_TARGET_VERSION=4
+
+if [ "${YQ_MAJOR_VERION}" -ge "${YQ_TARGET_VERSION}" ];
+then
+  DEPLOYMENT_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq ea -o=json '[.]' - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
+else
+  DEPLOYMENT_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.name' )
+fi
 echo -e "CHECKING deployment rollout of ${DEPLOYMENT_NAME}"
 echo ""
 set -x
@@ -160,7 +172,12 @@ echo -e "History for release:${RELEASE_NAME}"
 helm history ${HELM_TLS_OPTION} ${RELEASE_NAME}
 
 echo "=========================================================="
-APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq ea -o=json '[.]' -  | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
+if [ "${YQ_MAJOR_VERION}" -ge "${YQ_TARGET_VERSION}" ];
+then
+  APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq ea -o=json '[.]' - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
+else
+  APP_NAME=$( helm get ${HELM_TLS_OPTION} ${RELEASE_NAME} | yq read -d'*' --tojson - | jq -r | jq -r --arg image "$IMAGE_REPOSITORY:$IMAGE_TAG" '.[] | select (.kind=="Deployment") | . as $adeployment | .spec?.template?.spec?.containers[]? | select (.image==$image) | $adeployment.metadata.labels.app' )
+fi
 echo -e "APP: ${APP_NAME}"
 echo "DEPLOYED PODS:"
 kubectl describe pods --selector app=${APP_NAME} --namespace ${CLUSTER_NAMESPACE}
