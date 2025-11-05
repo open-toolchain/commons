@@ -80,6 +80,8 @@ else
   CLUSTER_INGRESS_SUBDOMAIN=""
   CLUSTER_INGRESS_SECRET=""
 fi
+export CLUSTER_INGRESS_SUBDOMAIN
+export CLUSTER_INGRESS_SECRET
 echo "Configuring cluster namespace"
 if kubectl get namespace ${CLUSTER_NAMESPACE}; then
   echo -e "Namespace ${CLUSTER_NAMESPACE} found."
@@ -182,44 +184,51 @@ echo "UPDATING manifest with image information"
 echo -e "Updating ${DEPLOYMENT_FILE} with image name: ${IMAGE}"
 NEW_DEPLOYMENT_FILE="$(dirname $DEPLOYMENT_FILE)/tmp.$(basename $DEPLOYMENT_FILE)"
 # find the yaml document index for the K8S deployment definition
-DEPLOYMENT_DOC_INDEX=$(yq read --doc "*" --tojson $DEPLOYMENT_FILE | jq -r 'to_entries | .[] | select(.value.kind | ascii_downcase=="deployment") | .key')
+DEPLOYMENT_DOC_INDEX=$(yq ea -o=json '[.]' $DEPLOYMENT_FILE | jq -r 'to_entries | .[] | select(.value.kind | ascii_downcase=="deployment") | .key')
 if [ -z "$DEPLOYMENT_DOC_INDEX" ]; then
   echo "No Kubernetes Deployment definition found in $DEPLOYMENT_FILE. Updating YAML document with index 0"
   DEPLOYMENT_DOC_INDEX=0
 fi
+export IMAGE
+export DEPLOYMENT_DOC_INDEX
+
 # Update deployment with image name
-yq write $DEPLOYMENT_FILE --doc $DEPLOYMENT_DOC_INDEX "spec.template.spec.containers[0].image" "${IMAGE}" > ${NEW_DEPLOYMENT_FILE}
+yq e 'select(document_index == env(DEPLOYMENT_DOC_INDEX)).spec.template.spec.containers[0].image = strenv(IMAGE)' $DEPLOYMENT_FILE > ${NEW_DEPLOYMENT_FILE}
 DEPLOYMENT_FILE=${NEW_DEPLOYMENT_FILE} # use modified file
 cat ${DEPLOYMENT_FILE}
 
 if [ ! -z "${CLUSTER_INGRESS_SUBDOMAIN}" ] && [ "${KEEP_INGRESS_CUSTOM_DOMAIN}" != true ]; then
   echo "=========================================================="
   echo "UPDATING manifest with ingress information"
-  INGRESS_DOC_INDEX=$(yq read --doc "*" --tojson $DEPLOYMENT_FILE | jq -r 'to_entries | .[] | select(.value.kind | ascii_downcase=="ingress") | .key')
+  INGRESS_DOC_INDEX=$(yq ea -o=json '[.]' $DEPLOYMENT_FILE | jq -r 'to_entries | .[] | select(.value.kind | ascii_downcase=="ingress") | .key')
   if [ -z "$INGRESS_DOC_INDEX" ]; then
     echo "No Kubernetes Ingress definition found in $DEPLOYMENT_FILE."
   else
     # Update ingress with cluster domain/secret information
     # Look for ingress rule whith host contains the token "cluster-ingress-subdomain"
-    INGRESS_RULES_INDEX=$(yq r --doc $INGRESS_DOC_INDEX --tojson $DEPLOYMENT_FILE | jq '.spec.rules | to_entries | .[] | select( .value.host | contains("cluster-ingress-subdomain")) | .key')
+    export INGRESS_DOC_INDEX
+    INGRESS_RULES_INDEX=$(yq e -o=json 'select(document_index == env(INGRESS_DOC_INDEX))' $DEPLOYMENT_FILE | jq '.spec.rules | to_entries | .[] | select( .value.host | contains("cluster-ingress-subdomain")) | .key')
     if [ ! -z "$INGRESS_RULES_INDEX" ]; then
-      INGRESS_RULE_HOST=$(yq r --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.rules[${INGRESS_RULES_INDEX}].host)
-      yq w --inplace --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.rules[${INGRESS_RULES_INDEX}].host ${INGRESS_RULE_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}
+      export INGRESS_RULES_INDEX
+      INGRESS_RULE_HOST=$(yq e 'select(document_index == env(INGRESS_DOC_INDEX)).spec.rules[env(INGRESS_RULES_INDEX)].host' $DEPLOYMENT_FILE)
+      yq -i e 'select(document_index == env(INGRESS_DOC_INDEX)).spec.rules[env(INGRESS_RULES_INDEX)].host |= sub("cluster-ingress-subdomain"; strenv(CLUSTER_INGRESS_SUBDOMAIN))' $DEPLOYMENT_FILE
     fi
     # Look for ingress tls whith secret contains the token "cluster-ingress-secret"
-    INGRESS_TLS_INDEX=$(yq r --doc $INGRESS_DOC_INDEX --tojson $DEPLOYMENT_FILE | jq '.spec.tls | to_entries | .[] | select(.secretName="cluster-ingress-secret") | .key')
+    INGRESS_TLS_INDEX=$(yq e -o=json 'select(document_index == env(INGRESS_DOC_INDEX))' $DEPLOYMENT_FILE | jq '.spec.tls | to_entries | .[] | select(.value.secretName=="cluster-ingress-secret") | .key')
+    export INGRESS_TLS_INDEX
     if [ ! -z "$INGRESS_TLS_INDEX" ]; then
-      yq w --inplace --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}].secretName $CLUSTER_INGRESS_SECRET
-      INGRESS_TLS_HOST_INDEX=$(yq r --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}] --tojson | jq '.hosts | to_entries | .[] | select( .value | contains("cluster-ingress-subdomain")) | .key')
+      yq -i e 'select(document_index == env(INGRESS_DOC_INDEX)).spec.tls[env(INGRESS_TLS_INDEX)].secretName = strenv(CLUSTER_INGRESS_SECRET)' $DEPLOYMENT_FILE
+      INGRESS_TLS_HOST_INDEX=$(yq e -o=json 'select(document_index == env(INGRESS_DOC_INDEX)).spec.tls[env(INGRESS_TLS_INDEX)]' $DEPLOYMENT_FILE | jq '.hosts | to_entries | .[] | select( .value | contains("cluster-ingress-subdomain")) | .key')
       if [ ! -z "$INGRESS_TLS_HOST_INDEX" ]; then
-        INGRESS_TLS_HOST=$(yq r --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}].hosts[$INGRESS_TLS_HOST_INDEX])
-        yq w --inplace --doc $INGRESS_DOC_INDEX $DEPLOYMENT_FILE spec.tls[${INGRESS_TLS_INDEX}].hosts[$INGRESS_TLS_HOST_INDEX] ${INGRESS_TLS_HOST/cluster-ingress-subdomain/$CLUSTER_INGRESS_SUBDOMAIN}
+        export INGRESS_TLS_HOST_INDEX
+        INGRESS_TLS_HOST=$(yq e 'select(document_index == env(INGRESS_DOC_INDEX)).spec.tls[env(INGRESS_TLS_INDEX)].hosts[env(INGRESS_TLS_HOST_INDEX)]' $DEPLOYMENT_FILE)
+        yq -i e 'select(document_index == env(INGRESS_DOC_INDEX)).spec.tls[env(INGRESS_TLS_INDEX)].hosts[env(INGRESS_TLS_HOST_INDEX)] |= sub("cluster-ingress-subdomain"; strenv(CLUSTER_INGRESS_SUBDOMAIN))' $DEPLOYMENT_FILE
       fi
     fi
     cat $DEPLOYMENT_FILE
     if kubectl explain route > /dev/null 2>&1; then 
       if kubectl get secret ${CLUSTER_INGRESS_SECRET} --namespace=openshift-ingress; then
-        if kubectl get secret ${CLUSTER_INGRESS_SECRET} --namespace ${CLUSTER_NAMESPACE}; then 
+        if kubectl get secret ${CLUSTER_INGRESS_SECRET} --namespace ${CLUSTER_NAMESPACE}; then
           echo "TLS Secret exists in the ${CLUSTER_NAMESPACE} namespace."
         else 
           echo "TLS Secret does not exists in the ${CLUSTER_NAMESPACE} namespace. Copying from openshift-ingress."
