@@ -31,11 +31,13 @@ echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being
 echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/check_publish_gate_component_helm_chart.sh"
 
 # Evaluate the gate against the version matching the git commit
-ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
-ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
+  ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
+  ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
 
-# get the process exit code
-RESULT=$?  
-if [[ ${RESULT} != 0 ]]; then
-    exit ${RESULT}
+  # get the process exit code
+  RESULT=$?
+  if [[ ${RESULT} != 0 ]]; then
+      exit ${RESULT}
+  fi
 fi

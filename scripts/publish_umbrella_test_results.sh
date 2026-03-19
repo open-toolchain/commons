@@ -30,24 +30,26 @@ fi
 echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being deprecated"
 echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/publish_umbrella_test_results.sh"
 
-ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
-ls ./insights/*
-for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
+  ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
+  ls ./insights/*
+  for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
 
-  echo -e "Publish results for component: ${INSIGHT_CONFIG}"
-  APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep APP_NAME | cut -d'=' -f2 )
-  GIT_BRANCH=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep GIT_BRANCH | cut -d'=' -f2 )
-  SOURCE_BUILD_NUMBER=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep SOURCE_BUILD_NUMBER | cut -d'=' -f2 )
+    echo -e "Publish results for component: ${INSIGHT_CONFIG}"
+    APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep APP_NAME | cut -d'=' -f2 )
+    GIT_BRANCH=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep GIT_BRANCH | cut -d'=' -f2 )
+    SOURCE_BUILD_NUMBER=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep SOURCE_BUILD_NUMBER | cut -d'=' -f2 )
  
-  echo -e "APP_NAME: ${APP_NAME}"
-  echo -e "GIT_BRANCH: ${GIT_BRANCH}"
-  echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
-  # publish the results for each component
-  ibmcloud doi publishtestrecord --logicalappname="$APP_NAME" --buildnumber=$SOURCE_BUILD_NUMBER --filelocation=${FILE_LOCATION} --type=${TEST_TYPE}
+    echo -e "APP_NAME: ${APP_NAME}"
+    echo -e "GIT_BRANCH: ${GIT_BRANCH}"
+    echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
+    # publish the results for each component
+    ibmcloud doi publishtestrecord --logicalappname="$APP_NAME" --buildnumber=$SOURCE_BUILD_NUMBER --filelocation=${FILE_LOCATION} --type=${TEST_TYPE}
 
-  # get the process exit code
-  RESULT=$?  
-  if [[ ${RESULT} != 0 ]]; then
+    # get the process exit code
+    RESULT=$?
+    if [[ ${RESULT} != 0 ]]; then
       exit ${RESULT}
-  fi
-done
+    fi
+  done
+fi

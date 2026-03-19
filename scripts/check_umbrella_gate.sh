@@ -33,26 +33,28 @@ fi
 echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being deprecated"
 echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/check_umbrella_gate.sh"
 
-ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
+if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
+  ibmcloud login --apikey $IBM_CLOUD_API_KEY --no-region
 
-ls ./insights/*
-for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
-  echo -e "Checking gate for component: ${INSIGHT_CONFIG}"
+  ls ./insights/*
+  for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
+    echo -e "Checking gate for component: ${INSIGHT_CONFIG}"
 
-  APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep APP_NAME | cut -d'=' -f2 )
-  GIT_BRANCH=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep GIT_BRANCH | cut -d'=' -f2 )
-  SOURCE_BUILD_NUMBER=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep SOURCE_BUILD_NUMBER | cut -d'=' -f2 )
-  POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${APP_NAME} ${LOGICAL_ENV_NAME} )
-  
-  echo -e "APP_NAME: ${APP_NAME}"
-  echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
-  echo -e "POLICY_NAME: ${POLICY_NAME}"
+    APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep APP_NAME | cut -d'=' -f2 )
+    GIT_BRANCH=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep GIT_BRANCH | cut -d'=' -f2 )
+    SOURCE_BUILD_NUMBER=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep SOURCE_BUILD_NUMBER | cut -d'=' -f2 )
+    POLICY_NAME=$( printf "${POLICY_NAME_FORMAT}" ${APP_NAME} ${LOGICAL_ENV_NAME} )
+    
+    echo -e "APP_NAME: ${APP_NAME}"
+    echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
+    echo -e "POLICY_NAME: ${POLICY_NAME}"
 
-  # Evaluate the gate against the version matching the git commit
-  ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
-  # get the process exit code
-  RESULT=$?  
-  if [[ ${RESULT} != 0 ]]; then
+    # Evaluate the gate against the version matching the git commit
+    ibmcloud doi evaluategate --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --policy="${POLICY_NAME}" --forcedecision=true
+    # get the process exit code
+    RESULT=$?
+    if [[ ${RESULT} != 0 ]]; then
       exit ${RESULT}
-  fi
-done
+    fi
+  done
+fi

@@ -122,40 +122,44 @@ echo "Note: this script has been updated to use ibmcloud doi plugin - iDRA being
 echo "iDRA based version of this script is located at: https://github.com/open-toolchain/commons/blob/v1.0.idra_based/scripts/deploy_umbrella_chart.sh"
 
   # If APP_NAME is defined then create a deployment record the umbrella chart deployment
-  if [ "$APP_NAME" ]; then
-    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+  if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
+    if [ "$APP_NAME" ]; then
+      ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+    fi
   fi
 
   # Keep the current APP_NAME and SOURCE_BUILD_NUMBER to restore it after sub-component DOI deployment record
   PREVIOUS_APP_NAME=$APP_NAME
   PREVIOUS_SOURCE_BUILD_NUMBER=$SOURCE_BUILD_NUMBER
 
-  ls ${CHART_PATH}/insights/*
-  echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
-  for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
-    echo -e "Publish deploy record for component: ${INSIGHT_CONFIG}"
-    APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep APP_NAME | cut -d'=' -f2 )
-    GIT_BRANCH=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep GIT_BRANCH | cut -d'=' -f2 )
-    SOURCE_BUILD_NUMBER=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep SOURCE_BUILD_NUMBER | cut -d'=' -f2 )
+  if jq -e '.services[] | select(.service_id=="draservicebroker")' _toolchain.json > /dev/null 2>&1; then
+    ls ${CHART_PATH}/insights/*
+    echo "LOGICAL_ENV_NAME=${LOGICAL_ENV_NAME}"
+    for INSIGHT_CONFIG in $( ls -v ${CHART_PATH}/insights); do
+      echo -e "Publish deploy record for component: ${INSIGHT_CONFIG}"
+      APP_NAME=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep APP_NAME | cut -d'=' -f2 )
+      GIT_BRANCH=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep GIT_BRANCH | cut -d'=' -f2 )
+      SOURCE_BUILD_NUMBER=$( cat ${CHART_PATH}/insights/${INSIGHT_CONFIG} | grep SOURCE_BUILD_NUMBER | cut -d'=' -f2 )
  
-    echo -e "APP_NAME: ${APP_NAME}"
-    echo -e "GIT_BRANCH: ${GIT_BRANCH}"
-    echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
+      echo -e "APP_NAME: ${APP_NAME}"
+      echo -e "GIT_BRANCH: ${GIT_BRANCH}"
+      echo -e "SOURCE_BUILD_NUMBER: ${SOURCE_BUILD_NUMBER}"
 
-    # publish deploy records for each microservice
-    ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
+      # publish deploy records for each microservice
+      ibmcloud doi publishdeployrecord --logicalappname="${APP_NAME}" --buildnumber=${SOURCE_BUILD_NUMBER} --env=${LOGICAL_ENV_NAME} --status=${STATUS}
 
-    # get the process exit code
-    RESULT=$?  
-    if [[ ${RESULT} != 0 ]]; then
-        exit ${RESULT}
-    fi
-  done
+      # get the process exit code
+      RESULT=$?
+      if [[ ${RESULT} != 0 ]]; then
+          exit ${RESULT}
+      fi
+    done
+  fi
+
+  # Restore APP_NAME and SOURCE_BUILD_NUMBER after sub-component DOI deployment record
+  export APP_NAME=$PREVIOUS_APP_NAME
+  export SOURCE_BUILD_NUMBER=$PREVIOUS_SOURCE_BUILD_NUMBER
 fi
-
-# Restore APP_NAME and SOURCE_BUILD_NUMBER after sub-component DOI deployment record
-export APP_NAME=$PREVIOUS_APP_NAME
-export SOURCE_BUILD_NUMBER=$PREVIOUS_SOURCE_BUILD_NUMBER
 
 echo "=========================================================="
 CLUSTER_ID=${PIPELINE_KUBERNETES_CLUSTER_ID:-${PIPELINE_KUBERNETES_CLUSTER_NAME}} # use cluster id instead of cluster name to handle case where there are multiple clusters with same name
